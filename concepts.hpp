@@ -77,10 +77,10 @@ concept bool Swappable() {
 
 template <class T, class U>
 concept bool Swappable() {
-    return Swappable<T>() &&
-        Swappable<U>() &&
-        Common<T, U>() &&
-        requires(T&& t, U&& u) {
+    return Swappable<T>()
+        && Swappable<U>()
+        && Common<T, U>()
+        && requires(T&& t, U&& u) {
             std::swap(std::forward<T>(t), std::forward<U>(u));
             std::swap(std::forward<U>(u), std::forward<T>(t));
         };
@@ -123,33 +123,33 @@ concept bool Constructible() {
 
 template <class T>
 concept bool DefaultConstructible() {
-    return Constructible<T>() &&
-        requires (const size_t n) {
+    return Constructible<T>()
+        && requires (const size_t n) {
             new T[n]{}; // Not required to be equality preserving.
         };
 }
 
 template <class T>
 concept bool MoveConstructible() {
-    return Constructible<T, std::remove_cv_t<T>&&>() &&
-        ConvertibleTo<std::remove_cv_t<T>&&, T>();
+    return Constructible<T, std::remove_cv_t<T>&&>()
+        && ConvertibleTo<std::remove_cv_t<T>&&, T>();
 }
 
 
 template <class T>
 concept bool CopyConstructible() {
-    return MoveConstructible<T>() &&
-        Constructible<T, const std::remove_cv_t<T>&>() &&
-        ConvertibleTo<std::remove_cv_t<T>&, T>() &&
-        ConvertibleTo<const std::remove_cv_t<T>&, T>() &&
-        ConvertibleTo<const std::remove_cv_t<T>&&, T>();
+    return MoveConstructible<T>()
+        && Constructible<T, const std::remove_cv_t<T>&>()
+        && ConvertibleTo<std::remove_cv_t<T>&, T>()
+        && ConvertibleTo<const std::remove_cv_t<T>&, T>()
+        && ConvertibleTo<const std::remove_cv_t<T>&&, T>();
 }
 
 template <class T>
 concept bool Movable() {
-    return MoveConstructible<T>() &&
-        Assignable<T&, T&&>() &&
-        Swappable<T&>();
+    return MoveConstructible<T>()
+    && Assignable<T&, T&&>()
+    && Swappable<T&>();
     // axiom move_semantics {
     //     eq(a, b) => eq(T{std::move(a)}, b);
     //     eq(b, c) => eq(a = std::move(b), c);
@@ -158,9 +158,9 @@ concept bool Movable() {
 
 template <class T>
 concept bool Copyable() {
-    return CopyConstructible<T>() &&
-        Movable<T>() &&
-        Assignable<T&, const T&>();
+    return CopyConstructible<T>()
+        && Movable<T>()
+        && Assignable<T&, const T&>();
     // axiom copy_semantics {
     //     eq(T{a}, a);
     //     eq(a = b, b);
@@ -171,8 +171,8 @@ concept bool Copyable() {
 
 template <class B>
 concept bool Boolean() {
-    return MoveConstructible<B>() &&
-        requires(const B b1, const B b2, const bool a) {
+    return MoveConstructible<B>()
+        && requires(const B b1, const B b2, const bool a) {
             bool(b1);
             { b1 } -> bool;
             bool(!b1);
@@ -216,44 +216,43 @@ concept bool EqualityComparable() {
 
 template <class T, class U>
 concept bool EqualityComparable() {
-    return Common<T, U>() &&
-        EqualityComparable<T>() &&
-        EqualityComparable<U>() &&
-        EqualityComparable<std::common_type_t<T, U>>() &&
-        WeaklyEqualityComparable<T, U>();
+    return Common<T, U>()
+        && EqualityComparable<T>()
+        && EqualityComparable<U>()
+        && EqualityComparable<std::common_type_t<T, U>>()
+        && WeaklyEqualityComparable<T, U>();
 }
 
 template <class T>
 concept bool StrictTotallyOrdered() {
-    return EqualityComparable<T>() &&
-    requires (const T a, const T b) {
-        { a < b } -> Boolean;
-        { a > b } -> Boolean;
-        { a <= b } -> Boolean;
-        { a >= b } -> Boolean;
-        // axiom {
-        //     !(a < a);
-        //     a < b => !(b < a);
-        //     a < b && b < c => a < c;
-        //     a < b || b < a || a == b;
-        // }
-        // axiom {
-        //     a > b <=> b < a;
-        //     a <= b <=> !(b < a);
-        //     a >= b <=> !(b > a);
-        // }
-    };
-
+    return EqualityComparable<T>()
+        && requires (const T a, const T b) {
+            { a < b } -> Boolean;
+            { a > b } -> Boolean;
+            { a <= b } -> Boolean;
+            { a >= b } -> Boolean;
+            // axiom {
+            //     !(a < a);
+            //     a < b => !(b < a);
+            //     a < b && b < c => a < c;
+            //     a < b || b < a || a == b;
+            // }
+            // axiom {
+            //     a > b <=> b < a;
+            //     a <= b <=> !(b < a);
+            //     a >= b <=> !(b > a);
+            // }
+        };
 }
 
 template <class T, class U>
 concept bool StrictTotallyOrdered() {
-    return Common<T, U>() &&
-        StrictTotallyOrdered<T>() &&
-        StrictTotallyOrdered<U>() &&
-        StrictTotallyOrdered<std::common_type_t<T, U>>() &&
-        EqualityComparable<T, U>() &&
-        requires (const T t, const U u) {
+    return Common<T, U>()
+        && StrictTotallyOrdered<T>()
+        && StrictTotallyOrdered<U>()
+        && StrictTotallyOrdered<std::common_type_t<T, U>>()
+        && EqualityComparable<T, U>()
+        && requires (const T t, const U u) {
             { t < u } -> Boolean;
             { t > u } -> Boolean;
             { t <= u } -> Boolean;
@@ -267,35 +266,35 @@ concept bool StrictTotallyOrdered() {
 
 template <class T>
 concept bool Semiregular() {
-    return Copyable<T>() &&
-    DefaultConstructible<T>();
+    return Copyable<T>() && DefaultConstructible<T>();
 }
 
 template <class T>
 concept bool Regular() {
-    return Semiregular<T>() &&
-    EqualityComparable<T>();
+    return Semiregular<T>() && EqualityComparable<T>();
 }
 
 // Callable concepts:
 
 template <class F, class...Args>
 concept bool Callable() {
-    return CopyConstructible<F>() &&
-        requires (F f, Args&&...args) {
-            invoke(f, std::forward<Args>(args)...); // not required to be equality preserving
+    return CopyConstructible<F>()
+        && requires (F f, Args&&...args) {
+            invoke(f, std::forward<Args>(args)...); // Not required to be equality preserving.
         };
 }
 
 template <class F, class...Args>
 concept bool RegularCallable() {
     return Callable<F, Args...>();
+    // axiom (F f, Args... args) {
+    //     equality_preserving(f(args...));
+    // }
 }
 
 template <class F, class...Args>
 concept bool Predicate() {
-    return RegularCallable<F, Args...>() &&
-        Boolean<std::result_of_t<F&(Args...)>>();
+    return RegularCallable<F, Args...>() && Boolean<std::result_of_t<F&(Args...)>>();
 }
 
 template <class R, class T>
@@ -305,12 +304,12 @@ concept bool Relation() {
 
 template <class R, class T, class U>
 concept bool Relation() {
-    return Relation<R, T>() &&
-        Relation<R, U>() &&
-        Common<T, U>() &&
-        Relation<R, std::common_type_t<T, U>>() &&
-        Predicate<R, T, U>() &&
-        Predicate<R, U, T>();
+    return Relation<R, T>()
+        && Relation<R, U>()
+        && Common<T, U>()
+        && Relation<R, std::common_type_t<T, U>>()
+        && Predicate<R, T, U>()
+        && Predicate<R, U, T>();
         // axiom {
         //     using C = CommonType<T, U>;
         //     r(t, u) <=> r(C{t}, C{u});
@@ -332,30 +331,28 @@ concept bool StrictWeakOrder() {
 
 template <class Op, class T>
 concept bool UnaryOperation() {
-    return RegularCallable<Op, T>() &&
-        ConvertibleTo<std::result_of_t<Op(T)>, T>();
+    return RegularCallable<Op, T>() && ConvertibleTo<std::result_of_t<Op(T)>, T>();
 }
 
 template <class Op, class T>
 concept bool BinaryOperation() {
-    return RegularCallable<Op, T, T>() &&
-        ConvertibleTo<std::result_of_t<Op(T, T)>, T>();
+    return RegularCallable<Op, T, T>() && ConvertibleTo<std::result_of_t<Op(T, T)>, T>();
 }
 
 template <class Op, class T, class U>
 concept bool BinaryOperation() {
-    return BinaryOperation<Op, T>() &&
-    BinaryOperation<Op, U>() &&
-    Common<T, U>() &&
-    BinaryOperation<Op, Common<T, U>>() &&
-    requires (Op op, T a, U b) {
-        { op(a, b) } -> std::common_type_t<T, U>();
-        { op(b, a) } -> std::common_type_t<T, U>();
-        // axiom {
-        //     eq(op(a, b), op(C{a}, C{b}));
-        //     eq(op(b, a), op(C{b}, C{a}));
-        // }
-    };
+    return BinaryOperation<Op, T>()
+        && BinaryOperation<Op, U>()
+        && Common<T, U>()
+        && BinaryOperation<Op, Common<T, U>>()
+        && requires (Op op, T a, U b) {
+            { op(a, b) } -> std::common_type_t<T, U>();
+            { op(b, a) } -> std::common_type_t<T, U>();
+            // axiom {
+            //     eq(op(a, b), op(C{a}, C{b}));
+            //     eq(op(b, a), op(C{b}, C{a}));
+            // }
+        };
 }
 
 // Iterator concepts:
@@ -386,8 +383,8 @@ using value_type_t = typename value_type<T>::type;
 
 template <class I>
 concept bool Readable() {
-    return Semiregular<I>() &&
-        requires (const I i) {
+    return Semiregular<I>()
+        && requires (const I i) {
         typename value_type_t<I>;
         { *i } -> const value_type_t<I>&; // pre: i is dereferenceable
     };
@@ -395,12 +392,12 @@ concept bool Readable() {
 
 template <class Out, class T>
 concept bool Writable() {
-    return Semiregular<Out>() &&
-        requires(Out o, T&& v) {
-        *o = std::forward<T>(v); // not required to be equality preserving
-        // axiom {
-        //     Readable<Out> && Same<ValueType<Out>, T> =>
-        //         (is_valid(*o = value) => (*o = value, eq(*o, value)));
-        // }
-    };
+    return Semiregular<Out>()
+        && requires(Out o, T&& v) {
+            *o = std::forward<T>(v); // not required to be equality preserving
+            // axiom {
+            //     Readable<Out> && Same<ValueType<Out>, T> =>
+            //         (is_valid(*o = value) => (*o = value, eq(*o, value)));
+            // }
+        };
 }
