@@ -148,8 +148,8 @@ concept bool CopyConstructible() {
 template <class T>
 concept bool Movable() {
     return MoveConstructible<T>()
-    && Assignable<T&, T&&>()
-    && Swappable<T&>();
+        && Assignable<T&, T&&>()
+        && Swappable<T&>();
     // axiom move_semantics {
     //     eq(a, b) => eq(T{std::move(a)}, b);
     //     eq(b, c) => eq(a = std::move(b), c);
@@ -310,11 +310,11 @@ concept bool Relation() {
         && Relation<R, std::common_type_t<T, U>>()
         && Predicate<R, T, U>()
         && Predicate<R, U, T>();
-        // axiom {
-        //     using C = CommonType<T, U>;
-        //     r(t, u) <=> r(C{t}, C{u});
-        //     r(u, t) <=> r(C{u}, C{t});
-        // }
+    // axiom {
+    //     using C = CommonType<T, U>;
+    //     r(t, u) <=> r(C{t}, C{u});
+    //     r(u, t) <=> r(C{u}, C{t});
+    // }
 }
 
 template <class R, class T>
