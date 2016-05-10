@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <iterator>
 #include <type_traits>
 #include <utility>
 
@@ -134,7 +135,6 @@ concept bool MoveConstructible() {
     return Constructible<T, std::remove_cv_t<T>&&>()
         && ConvertibleTo<std::remove_cv_t<T>&&, T>();
 }
-
 
 template <class T>
 concept bool CopyConstructible() {
@@ -386,7 +386,7 @@ concept bool Readable() {
     return Semiregular<I>()
         && requires (const I i) {
         typename value_type_t<I>;
-        { *i } -> const value_type_t<I>&; // pre: i is dereferenceable
+        { *i } -> const value_type_t<I>&; // pre: i is dereferenceable.
     };
 }
 
@@ -394,10 +394,201 @@ template <class Out, class T>
 concept bool Writable() {
     return Semiregular<Out>()
         && requires(Out o, T&& v) {
-            *o = std::forward<T>(v); // not required to be equality preserving
+            *o = std::forward<T>(v); // Not required to be equality preserving.
             // axiom {
             //     Readable<Out> && Same<ValueType<Out>, T> =>
             //         (is_valid(*o = value) => (*o = value, eq(*o, value)));
             // }
         };
+}
+
+template <class>
+struct difference_type;
+
+template <class T>
+using difference_type_t = typename difference_type<T>::type;
+
+template <class I>
+concept bool WeaklyIncrementable() {
+    return Semiregular<I>()
+    && requires (I i) {
+        typename difference_type_t<I>;
+        requires SignedIntegral<difference_type_t<I>>();
+        { ++i } -> Same<I&>; // Not required to be equality preserving.
+        // axiom {
+        //     is_valid(++i) => &++i == &i;
+        // }
+        i++; // Not required to be equality preserving.
+        // axiom {
+        //     is_valid(++i) <=> is_valid(i++);
+        // }
+    };
+}
+
+template <class I>
+concept bool Incrementable() {
+    return Regular<I>()
+        && WeaklyIncrementable<I>()
+        && requires(I i) {
+            { i++ } -> Same<I>;
+        };
+        // axiom {
+        //     equality_preserving(++i);
+        // }
+        // axiom {
+        //     equality_preserving(i++);
+        //     is_valid(i++) => (i == j => i++ == j);
+        //     is_valid(i++) => (i == j => (i++, i) == ++j);
+        // }
+}
+
+template <class I>
+concept bool Iterator() {
+    return WeaklyIncrementable<I>()
+    && requires(I i) {
+        { *i } -> auto&&; // pre: i is dereferenceable.
+    };
+}
+
+template <class>
+struct iterator_category;
+
+template <class T>
+using iterator_category_t = typename iterator_category<T>::type;
+
+template <class I>
+concept bool InputIterator() {
+    return Iterator<I>()
+        && Readable<I>()
+        && requires(I i, const I ci) {
+            typename iterator_category_t<I>;
+            requires DerivedFrom<iterator_category_t<I>, std::input_iterator_tag>();
+            { i++ } -> Readable; // Not required to be equality preserving.
+            requires Same<value_type_t<I>, value_type_t<decltype(i++)>>();
+            { *ci } -> const value_type_t<I>&;
+        };
+}
+
+template <class I, class T>
+concept bool OutputIterator() {
+    return Iterator<I>() && Writable<I, T>();
+}
+
+template <class I>
+concept bool ForwardIterator() {
+    return InputIterator<I>()
+        && DerivedFrom<iterator_category_t<I>, std::forward_iterator_tag>()
+        && Incrementable<I>();
+}
+
+template <class I>
+concept bool BidirectionalIterator() {
+    return ForwardIterator<I>()
+        && DerivedFrom<iterator_category_t<I>, std::bidirectional_iterator_tag>()
+        && requires (I i) {
+            { --i } -> Same<I&>;
+            // axiom { is_valid(--i) => &--i == &i; }
+            { i-- } -> Same<I>;
+            // axiom {
+            //     is_valid(--i) <=> is_valid(i--);
+            //     is_valid(i--) => (i == j => i-- == j);
+            //     is_valid(i--) => (i == j => (i--, i) == --j);
+            // }
+        };
+        // axiom {
+        //     is_valid(++i) => (is_valid(--(++i)) && (i == j => --(++i) == j));
+        //     is_valid(--i) => (is_valid(++(--i)) && (i == j => ++(--i) == j));
+        // }
+}
+
+template <class R>
+using reference_t = decltype(*std::declval<R&>());
+
+template <class I>
+concept bool RandomAccessIterator() {
+    return BidirectionalIterator<I>()
+        && DerivedFrom<iterator_category_t<I>, std::random_access_iterator_tag>()
+        && StrictTotallyOrdered<I>()
+        && requires (I i, const I j, const difference_type_t<I> n) {
+            { i += n } -> Same<I&>;
+            { j + n } -> Same<I>;
+            { n + j } -> Same<I>;
+            { i -= n } -> Same<I&>;
+            { j - n } -> Same<I>;
+            { j[n] } -> Same<reference_t<I>>;
+            // axiom addition {
+            // is_valid(advance(i, n) <=> is_valid(i += n);
+            //     is_valid(i += n) => i += n == (advance(i, n), i);
+            //     is_valid(i += n) => &(i += n) == &i;
+            //     is_valid(i += n) => i + n == (i += n);
+            //     is_valid(i + n) => i + n == n + i; // Commutativity of pointer addition.
+            //     is_valid(i + (n + n)) => i + (n + n) == (i + n) + n; // Associativity of pointer addition.
+            //     Peano-like pointer addition:
+            //     i + 0 == i;
+            //     is_valid(i + n) => i + n == ++ (i + (n - 1));
+            //     is_valid(++i) => (i == j => ++i != j);
+            // }
+            // axiom subtraction {
+            // is_valid(i += -n) <=> is_valid(i -= n);
+            // is_valid(i -= n) => (i -= n) == (i += -n);
+            // is_valid(i -= n) => &(i -= n) == &i;
+            // is_valid(i -= n) => (i - n) == (i -= n);
+            // }
+            // axiom difference {
+            //     is_valid(distance(i, j)) <=> is_valid(i - j) && is_valid(j - i);
+            //     is_valid(i - j) => (i - j) >= 0 => i - j == distance(i, j);
+            //     is_valid(i - j) => (i - j) < 0 => i - j == -distance(i, j);
+            // }
+            // axiom subscript {
+            // is_valid(i + n) && is_valid(*(i + n)) => i[n] == *(i + n);
+            // }
+        };
+}
+
+// Rearrangements:
+
+template <class I>
+using rvalue_reference_t = decltype(std::move(std::declval<reference_t<I>>()));
+
+template <class In, class Out>
+concept bool IndirectlyMovable() {
+    return Readable<In>() && Writable<Out, rvalue_reference_t<In>>();
+}
+
+template <class In, class Out>
+concept bool IndirectlyMovableStorable() {
+    return IndirectlyMovable<In, Out>()
+        && Writable<Out, value_type_t<In>&&>()
+        && Movable<value_type_t<In>>()
+        && Constructible<value_type_t<In>, rvalue_reference_t<In>>()
+        && Assignable<value_type_t<In>&, rvalue_reference_t<In>>();
+}
+
+template <class In, class Out>
+concept bool IndirectlyCopyable() {
+    return IndirectlyMovable<In, Out>() && Writable<Out, reference_t<In>>();
+}
+
+template <class In, class Out>
+concept bool IndirectlyCopyableStorable() {
+    return IndirectlyCopyable<In, Out>()
+        && IndirectlyMovableStorable<In, Out>()
+        && Writable<Out, const value_type_t<In>&>()
+        && Copyable<value_type_t<In>>()
+        && Constructible<value_type_t<In>, reference_t<In>>()
+        && Assignable<value_type_t<In>&, reference_t<In>>();
+}
+
+template <class I1, class I2 = I1>
+concept bool IndirectlySwappable() {
+    return Readable<I1>()
+        && Readable<I2>()
+        && Swappable<reference_t<I1>, reference_t<I2>>();
+}
+
+template <class I>
+concept bool Permutable() {
+    return ForwardIterator<I>()
+        && Semiregular<value_type_t<I>>
+        && IndirectlyMovable<I, I>();
 }
