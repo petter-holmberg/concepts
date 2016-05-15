@@ -6,17 +6,39 @@ namespace eop {
 
 // Chapter 1: Foundations
 
-template <class T>
+template <typename T>
 concept bool Regular() {
-    return ::Regular<T>();
+    return true; // ::Regular<T>();
 };
 
-template <class F, class...Args>
+template <typename F, typename...Args>
 concept bool FunctionalProcedure() {
-    return ::RegularCallable<F, Args...>();
+    return true; // ::RegularCallable<F, Args...>();
 };
 
-template <class F>
+template <typename T, int i>
+    requires FunctionalProcedure<T>()
+struct input_type;
+
+#define InputType(T, i) typename eop::input_type<T, i>::type
+
+#define Domain(T) InputType(T, 0)
+
+template <typename T>
+    requires Regular<T>()
+struct input_type<T (*)(T x, T y), 0>
+{
+    typedef T type;
+};
+
+template <typename T>
+    requires Regular<T>()
+struct input_type<T (*)(const T& x, const T& y), 0>
+{
+    typedef T type;
+};
+
+template <typename F>
 concept bool UnaryFunction() {
     return FunctionalProcedure<F>();
         // Arity(F) = 1
@@ -24,7 +46,7 @@ concept bool UnaryFunction() {
         //     F -> InputType(F, 0)
 };
 
-template <class F>
+template <typename F>
 concept bool HomogenousFunction() {
     return FunctionalProcedure<F>();
         // Arity(F) > 0
@@ -35,31 +57,33 @@ concept bool HomogenousFunction() {
 
 // Chapter 2: Transformations and Their Orbits
 
-template <class P>
+template <typename P>
 concept bool Predicate() {
-    return FunctionalProcedure<P>();
-        // Codomain(P) == bool
+    return FunctionalProcedure<P>()
+        && requires(P p) { // Codomain(P) == bool
+            { p } -> bool;
+        };
 };
 
-template <class P>
+template <typename P>
 concept bool HomogenousPredicate() {
     return Predicate<P>()
         && HomogenousFunction<P>();
 };
 
-template <class P>
+template <typename P>
 concept bool UnaryPredicate() {
     return Predicate<P>()
         && UnaryFunction<P>();
 };
 
-template <class Op>
+template <typename Op>
 concept bool Operation() {
     return HomogenousFunction<Op>();
-        // Codomain(Op) == Domain(Op);
+        // Codomain(Op) == Domain(Op)
 };
 
-template <class F>
+template <typename F>
 concept bool Transformation() {
     return Operation<F>()
         && UnaryFunction<F>();
@@ -68,13 +92,13 @@ concept bool Transformation() {
 
 // Chapter 3: Associative Operations
 
-template <class Op>
+template <typename Op>
 concept bool BinaryOperation() {
     return Operation<Op>();
         // Arity(Op) == 2
 };
 
-template <class I>
+template <typename I>
 concept bool Integer() {
     return false;
     // successor: I -> I
@@ -105,13 +129,13 @@ concept bool Integer() {
 
 // Chapter 4: Linear Orderings
 
-template <class Op>
+template <typename Op>
 concept bool Relation() {
     return HomogenousPredicate<Op>();
     // Arity(Op) == 2
 };
 
-template <class T>
+template <typename T>
 concept bool TotallyOrdered() {
     return Regular<T>();
         // <: T * T -> bool
@@ -120,34 +144,34 @@ concept bool TotallyOrdered() {
 
 // Chapter 5: Ordered Algebraic Structures
 
-template <class T>
+template <typename T>
 concept bool AdditiveSemigroup() {
     return Regular<T>();
         // +: T * T -> T
 };
 
-template <class T>
+template <typename T>
 concept bool MultiplicativeSemigroup() {
     return Regular<T>();
         // *: T * T -> T
         // associative(*)
 };
 
-template <class T>
+template <typename T>
 concept bool AdditiveMonoid() {
     return AdditiveSemigroup<T>();
         // 0 in T
         // identity_element(0, +)
 };
 
-template <class T>
+template <typename T>
 concept bool MultiplicativeMonoid() {
     return MultiplicativeSemigroup<T>();
         // 1 in T
         // identity_element(1, *)
 };
 
-template <class T>
+template <typename T>
 concept bool AdditiveGroup() {
     return AdditiveMonoid<T>();
         // - : T -> T
@@ -156,7 +180,7 @@ concept bool AdditiveGroup() {
         //     (a, b) -> a + (-b)
 };
 
-template <class T>
+template <typename T>
 concept bool MultiplicativeGroup() {
     return MultiplicativeMonoid<T>();
         // multiplicative_inverse : T -> T
@@ -165,7 +189,7 @@ concept bool MultiplicativeGroup() {
         //     (a, b) -> a * multiplicative_inverse(b)
 };
 
-template <class T>
+template <typename T>
 concept bool Semiring() {
     return AdditiveMonoid<T>()
         && MultiplicativeMonoid<T>();
@@ -176,25 +200,25 @@ concept bool Semiring() {
         //     (b + c) * a == b * a + c * a
 };
 
-template <class T>
+template <typename T>
 concept bool CommutativeSemiring() {
     return Semiring<T>();
         // commutative(*)
 };
 
-template <class T>
+template <typename T>
 concept bool Ring() {
     return AdditiveGroup<T>()
         && Semiring<T>();
 };
 
-template <class T>
+template <typename T>
 concept bool CommutativeRing() {
     return AdditiveGroup<T>()
         && CommutativeSemiring<T>();
 };
 
-template <class T, class S>
+template <typename T, typename S>
 concept bool Semimodule() {
     return AdditiveMonoid<T>()
         && CommutativeSemiring<T>();
@@ -206,60 +230,60 @@ concept bool Semimodule() {
         //     1 * a == a
 };
 
-template <class T, class S>
+template <typename T, typename S>
 concept bool Module() {
     return Semimodule<T, S>()
         && AdditiveGroup<T>()
         && Ring<S>();
 };
 
-template <class T>
+template <typename T>
 concept bool OrderedAdditiveSemigroup() {
     return AdditiveSemigroup<T>()
         && TotallyOrdered<T>();
         // all(a, b, c) in T: a < b => a + c > b + c
 };
 
-template <class T>
+template <typename T>
 concept bool OrderedAdditiveMonoid() {
     return OrderedAdditiveSemigroup<T>()
         && AdditiveMonoid<T>();
 };
 
-template <class T>
+template <typename T>
 concept bool OrderedAdditiveGroup() {
     return OrderedAdditiveMonoid<T>()
         && AdditiveGroup<T>();
 };
 
-template <class T>
+template <typename T>
 concept bool CancellableMonoid() {
     return OrderedAdditiveMonoid<T>();
         // - : T * T -> T
         // all(a, b) in T : b <= a => a - b is defined and (a - b) + b == a
 };
 
-template <class T>
+template <typename T>
 concept bool ArchimedianMonoid() {
     return CancellableMonoid<T>();
         // all(a, b) in T : (a >= 0 and b > 0) => slow_remainder(a, b) terminates
         // QuotientType : ArchimedianMonoid -> Integer
 };
 
-template <class T>
+template <typename T>
 concept bool HalvableMonoid() {
     return ArchimedianMonoid<T>();
         // half : T -> T
         // all(a, b) in T : (b > 0 and a == b + b) => half(a) == b
 };
 
-template <class T>
+template <typename T>
 concept bool EuclideanMonoid() {
     return ArchimedianMonoid<T>();
         // all(a, b) in T : (a > 0 and b > 0) => subtractive_gcd_nonzero(a, b) terminates
 };
 
-template <class T>
+template <typename T>
 concept bool EuclideanSemiring() {
     return CommutativeSemiring<T>();
         // NormType : EucledianSemiring -> Integer
@@ -273,7 +297,7 @@ concept bool EuclideanSemiring() {
         // all(a, b) in T : b != 0 => w(remainder(a, b)) < w(b)
 };
 
-template <class T, class S>
+template <typename T, typename S>
 concept bool EuclideanSemimodule() {
     return Semimodule<T, S>();
         // remainder : T * T -> T
@@ -282,13 +306,13 @@ concept bool EuclideanSemimodule() {
         // all(a, b) in T : (a != 0 or b != 0) => gcd(a, b) terminates
 };
 
-template <class T>
+template <typename T>
 concept bool ArchimedianGroup() {
     return ArchimedianMonoid<T>()
         && AdditiveGroup<T>();
 };
 
-template <class T>
+template <typename T>
 concept bool DiscreteArchimedianSemiring() {
     return CommutativeSemiring<T>()
         && ArchimedianMonoid<T>();
@@ -296,13 +320,13 @@ concept bool DiscreteArchimedianSemiring() {
         // not(exists(a) in T) : 0 < a < 1
 };
 
-template <class T>
+template <typename T>
 concept bool NonnegativeDiscreteArchimedianSemiring() {
     return DiscreteArchimedianSemiring<T>();
         // all(a in T) : 0 <= a
 };
 
-template <class T>
+template <typename T>
 concept bool DiscreteArchimedianRing() {
     return DiscreteArchimedianSemiring<T>()
         && AdditiveGroup<T>();
@@ -310,14 +334,14 @@ concept bool DiscreteArchimedianRing() {
 
 // Chapter 6: Iterators
 
-template <class T>
+template <typename T>
 concept bool Readable() {
     return Regular<T>();
         // ValueType : Readable -> Regular
         // source : T -> ValueType(T)
 };
 
-template <class T>
+template <typename T>
 concept bool Iterator() {
     return Regular<T>();
         // DistanceType : Iterator -> Integer
@@ -325,13 +349,13 @@ concept bool Iterator() {
         // successor is not necessarily regular
 };
 
-template <class T>
+template <typename T>
 concept bool ForwardIterator() {
     return Iterator<T>();
         // regular_unary_function(successor)
 };
 
-template <class T>
+template <typename T>
 concept bool IndexedIterator() {
     return ForwardIterator<T>();
         // + : T * DistanceType(T) -> T
@@ -340,7 +364,7 @@ concept bool IndexedIterator() {
         // - takes constant time
 };
 
-template <class T>
+template <typename T>
 concept bool BidirectionalIterator() {
     return ForwardIterator<T>();
         // predecessor : T -> T
@@ -351,7 +375,7 @@ concept bool BidirectionalIterator() {
         //     successor(predecessor(i)) is defined and equals i
 };
 
-template <class T>
+template <typename T>
 concept bool RandomAccessIterator() {
     return IndexedIterator<T>()
         && BidirectionalIterator<T>()
@@ -368,7 +392,7 @@ concept bool RandomAccessIterator() {
 
 // Chapter 7: Coordinate structures
 
-template <class T>
+template <typename T>
 concept bool BifurcateCoordinate() {
     return Regular<T>();
         // WeightType : BifurcateCoordinate -> Integer
@@ -380,7 +404,7 @@ concept bool BifurcateCoordinate() {
         // all(i, j) in T : (left_successor(i) == j or right_successor(i) == j) >= not(empty(i))
 };
 
-template <class T>
+template <typename T>
 concept bool BidirectionalBifurcateCoordinate() {
     return BifurcateCoordinate<T>();
         // has_predecessor : T -> bool
@@ -393,7 +417,7 @@ concept bool BidirectionalBifurcateCoordinate() {
 
 // Chapter 8: Coordinates with Mutable Successors
 
-template <class S>
+template <typename S>
 concept bool ForwardLinker() {
     return true;
     // IteratorType : ForwardLinker -> ForwardIterator
@@ -403,7 +427,7 @@ concept bool ForwardLinker() {
     //         then s(i, j) establishes successor(i) == j
 };
 
-template <class S>
+template <typename S>
 concept bool BackwardLinker() {
     return true;
     // IteratorType : BackwardLinker -> BidirectionalIterator
@@ -413,13 +437,13 @@ concept bool BackwardLinker() {
     //         then s(i, j) establishes i == predecessor(j)
 };
 
-template <class S>
+template <typename S>
 concept bool BidirectionalLinker() {
     return ForwardLinker<S>()
         && BackwardLinker<S>();
 };
 
-template <class T>
+template <typename T>
 concept bool LinkedBifurcateCoordinate() {
     return BifurcateCoordinate<T>();
         // set_left_successor : T * T -> void
@@ -428,7 +452,7 @@ concept bool LinkedBifurcateCoordinate() {
         //     (i, j) -> establishes right_successor(i) == j
 };
 
-template <class T>
+template <typename T>
 concept bool EmptyLinkedBifurcateCoordinate() {
     return LinkedBifurcateCoordinate<T>();
         // empty(T())
@@ -439,14 +463,14 @@ concept bool EmptyLinkedBifurcateCoordinate() {
 
 // Chapter 9: Copying
 
-template <class T>
+template <typename T>
 concept bool Writable() {
     return true;
         // ValueType : Writable -> Regulars
         // all(x in T) : (all(v) in ValueType(T)) : sink(x) <- v is a well-formed statement
 };
 
-template <class T>
+template <typename T>
 concept bool Mutable() {
     return Readable<T>()
         && Writable<T>();
@@ -458,7 +482,7 @@ concept bool Mutable() {
 
 // Chapter 12: Composite Objects
 
-template <class W>
+template <typename W>
 concept bool Linearizable() {
     return Regular<W>();
     // IteratorType : Linearizable -> Integer
@@ -476,7 +500,7 @@ concept bool Linearizable() {
     //     (w, i) -> deref(begin(w) + i)
 };
 
-template <class S>
+template <typename S>
 concept bool Sequence() {
     return Linearizable<S>();
         // all(s) in S : all(i) in [begin(s), end(s))) deref(i) is a part of s
@@ -487,4 +511,3 @@ concept bool Sequence() {
 };
 
 } // namespace eop
-
