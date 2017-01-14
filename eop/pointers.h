@@ -31,80 +31,80 @@
 
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 struct value_type<pointer(T)>
 {
     typedef T type;
 };
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 const T& source(pointer(T) x)
 {
     return *x;
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 const T& source(const T& x)
 {
     return x;
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 struct distance_type<pointer(T)>
 {
     typedef ptrdiff_t type;
 };
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 pointer(T) successor(pointer(T) x)
 {
     return x + ptrdiff_t(1);
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 pointer(T) predecessor(pointer(T) x)
 {
     return x - ptrdiff_t(1);
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 T& sink(pointer(T) x)
 {
     return *x;
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 T& sink(T& x)
 {
     return x;
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 T& deref(pointer(T) x)
 {
     return *x;
 }
 
 //template<typename T>
-//    requires(Regular(T))
+//    __requires(Regular(T))
 //T& deref(T& x)
 //{
 //    return x;
 //}
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 struct iterator_concept<T*>
 {
-    typedef random_access_iterator_tag concept;
+    typedef random_access_iterator_tag __concept;
 };
 
 #endif // EOP_POINTERS

@@ -85,7 +85,7 @@ void print_eol()
 }
 
 template<typename T0, typename T1>
-    requires(Regular(T0) && Regular(T1))
+    __requires(Regular(T0) && Regular(T1))
 void print(const pair<T0, T1>& x)
 {
     print("pair(");
@@ -94,7 +94,7 @@ void print(const pair<T0, T1>& x)
 }
 
 template<typename I>
-    requires(Readable(I) && Iterator(I))
+    __requires(Readable(I) && Iterator(I))
 void print_range(I f, I l)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
@@ -106,7 +106,7 @@ void print_range(I f, I l)
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 void print(const slist<T>& x)
 {
     print("slist[");
@@ -117,7 +117,7 @@ void print(const slist<T>& x)
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 void print(const list<T>& x)
 {
     print("list[");
@@ -128,11 +128,11 @@ void print(const list<T>& x)
 }
 
 template<typename C>
-    requires(BifurcateCoordinate(C))
+    __requires(BifurcateCoordinate(C))
 struct print_visit
 {
     bool b_pre, b_in, b_post;
-    print_visit(bool b_pre, bool b_in, bool b_post) : 
+    print_visit(bool b_pre, bool b_in, bool b_post) :
         b_pre(b_pre), b_in(b_in), b_post(b_post) { }
     void operator()(visit v, C c)
     {
@@ -144,7 +144,7 @@ struct print_visit
 };
 
 template<typename C>
-    requires(BifurcateCoordinate(C))
+    __requires(BifurcateCoordinate(C))
 void print_bifurcate(C c)
 {
     if (empty(c)) {
@@ -163,7 +163,7 @@ void print_bifurcate(C c)
 }
 
 template<typename C>
-    requires(BifurcateCoordinate(C))
+    __requires(BifurcateCoordinate(C))
 void print_node(C c)
 {
     if (empty(c)) print("/");
@@ -171,7 +171,7 @@ void print_node(C c)
 }
 
 template<typename C>
-    requires(BifurcateCoordinate(C))
+    __requires(BifurcateCoordinate(C))
 void print_coordinate(C c)
 {
     if (empty(c)) print("/");
@@ -179,21 +179,21 @@ void print_coordinate(C c)
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 void print(const stree<T>& x)
 {
     print_bifurcate(begin(x));
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 void print(const tree<T>& x)
 {
     print_bifurcate(begin(x));
 }
 
 template<int k, typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 void print(const array_k<k, T>& x)
 {
     print("array_k[");
@@ -204,7 +204,7 @@ void print(const array_k<k, T>& x)
 }
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 void print(const array<T>& x)
 {
     print("array[");

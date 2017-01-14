@@ -35,7 +35,7 @@
 //  The requires clause is implemented with this macro (this
 //  implementation treats requirements as documentation only):
 
-#define requires(...)
+#define __requires(...)
 
 
 // Intrinsics
@@ -56,7 +56,7 @@ pointer(T) addressof(T& x)
 // In-place construction and destruction (not in Appendix B.2)
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 void construct(T& p)
 {
     // Precondition: $p$ refers to raw memory, not an object
@@ -65,17 +65,17 @@ void construct(T& p)
 }
 
 template<typename T, typename U>
-    requires(Regular(T) && Constructible(T, U))
+    __requires(Regular(T) && Constructible(T, U))
 void construct(T& p, const U& initializer)
 {
     // Precondition: $p$ refers to raw memory, not an object
     // Postcondition: Default makes $p = initializer$
-    // Override $\func{construct}$ to specialize construction of a part of a 
+    // Override $\func{construct}$ to specialize construction of a part of a
     new (&p) T(initializer);
-}    
+}
 
 template<typename T>
-    requires(Regular(T))
+    __requires(Regular(T))
 void destroy(T& p)
 {
     // Precondition: $p$ is in a partially-formed state
@@ -84,7 +84,7 @@ void destroy(T& p)
 }
 
 template<typename T, typename U>
-    requires(Regular(T))
+    __requires(Regular(T))
 void destroy(T& p, U& finalizer)
 {
     // Precondition: $p$ is in a partially-formed state

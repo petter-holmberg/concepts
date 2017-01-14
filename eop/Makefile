@@ -1,9 +1,9 @@
 # eop Makefile
 
-CC       = g++
+CC       = ~/gcc/bin/g++
 DEBUG    = -O0 -ggdb -pg
 //CFLAGS   = -Wall
-CFLAGS   =
+CFLAGS   = -std=c++1z -fconcepts
 CXXFLAGS = $(CFLAGS)
 LDFLAGS	 = -g
 

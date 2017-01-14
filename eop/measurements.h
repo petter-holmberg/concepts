@@ -76,7 +76,7 @@ inline double time_per_iter(const measure_time& m)
 }
 
 template<typename M, typename F>
-    requires(Measure(M) && Measurement(F))
+    __requires(Measure(M) && Measurement(F))
 M perform()
 {
     typedef DistanceType(M) N;
@@ -132,7 +132,7 @@ struct measure_reverse_bidirectional
             REPETITIONS(100000000 / N),
             a(N, N, T(17)),
             f(begin(a)), l(end(a))
-    { 
+    {
          Assert(size(a) == N && find_not(f, l, T(17)) == l);
     }
     inline void operator()() {
@@ -317,7 +317,7 @@ struct measure_sort_n_adaptive
             a(N, N, T(17)),
             f(begin(a)), l(end(a)),
             b(100000, 100000, T(0))
-    { 
+    {
         iota(N, f);
         reverse_bidirectional(f, l);
         // Assert(decreasing_range(f, l));
@@ -329,7 +329,7 @@ struct measure_sort_n_adaptive
 };
 
 template<typename M>
-    requires(Measure(M))
+    __requires(Measure(M))
 void report(M m)
 {
     print(m.legend); print(": ");
