@@ -26,6 +26,7 @@
 #include "type_functions.h"
 #include "pointers.h"
 #include "integers.h"
+#include "concepts.h"
 
 #include <cstdlib> // malloc, free
 #include <cmath> // sqrt
