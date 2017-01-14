@@ -42,17 +42,19 @@ template <typename F>
 concept bool UnaryFunction() {
     return FunctionalProcedure<F>();
         // Arity(F) = 1
-        // Domain : UnaryFunction -> Regular
-        //     F -> InputType(F, 0)
+        // && requires(F f, T t) { // Domain : UnaryFunction -> Regular
+        //     { F(t) } -> Domain(F);
+        // };
 };
 
 template <typename F>
 concept bool HomogenousFunction() {
     return FunctionalProcedure<F>();
         // Arity(F) > 0
-        // (All(i,j) in N : i,j < Arity(F)) => (InputType(F, i) == InputType(F, j))
-        // Domain : HomogenousFunction -> Regular
-        //     F -> InputType(F, 0)
+        // axiom For all i, j in N : (i, j < Arity(F)) => (InputType(F, i) == InputType(F, j))
+        // && requires(F f, T t) { // Domain : HomogenousFunction -> Regular
+        //     { F(t) } -> Domain(F);
+        // };
 };
 
 // Chapter 2: Transformations and Their Orbits
