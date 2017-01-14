@@ -74,11 +74,10 @@ struct equal
     }
 };
 
-template<typename T>
-    __requires(Regular(T))
+template<Regular T>
 struct input_type<equal<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 
@@ -95,22 +94,19 @@ struct pair
     pair(const T0& m0, const T1& m1) : m0(m0), m1(m1) { }
 };
 
-template<typename T0, typename T1>
-    __requires(Regular(T0) && Regular(T1))
-struct underlying_type< pair<T0, T1> >
+template<Regular T0, Regular T1>
+struct underlying_type<pair<T0, T1>>
 {
-    typedef pair<UnderlyingType(T0), UnderlyingType(T1)> type;
+    using type = pair<UnderlyingType(T0), UnderlyingType(T1)>;
 };
 
-template<typename T0, typename T1>
-    __requires(Regular(T0) && Regular(T1))
+template<Regular T0, Regular T1>
 bool operator==(const pair<T0, T1>& x, const pair<T0, T1>& y)
 {
     return x.m0 == y.m0 && x.m1 == y.m1;
 }
 
-template<typename T0, typename T1>
-    __requires(TotallyOrdered(T0) && TotallyOrdered(T1))
+template<StrictTotallyOrdered T0, StrictTotallyOrdered T1>
 bool operator<(const pair<T0, T1>& x, const pair<T0, T1>& y)
 {
     return x.m0 < y.m0 || (!(y.m0 < x.m0) && x.m1 < y.m1);
@@ -131,22 +127,19 @@ struct triple
     triple(T0 m0, T1 m1, T2 m2) : m0(m0), m1(m1), m2(m2) { }
 };
 
-template<typename T0, typename T1, typename T2>
-    __requires(Regular(T0) && Regular(T1) && Regular(T2))
-struct underlying_type< triple<T0, T1, T2> >
+template<Regular T0, Regular T1, Regular T2>
+struct underlying_type<triple<T0, T1, T2>>
 {
-    typedef triple<UnderlyingType(T0), UnderlyingType(T1), UnderlyingType(T2)> type;
+    using type = triple<UnderlyingType(T0), UnderlyingType(T1), UnderlyingType(T2)>;
 };
 
-template<typename T0, typename T1, typename T2>
-    __requires(Regular(T0) && Regular(T1) && Regular(T2))
+template<Regular T0, Regular T1, Regular T2>
 bool operator==(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
 {
     return x.m0 == y.m0 && x.m1 == y.m1 && x.m2 == y.m2;
 }
 
-template<typename T0, typename T1, typename T2>
-    __requires(Regular(T0) && Regular(T1) && Regular(T2))
+template<Regular T0, Regular T1, Regular T2>
 bool operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
 {
     return x.m0 < y.m0 ||
