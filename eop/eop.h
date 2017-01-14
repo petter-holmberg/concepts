@@ -64,8 +64,7 @@ Domain(Op) square(const Domain(Op)& x, Op op)
 
 // Function object for equality
 
-template<typename T>
-    __requires(Regular(T))
+template<Regular T>
 struct equal
 {
     bool operator()(const T& x, const T& y)
@@ -84,8 +83,7 @@ struct input_type<equal<T>, 0>
 // type pair (see chapter 12 of Elements of Programming)
 // model Regular(Pair)
 
-template<typename T0, typename T1>
-    __requires(Regular(T0) && Regular(T1))
+template<Regular T0, Regular T1>
 struct pair
 {
     T0 m0;
@@ -106,7 +104,7 @@ bool operator==(const pair<T0, T1>& x, const pair<T0, T1>& y)
     return x.m0 == y.m0 && x.m1 == y.m1;
 }
 
-template<StrictTotallyOrdered T0, StrictTotallyOrdered T1>
+template<TotallyOrdered T0, TotallyOrdered T1>
 bool operator<(const pair<T0, T1>& x, const pair<T0, T1>& y)
 {
     return x.m0 < y.m0 || (!(y.m0 < x.m0) && x.m1 < y.m1);
@@ -116,8 +114,7 @@ bool operator<(const pair<T0, T1>& x, const pair<T0, T1>& y)
 // type triple (see Exercise 12.2 of Elements of Programming)
 // model Regular(triple)
 
-template<typename T0, typename T1, typename T2>
-    __requires(Regular(T0) && Regular(T1) && Regular(T2))
+template<Regular T0, Regular T1, Regular T2>
 struct triple
 {
     T0 m0;
@@ -165,8 +162,7 @@ double euclidean_norm(double x, double y, double z) {
     return sqrt(x * x + y * y + z * z);
 } // ternary operation
 
-template<typename F, typename N>
-    __requires(Transformation(F) && Integer(N))
+template<Transformation F, Integer N>
 Domain(F) power_unary(Domain(F) x, N n, F f)
 {
     // Precondition:
@@ -178,12 +174,11 @@ Domain(F) power_unary(Domain(F) x, N n, F f)
     return x;
 }
 
-template<typename F>
-    __requires(Transformation(F))
+template<Transformation F>
 DistanceType(F) distance(Domain(F) x, Domain(F) y, F f)
 {
     // Precondition: $y$ is reachable from $x$ under $f$
-    typedef DistanceType(F) N;
+    using N = DistanceType(F);
     N n(0);
     while (x != y) {
         x = f(x);
@@ -192,9 +187,8 @@ DistanceType(F) distance(Domain(F) x, Domain(F) y, F f)
     return n;
 }
 
-template<typename F, typename P>
-    __requires(Transformation(F) && UnaryPredicate(P) &&
-        Domain(F) == Domain(P))
+template<Transformation F, UnaryPredicate P>
+    __requires(Domain(F) == Domain(P))
 Domain(F) collision_point(const Domain(F)& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
@@ -214,19 +208,16 @@ Domain(F) collision_point(const Domain(F)& x, F f, P p)
     // Postcondition: return value is terminal point or collision point
 }
 
-template<typename F, typename P>
-    __requires(Transformation(F) && UnaryPredicate(P) &&
-        Domain(F) == Domain(P))
+template<Transformation F, UnaryPredicate P>
+    __requires(Domain(F) == Domain(P))
 bool terminating(const Domain(F)& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     return !p(collision_point(x, f, p));
 }
 
-template<typename F>
-    __requires(Transformation(F))
-Domain(F)
-collision_point_nonterminating_orbit(const Domain(F)& x, F f)
+template<Transformation F>
+Domain(F) collision_point_nonterminating_orbit(const Domain(F)& x, F f)
 {
     Domain(F) slow = x;        // $slow = f^0(x)$
     Domain(F) fast = f(x);     // $fast = f^1(x)$
@@ -241,16 +232,14 @@ collision_point_nonterminating_orbit(const Domain(F)& x, F f)
     // Postcondition: return value is collision point
 }
 
-template<typename F>
-    __requires(Transformation(F))
+template<Transformation F>
 bool circular_nonterminating_orbit(const Domain(F)& x, F f)
 {
     return x == f(collision_point_nonterminating_orbit(x, f));
 }
 
-template<typename F, typename P>
-    __requires(Transformation(F) && UnaryPredicate(P) &&
-        Domain(F) == Domain(P))
+template<Transformation F, UnaryPredicate P>
+    __requires(Domain(F) == Domain(P))
 bool circular(const Domain(F)& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
@@ -258,8 +247,7 @@ bool circular(const Domain(F)& x, F f, P p)
     return p(y) && x == f(y);
 }
 
-template<typename F>
-    __requires(Transformation(F))
+template<Transformation F>
 Domain(F) convergent_point(Domain(F) x0, Domain(F) x1, F f)
 {
     // Precondition: $(\exists n \in \func{DistanceType}(F))\,n \geq 0 \wedge f^n(x0) = f^n(x1)$
@@ -270,10 +258,8 @@ Domain(F) convergent_point(Domain(F) x0, Domain(F) x1, F f)
     return x0;
 }
 
-template<typename F>
-    __requires(Transformation(F))
-Domain(F)
-connection_point_nonterminating_orbit(const Domain(F)& x, F f)
+template<Transformation F>
+Domain(F) connection_point_nonterminating_orbit(const Domain(F)& x, F f)
 {
     return convergent_point(
         x,
@@ -281,9 +267,8 @@ connection_point_nonterminating_orbit(const Domain(F)& x, F f)
         f);
 }
 
-template<typename F, typename P>
-    __requires(Transformation(F) && UnaryPredicate(P) &&
-        Domain(F) == Domain(P))
+template<Transformation F, UnaryPredicate P>
+    __requires(Domain(F) == Domain(P))
 Domain(F) connection_point(const Domain(F)& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
@@ -294,14 +279,11 @@ Domain(F) connection_point(const Domain(F)& x, F f, P p)
 
 // Exercise 2.3:
 
-template<typename F>
-    __requires(Transformation(F))
-Domain(F) convergent_point_guarded(Domain(F) x0,
-                                   Domain(F) x1,
-                                   Domain(F) y, F f)
+template<Transformation F>
+Domain(F) convergent_point_guarded(Domain(F) x0, Domain(F) x1, Domain(F) y, F f)
 {
     // Precondition: $\func{reachable}(x0, y, f) \wedge \func{reachable}(x1, y, f)$
-    typedef DistanceType(F) N;
+    using N = DistanceType(F);
     N d0 = distance(x0, y, f);
     N d1 = distance(x1, y, f);
     if      (d0 < d1) x1 = power_unary(x1, d1 - d0, f);
@@ -309,26 +291,24 @@ Domain(F) convergent_point_guarded(Domain(F) x0,
     return convergent_point(x0, x1, f);
 }
 
-template<typename F>
-    __requires(Transformation(F))
+template<Transformation F>
 triple<DistanceType(F), DistanceType(F), Domain(F)>
 orbit_structure_nonterminating_orbit(const Domain(F)& x, F f)
 {
-    typedef DistanceType(F) N;
+    using N = DistanceType(F);
     Domain(F) y = connection_point_nonterminating_orbit(x, f);
     return triple<N, N, Domain(F)>(distance(x, y, f),
                                    distance(f(y), y, f),
                                    y);
 }
 
-template<typename F, typename P>
-    __requires(Transformation(F) &&
-        UnaryPredicate(P) && Domain(F) == Domain(P))
+template<Transformation F, UnaryPredicate P>
+    __requires(Domain(F) == Domain(P))
 triple<DistanceType(F), DistanceType(F), Domain(F)>
 orbit_structure(const Domain(F)& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
-    typedef DistanceType(F) N;
+    using N = DistanceType(F);
     Domain(F) y = connection_point(x, f, p);
     N m = distance(x, y, f);
     N n(0);
@@ -344,8 +324,7 @@ orbit_structure(const Domain(F)& x, F f, P p)
 //
 
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
+template<Integer I, BinaryOperation Op>
 Domain(Op) power_left_associated(Domain(Op) a, I n, Op op)
 {
     // Precondition: $n > 0$
@@ -353,8 +332,7 @@ Domain(Op) power_left_associated(Domain(Op) a, I n, Op op)
     return op(power_left_associated(a, n - I(1), op), a);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
+template<Integer I, BinaryOperation Op>
 Domain(Op) power_right_associated(Domain(Op) a, I n, Op op)
 {
     // Precondition: $n > 0$
@@ -362,8 +340,7 @@ Domain(Op) power_right_associated(Domain(Op) a, I n, Op op)
     return op(a, power_right_associated(a, n - I(1), op));
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
+template<Integer I, BinaryOperation Op>
 Domain(Op) power_0(Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
@@ -373,8 +350,7 @@ Domain(Op) power_0(Domain(Op) a, I n, Op op)
     return op(power_0(op(a, a), n / I(2), op), a);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
+template<Integer I, BinaryOperation Op>
 Domain(Op) power_1(Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
@@ -384,10 +360,8 @@ Domain(Op) power_1(Domain(Op) a, I n, Op op)
     return r;
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain(Op) power_accumulate_0(Domain(Op) r, Domain(Op) a, I n,
-                              Op op)
+template<Integer I, BinaryOperation Op>
+Domain(Op) power_accumulate_0(Domain(Op) r, Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n == I(0)) return r;
@@ -395,10 +369,8 @@ Domain(Op) power_accumulate_0(Domain(Op) r, Domain(Op) a, I n,
     return power_accumulate_0(r, op(a, a), n / I(2), op);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain(Op) power_accumulate_1(Domain(Op) r, Domain(Op) a, I n,
-                              Op op)
+template<Integer I, BinaryOperation Op>
+Domain(Op) power_accumulate_1(Domain(Op) r, Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n == I(0)) return r;
@@ -407,10 +379,8 @@ Domain(Op) power_accumulate_1(Domain(Op) r, Domain(Op) a, I n,
     return power_accumulate_1(r, op(a, a), n / I(2), op);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain(Op) power_accumulate_2(Domain(Op) r, Domain(Op) a, I n,
-                              Op op)
+template<Integer I, BinaryOperation Op>
+Domain(Op) power_accumulate_2(Domain(Op) r, Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n % I(2) != I(0)) {
@@ -420,10 +390,8 @@ Domain(Op) power_accumulate_2(Domain(Op) r, Domain(Op) a, I n,
     return power_accumulate_2(r, op(a, a), n / I(2), op);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain(Op) power_accumulate_3(Domain(Op) r, Domain(Op) a, I n,
-                              Op op)
+template<Integer I, BinaryOperation Op>
+Domain(Op) power_accumulate_3(Domain(Op) r, Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n % I(2) != I(0)) {
@@ -435,10 +403,8 @@ Domain(Op) power_accumulate_3(Domain(Op) r, Domain(Op) a, I n,
     return power_accumulate_3(r, a, n, op);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain(Op) power_accumulate_4(Domain(Op) r, Domain(Op) a, I n,
-                              Op op)
+template<Integer I, BinaryOperation Op>
+Domain(Op) power_accumulate_4(Domain(Op) r, Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     while (true) {
@@ -451,11 +417,8 @@ Domain(Op) power_accumulate_4(Domain(Op) r, Domain(Op) a, I n,
     }
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain(Op) power_accumulate_positive_0(Domain(Op) r,
-                                       Domain(Op) a, I n,
-                                       Op op)
+template<Integer I, BinaryOperation Op>
+Domain(Op) power_accumulate_positive_0(Domain(Op) r, Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     while (true) {
@@ -468,26 +431,22 @@ Domain(Op) power_accumulate_positive_0(Domain(Op) r,
     }
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain(Op) power_accumulate_5(Domain(Op) r, Domain(Op) a, I n,
-                              Op op)
+template<Integer I, BinaryOperation Op>
+Domain(Op) power_accumulate_5(Domain(Op) r, Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n == I(0)) return r;
     return power_accumulate_positive_0(r, a, n, op);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
+template<Integer I, BinaryOperation Op>
 Domain(Op) power_2(Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     return power_accumulate_5(a, a, n - I(1), op);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
+template<Integer I, BinaryOperation Op>
 Domain(Op) power_3(Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
@@ -501,11 +460,8 @@ Domain(Op) power_3(Domain(Op) a, I n, Op op)
 }
 
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain(Op) power_accumulate_positive(Domain(Op) r,
-                                     Domain(Op) a, I n,
-                                     Op op)
+template<Integer I, BinaryOperation Op>
+Domain(Op) power_accumulate_positive(Domain(Op) r, Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
     while (true) {
@@ -518,18 +474,15 @@ Domain(Op) power_accumulate_positive(Domain(Op) r,
     }
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain(Op) power_accumulate(Domain(Op) r, Domain(Op) a, I n,
-                            Op op)
+template<Integer I, BinaryOperation Op>
+Domain(Op) power_accumulate(Domain(Op) r, Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
     if (zero(n)) return r;
     return power_accumulate_positive(r, a, n, op);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
+template<Integer I, BinaryOperation Op>
 Domain(Op) power(Domain(Op) a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
@@ -542,8 +495,7 @@ Domain(Op) power(Domain(Op) a, I n, Op op)
     return power_accumulate_positive(a, op(a, a), n, op);
 }
 
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
+template<Integer I, BinaryOperation Op>
 Domain(Op) power(Domain(Op) a, I n, Op op, Domain(Op) id)
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
@@ -551,25 +503,25 @@ Domain(Op) power(Domain(Op) a, I n, Op op, Domain(Op) id)
     return power(a, n, op);
 }
 
-template<typename I>
-    __requires(Integer(I))
-pair<I, I> fibonacci_matrix_multiply(const pair<I, I>& x,
-                                     const pair<I, I>& y)
+template<Integer I>
+pair<I, I> fibonacci_matrix_multiply(const pair<I, I>& x, const pair<I, I>& y)
 {
     return pair<I, I>(
         x.m0 * (y.m1 + y.m0) + x.m1 * y.m0,
         x.m0 * y.m0 + x.m1 * y.m1);
 }
 
-template<typename I>
-    __requires(Integer(I))
+template<Integer I>
 I fibonacci(I n)
 {
     // Precondition: $n \geq 0$
     if (n == I(0)) return I(0);
-    return power(pair<I, I>(I(1), I(0)),
-                 n,
-                 fibonacci_matrix_multiply<I>).m0;
+    if (n == I(1)) return I(1);
+    pair<I, I> p = power(
+        pair<I, I>(I(1), I(0)),
+        n - 1,
+        fibonacci_matrix_multiply<I>);
+    return p.m0 + p.m1;
 }
 
 
@@ -583,8 +535,7 @@ I fibonacci(I n)
 // Exercise 4.3: Give an example of a symmetric relation that is not reflexive
 
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 struct complement
 {
     R r;
@@ -595,15 +546,13 @@ struct complement
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
-struct input_type< complement<R>, 0>
+template<Relation R>
+struct input_type<complement<R>, 0>
 {
-    typedef Domain(R) type;
+    using type = Domain(R);
 };
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 struct converse
 {
     R r;
@@ -614,18 +563,16 @@ struct converse
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
-struct input_type< converse<R>, 0>
+template<Relation R>
+struct input_type<converse<R>, 0>
 {
-    typedef Domain(R) type;
+    using type = Domain(R);
 };
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 struct complement_of_converse
 {
-    typedef Domain(R) T;
+    using T = Domain(R);
     R r;
     complement_of_converse(const R& r) : r(r) { }
     bool operator()(const T& a, const T& b)
@@ -634,15 +581,13 @@ struct complement_of_converse
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
-struct input_type< complement_of_converse<R>, 0>
+template<Relation R>
+struct input_type<complement_of_converse<R>, 0>
 {
-    typedef Domain(R) type;
+    using type = Domain(R);
 };
 
-template<typename R>
-   __requires(Relation(R))
+template<Relation R>
 struct symmetric_complement
 {
     R r;
@@ -653,35 +598,29 @@ struct symmetric_complement
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
-struct input_type< symmetric_complement<R>, 0>
+template<Relation R>
+struct input_type<symmetric_complement<R>, 0>
 {
-    typedef Domain(R) type;
+    using type = Domain(R);
 };
 
-template<typename R>
-    __requires(Relation(R))
-const Domain(R)& select_0_2(const Domain(R)& a,
-                            const Domain(R)& b, R r)
+template<Relation R>
+const Domain(R)& select_0_2(const Domain(R)& a, const Domain(R)& b, R r)
 {
     // Precondition: $\func{weak\_ordering}(r)$
     if (r(b, a)) return b;
     return a;
 }
 
-template<typename R>
-    __requires(Relation(R))
-const Domain(R)& select_1_2(const Domain(R)& a,
-                            const Domain(R)& b, R r)
+template<Relation R>
+const Domain(R)& select_1_2(const Domain(R)& a, const Domain(R)& b, R r)
 {
     // Precondition: $\func{weak\_ordering}(r)$
     if (r(b, a)) return a;
     return b;
 }
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 const Domain(R)& select_0_3(const Domain(R)& a,
                             const Domain(R)& b,
                             const Domain(R)& c, R r)
@@ -689,8 +628,7 @@ const Domain(R)& select_0_3(const Domain(R)& a,
     return select_0_2(select_0_2(a, b, r), c, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 const Domain(R)& select_2_3(const Domain(R)& a,
                             const Domain(R)& b,
                             const Domain(R)& c, R r)
@@ -698,8 +636,7 @@ const Domain(R)& select_2_3(const Domain(R)& a,
     return select_1_2(select_1_2(a, b, r), c, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 const Domain(R)& select_1_3_ab(const Domain(R)& a,
                                const Domain(R)& b,
                                const Domain(R)& c, R r)
@@ -708,8 +645,7 @@ const Domain(R)& select_1_3_ab(const Domain(R)& a,
     return select_1_2(a, c, r); // $b$ is not the median
 }
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 const Domain(R)& select_1_3(const Domain(R)& a,
                             const Domain(R)& b,
                             const Domain(R)& c, R r)
@@ -718,32 +654,32 @@ const Domain(R)& select_1_3(const Domain(R)& a,
     return              select_1_3_ab(a, b, c, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 const Domain(R)& select_1_4_ab_cd(const Domain(R)& a,
                                   const Domain(R)& b,
                                   const Domain(R)& c,
-                                  const Domain(R)& d, R r) {
+                                  const Domain(R)& d, R r)
+{
     if (r(c, a)) return select_0_2(a, d, r);
     return              select_0_2(b, c, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 const Domain(R)& select_1_4_ab(const Domain(R)& a,
                                const Domain(R)& b,
                                const Domain(R)& c,
-                               const Domain(R)& d, R r) {
+                               const Domain(R)& d, R r)
+{
     if (r(d, c)) return select_1_4_ab_cd(a, b, d, c, r);
     return              select_1_4_ab_cd(a, b, c, d, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 const Domain(R)& select_1_4(const Domain(R)& a,
                             const Domain(R)& b,
                             const Domain(R)& c,
-                            const Domain(R)& d, R r) {
+                            const Domain(R)& d, R r)
+{
     if (r(b, a)) return select_1_4_ab(b, a, c, d, r);
     return              select_1_4_ab(a, b, c, d, r);
 }
@@ -753,54 +689,44 @@ const Domain(R)& select_1_4(const Domain(R)& a,
 
 // Order selection procedures with stability indices
 
-template<bool strict, typename R>
-    __requires(Relation(R))
+template<bool strict, Relation R>
 struct compare_strict_or_reflexive;
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 struct compare_strict_or_reflexive<true, R> // strict
 {
-    bool operator()(const Domain(R)& a,
-                    const Domain(R)& b, R r)
+    bool operator()(const Domain(R)& a, const Domain(R)& b, R r)
     {
         return r(a, b);
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 struct compare_strict_or_reflexive<false, R> // reflexive
 {
-    bool operator()(const Domain(R)& a,
-                    const Domain(R)& b, R r)
+    bool operator()(const Domain(R)& a, const Domain(R)& b, R r)
     {
         return !r(b, a); // $\func{complement\_of\_converse}_r(a, b)$
     }
 };
 
-template<int ia, int ib, typename R>
-    __requires(Relation(R))
-const Domain(R)& select_0_2(const Domain(R)& a,
-                            const Domain(R)& b, R r)
+template<int ia, int ib, Relation R>
+const Domain(R)& select_0_2(const Domain(R)& a, const Domain(R)& b, R r)
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return b;
     return a;
 }
 
-template<int ia, int ib, typename R>
-    __requires(Relation(R))
-const Domain(R)& select_1_2(const Domain(R)& a,
-                            const Domain(R)& b, R r)
+template<int ia, int ib, Relation R>
+const Domain(R)& select_1_2(const Domain(R)& a, const Domain(R)& b, R r)
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return a;
     return b;
 }
 
-template<int ia, int ib, int ic, int id, typename R>
-    __requires(Relation(R))
+template<int ia, int ib, int ic, int id, Relation R>
 const Domain(R)& select_1_4_ab_cd(const Domain(R)& a,
                                   const Domain(R)& b,
                                   const Domain(R)& c,
@@ -813,12 +739,11 @@ const Domain(R)& select_1_4_ab_cd(const Domain(R)& a,
         select_0_2<ib,ic>(b, c, r);
 }
 
-template<int ia, int ib, int ic, int id, typename R>
-    __requires(Relation(R))
+template<int ia, int ib, int ic, int id, Relation R>
 const Domain(R)& select_1_4_ab(const Domain(R)& a,
-                            const Domain(R)& b,
-                            const Domain(R)& c,
-                            const Domain(R)& d, R r)
+                               const Domain(R)& b,
+                               const Domain(R)& c,
+                               const Domain(R)& d, R r)
 {
     compare_strict_or_reflexive<(ic < id), R> cmp;
     if (cmp(d, c, r)) return
@@ -827,8 +752,7 @@ const Domain(R)& select_1_4_ab(const Domain(R)& a,
         select_1_4_ab_cd<ia,ib,ic,id>(a, b, c, d, r);
 }
 
-template<int ia, int ib, int ic, int id, typename R>
-    __requires(Relation(R))
+template<int ia, int ib, int ic, int id, Relation R>
 const Domain(R)& select_1_4(const Domain(R)& a,
                             const Domain(R)& b,
                             const Domain(R)& c,
@@ -841,8 +765,7 @@ const Domain(R)& select_1_4(const Domain(R)& a,
         select_1_4_ab<ia,ib,ic,id>(a, b, c, d, r);
 }
 
-template<int ia, int ib, int ic, int id, int ie, typename R>
-    __requires(Relation(R))
+template<int ia, int ib, int ic, int id, int ie, Relation R>
 const Domain(R)& select_2_5_ab_cd(const Domain(R)& a,
                                   const Domain(R)& b,
                                   const Domain(R)& c,
@@ -856,8 +779,7 @@ const Domain(R)& select_2_5_ab_cd(const Domain(R)& a,
         select_1_4_ab<ic,id,ib,ie>(c, d, b, e, r);
 }
 
-template<int ia, int ib, int ic, int id, int ie, typename R>
-    __requires(Relation(R))
+template<int ia, int ib, int ic, int id, int ie, Relation R>
 const Domain(R)& select_2_5_ab(const Domain(R)& a,
                                const Domain(R)& b,
                                const Domain(R)& c,
@@ -866,15 +788,12 @@ const Domain(R)& select_2_5_ab(const Domain(R)& a,
 {
     compare_strict_or_reflexive<(ic < id), R> cmp;
     if (cmp(d, c, r)) return
-        select_2_5_ab_cd<ia,ib,id,ic,ie>(
-                          a, b, d, c, e, r);
+        select_2_5_ab_cd<ia,ib,id,ic,ie>(a, b, d, c, e, r);
     return
-        select_2_5_ab_cd<ia,ib,ic,id,ie>(
-                          a, b, c, d, e, r);
+        select_2_5_ab_cd<ia,ib,ic,id,ie>(a, b, c, d, e, r);
 }
 
-template<int ia, int ib, int ic, int id, int ie, typename R>
-    __requires(Relation(R))
+template<int ia, int ib, int ic, int id, int ie, Relation R>
 const Domain(R)& select_2_5(const Domain(R)& a,
                             const Domain(R)& b,
                             const Domain(R)& c,
@@ -892,8 +811,7 @@ const Domain(R)& select_2_5(const Domain(R)& a,
 // on average
 
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 const Domain(R)& median_5(const Domain(R)& a,
                           const Domain(R)& b,
                           const Domain(R)& c,
@@ -911,8 +829,7 @@ const Domain(R)& median_5(const Domain(R)& a,
 
 // Natural total ordering
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template<TotallyOrdered T>
 struct less
 {
     bool operator()(const T& x, const T& y)
@@ -921,22 +838,19 @@ struct less
     }
 };
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template<TotallyOrdered T>
 struct input_type<less<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template<TotallyOrdered T>
 const T& min(const T& a, const T& b)
 {
     return select_0_2(a, b, less<T>());
 }
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template<TotallyOrdered T>
 const T& max(const T& a, const T& b)
 {
     return select_1_2(a, b, less<T>());
@@ -945,29 +859,25 @@ const T& max(const T& a, const T& b)
 
 // Clusters of related procedures: equality and ordering
 
-template<typename T>
-    __requires(Regular(T))
+template<Regular T>
 bool operator!=(const T& x, const T& y)
 {
     return !(x==y);
 }
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template<TotallyOrdered T>
 bool operator>(const T& x, const T& y)
 {
     return y < x;
 }
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template<TotallyOrdered T>
 bool operator<=(const T& x, const T& y)
 {
     return !(y < x);
 }
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template<TotallyOrdered T>
 bool operator>=(const T& x, const T& y)
 {
     return !(x < y);
@@ -982,8 +892,7 @@ bool operator>=(const T& x, const T& y)
 //
 
 
-template<typename T>
-    __requires(AdditiveSemigroup(T))
+template<AdditiveSemigroup T>
 struct plus
 {
     T operator()(const T& x, const T& y)
@@ -992,15 +901,13 @@ struct plus
     }
 };
 
-template<typename T>
-    __requires(AdditiveSemigroup(T))
-struct input_type< plus<T>, 0 >
+template<AdditiveSemigroup T>
+struct input_type<plus<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename T>
-    __requires(MultiplicativeSemigroup(T))
+template<MultiplicativeSemigroup T>
 struct multiplies
 {
     T operator()(const T& x, const T& y)
@@ -1009,11 +916,10 @@ struct multiplies
     }
 };
 
-template<typename T>
-    __requires(MultiplicativeSemigroup(T))
-struct input_type< multiplies<T>, 0 >
+template<MultiplicativeSemigroup T>
+struct input_type<multiplies<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename Op>
@@ -1030,14 +936,13 @@ struct multiplies_transformation
 };
 
 template<typename Op>
-    __requires(SemigroupOperation(Op))
-struct input_type< multiplies_transformation<Op>, 0 >
+   __requires(SemigroupOperation(Op))
+struct input_type<multiplies_transformation<Op>, 0>
 {
     typedef Domain(Op) type;
 };
 
-template<typename T>
-    __requires(AdditiveGroup(T))
+template<AdditiveGroup T>
 struct negate
 {
     T operator()(const T& x)
@@ -1046,23 +951,20 @@ struct negate
     }
 };
 
-template<typename T>
-    __requires(AdditiveGroup(T))
-struct input_type< negate<T>, 0>
+template<AdditiveGroup T>
+struct input_type<negate<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename T>
-    __requires(OrderedAdditiveGroup(T))
+template<OrderedAdditiveGroup T>
 T abs(const T& a)
 {
     if (a < T(0)) return -a;
     else          return  a;
 }
 
-template<typename T>
-    __requires(CancellableMonoid(T))
+template<CancellableMonoid T>
 T slow_remainder(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
@@ -1070,8 +972,7 @@ T slow_remainder(T a, T b)
     return a;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
+template<ArchimedeanMonoid T>
 QuotientType(T) slow_quotient(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
@@ -1083,8 +984,7 @@ QuotientType(T) slow_quotient(T a, T b)
     return n;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
+template<ArchimedeanMonoid T>
 T remainder_recursive(T a, T b)
 {
     // Precondition: $a \geq b > 0$
@@ -1095,8 +995,7 @@ T remainder_recursive(T a, T b)
     return a - b;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
+template<ArchimedeanMonoid T>
 T remainder_nonnegative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
@@ -1111,8 +1010,7 @@ T remainder_nonnegative(T a, T b)
     Volume 19, Number 2, 1990, pages 329--340.
 */
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
+template<ArchimedeanMonoid T>
 T remainder_nonnegative_fibonacci(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
@@ -1132,8 +1030,7 @@ T remainder_nonnegative_fibonacci(T a, T b)
     return a;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
+template<ArchimedeanMonoid T>
 T largest_doubling(T a, T b)
 {
     // Precondition: $a \geq b > 0$
@@ -1141,8 +1038,7 @@ T largest_doubling(T a, T b)
     return b;
 }
 
-template<typename T>
-    __requires(HalvableMonoid(T))
+template<HalvableMonoid T>
 T remainder_nonnegative_iterative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
@@ -1158,8 +1054,7 @@ T remainder_nonnegative_iterative(T a, T b)
 
 // Jon Brandt suggested this algorithm (it is not mentioned in chapter 5):
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
+template<ArchimedeanMonoid T>
 T remainder_nonnegative_with_largest_doubling(T a, T b)
 {
     // Precondition: $a \geq T(0) \wedge b > T(0)$
@@ -1168,8 +1063,7 @@ T remainder_nonnegative_with_largest_doubling(T a, T b)
     return a;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
+template<ArchimedeanMonoid T>
 T subtractive_gcd_nonzero(T a, T b)
 {
     // Precondition: $a > 0 \wedge b > 0$
@@ -1180,8 +1074,7 @@ T subtractive_gcd_nonzero(T a, T b)
     }
 }
 
-template<typename T>
-    __requires(EuclideanMonoid(T))
+template<EuclideanMonoid T>
 T subtractive_gcd(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
@@ -1193,8 +1086,7 @@ T subtractive_gcd(T a, T b)
     }
 }
 
-template<typename T>
-    __requires(EuclideanMonoid(T))
+template<EuclideanMonoid T>
 T fast_subtractive_gcd(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
@@ -1206,8 +1098,7 @@ T fast_subtractive_gcd(T a, T b)
     }
 }
 
-template<typename T>
-    __requires(EuclideanSemiring(T))
+template<EuclideanSemiring T>
 T gcd(T a, T b)
 {
     // Precondition: $\neg(a = 0 \wedge b = 0)$
@@ -1220,7 +1111,7 @@ T gcd(T a, T b)
 }
 
 template<typename T, typename S>
-    __requires(EuclideanSemimodule(T, S))
+    requires EuclideanSemimodule<T, S>()
 T gcd(T a, T b)
 {
     // Precondition: $\neg(a = 0 \wedge b = 0)$
@@ -1235,8 +1126,7 @@ T gcd(T a, T b)
 
 // Exercise 5.3:
 
-template<typename T>
-    __requires(Integer(T))
+template<Integer T>
 T stein_gcd_nonnegative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
@@ -1260,13 +1150,11 @@ T stein_gcd_nonnegative(T a, T b)
         } else return binary_scale_up_nonnegative(a, d);
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
-pair<QuotientType(T), T>
-quotient_remainder_nonnegative(T a, T b)
+template<ArchimedeanMonoid T>
+pair<QuotientType(T), T> quotient_remainder_nonnegative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
-    typedef QuotientType(T) N;
+    using N = QuotientType(T);
     if (a < b) return pair<N, T>(N(0), a);
     if (a - b < b) return pair<N, T>(N(1), a - b);
     pair<N, T> q = quotient_remainder_nonnegative(a, b + b);
@@ -1276,10 +1164,8 @@ quotient_remainder_nonnegative(T a, T b)
     else       return pair<N, T>(successor(m), a - b);
 }
 
-template<typename T>
-    __requires(HalvableMonoid(T))
-pair<QuotientType(T), T>
-quotient_remainder_nonnegative_iterative(T a, T b)
+template<HalvableMonoid T>
+pair<QuotientType(T), T> quotient_remainder_nonnegative_iterative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     typedef QuotientType(T) N;
@@ -1299,12 +1185,11 @@ quotient_remainder_nonnegative_iterative(T a, T b)
 }
 
 template<typename Op>
-    __requires(BinaryOperation(Op) &&
-        ArchimedeanGroup(Domain(Op)))
+    requires BinaryOperation<Op>() && ArchimedeanGroup<Domain(Op)>()
 Domain(Op) remainder(Domain(Op) a, Domain(Op) b, Op rem)
 {
     // Precondition: $b \neq 0$
-    typedef Domain(Op) T;
+    using T = Domain(Op);
     T r;
     if (a < T(0))
         if (b < T(0)) {
@@ -1321,16 +1206,14 @@ Domain(Op) remainder(Domain(Op) a, Domain(Op) b, Op rem)
     return r;
 }
 
-template<typename F>
-    __requires(HomogeneousFunction(F) && Arity(F) == 2 &&
-        ArchimedeanGroup(Domain(F)) &&
-        Codomain(F) == pair<QuotientType(Domain(F)),
-                            Domain(F)>)
-pair<QuotientType(Domain(F)), Domain(F)>
-quotient_remainder(Domain(F) a, Domain(F) b, F quo_rem)
+template<HomogeneousFunction F>
+    requires ArchimedeanGroup<Domain(F)>()
+    __requires(Arity(F) == 2 &&
+        Codomain(F) == pair<QuotientType(Domain(F)), Domain(F)>)
+pair<QuotientType(Domain(F)), Domain(F)> quotient_remainder(Domain(F) a, Domain(F) b, F quo_rem)
 {
     // Precondition: $b \neq 0$
-    typedef Domain(F) T;
+    using T = Domain(F);
     pair<QuotientType(T), T> q_r;
     if (a < T(0)) {
         if (b < T(0)) {
@@ -1362,8 +1245,7 @@ quotient_remainder(Domain(F) a, Domain(F) b, F quo_rem)
 //
 
 
-template<typename I>
-    __requires(Iterator(I))
+template<Iterator I>
 void increment(I& x)
 {
     // Precondition: $\func{successor}(x)$ is defined
@@ -1371,8 +1253,7 @@ void increment(I& x)
 }
 
 
-template<typename I>
-    __requires(Iterator(I))
+template<Iterator I>
 I operator+(I f, DistanceType(I) n)
 {
     // Precondition: $n \geq 0 \wedge \property{weak\_range}(f, n)$
@@ -1384,8 +1265,7 @@ I operator+(I f, DistanceType(I) n)
 }
 
 
-template<typename I>
-    __requires(Iterator(I))
+template<Iterator I>
 DistanceType(I) operator-(I l, I f)
 {
     // Precondition: $\property{bounded\_range}(f, l)$
@@ -1398,9 +1278,9 @@ DistanceType(I) operator-(I l, I f)
 }
 
 template<typename I, typename Proc>
-    __requires(Readable(I) && Iterator(I) &&
-        Procedure(Proc) && Arity(Proc) == 1 &&
-        ValueType(I) == InputType(Proc, 0))
+    requires Readable<I>() && Iterator<I>()
+        __requires(Procedure(Proc) && Arity(Proc) == 1 &&
+            ValueType(I) == InputType(Proc, 0))
 Proc for_each(I f, I l, Proc proc)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1412,7 +1292,7 @@ Proc for_each(I f, I l, Proc proc)
 }
 
 template<typename I>
-    __requires(Readable(I) && Iterator(I))
+    requires Readable<I>() && Iterator<I>()
 I find(I f, I l, const ValueType(I)& x)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1421,7 +1301,7 @@ I find(I f, I l, const ValueType(I)& x)
 }
 
 template<typename I>
-    __requires(Readable(I) && Iterator(I))
+    requires Readable<I>() && Iterator<I>()
 I find_not(I f, I l, const ValueType(I)& x)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1429,9 +1309,9 @@ I find_not(I f, I l, const ValueType(I)& x)
     return f;
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I find_if(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1439,9 +1319,9 @@ I find_if(I f, I l, P p)
     return f;
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I find_if_not(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1452,46 +1332,45 @@ I find_if_not(I f, I l, P p)
 
 // Exercise 6.1: quantifier functions
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 bool all(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if_not(f, l, p);
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 bool none(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if(f, l, p);
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 bool not_all(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !all(f, l, p);
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 bool some(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !none(f, l, p);
 }
 
-template<typename I, typename P, typename J>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && Iterator(J) &&
-        ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P, Iterator J>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 J count_if(I f, I l, P p, J j)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1506,17 +1385,16 @@ J count_if(I f, I l, P p, J j)
 // Exercise 6.2: implement count_if using for_each
 
 
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 DistanceType(I) count_if(I f, I l, P p) {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return count_if(f, l, p, DistanceType(I)(0));
 }
 
-template<typename I, typename J>
-    __requires(Readable(I) && Iterator(I) &&
-        Iterator(J))
+template<typename I, Iterator J>
+    requires Readable<I>() && Iterator<I>()
 J count(I f, I l, const ValueType(I)& x, J j)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1528,16 +1406,15 @@ J count(I f, I l, const ValueType(I)& x, J j)
 }
 
 template<typename I>
-    __requires(Readable(I) && Iterator(I))
+    requires Readable<I>() && Iterator<I>()
 DistanceType(I) count(I f, I l, const ValueType(I)& x)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-  return count(f, l, x, DistanceType(I)(0));
+    return count(f, l, x, DistanceType(I)(0));
 }
 
-template<typename I, typename J>
-    __requires(Readable(I) && Iterator(I) &&
-        Iterator(J))
+template<typename I, Iterator J>
+    requires Readable<I>() && Iterator<I>()
 J count_not(I f, I l, const ValueType(I)& x, J j)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1549,17 +1426,16 @@ J count_not(I f, I l, const ValueType(I)& x, J j)
 }
 
 template<typename I>
-    __requires(Readable(I) && Iterator(I))
+    requires Readable<I>() && Iterator<I>()
 DistanceType(I) count_not(I f, I l, const ValueType(I)& x)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-  return count_not(f, l, x, DistanceType(I)(0));
+    return count_not(f, l, x, DistanceType(I)(0));
 }
 
-template<typename I, typename P, typename J>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && Domain(P) == ValueType(I) &&
-        Iterator(J))
+template<typename I, UnaryPredicate P, Iterator J>
+    requires Readable<I>() && Iterator<I>()
+    __requires(Domain(P) == ValueType(I))
 J count_if_not(I f, I l, P p, J j)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1569,19 +1445,18 @@ J count_if_not(I f, I l, P p, J j)
     }
     return j;
 }
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && Domain(P) == ValueType(I))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(Domain(P) == ValueType(I))
 DistanceType(I) count_if_not(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return count_if_not(f, l, p, DistanceType(I)(0));
 }
 
-template<typename I, typename Op, typename F>
-    __requires(Iterator(I) && BinaryOperation(Op) &&
-        UnaryFunction(F) &&
-        I == Domain(F) && Codomain(F) == Domain(Op))
+template<typename I, typename Op, UnaryFunction F>
+    requires Iterator<I>() && BinaryOperation<Op>()
+    __requires(I == Domain(F) && Codomain(F) == Domain(Op))
 Domain(Op) reduce_nonempty(I f, I l, Op op, F fun)
 {
     // Precondition: $\property{bounded\_range}(f, l) \wedge f \neq l$
@@ -1596,9 +1471,9 @@ Domain(Op) reduce_nonempty(I f, I l, Op op, F fun)
     return r;
 }
 
-template<typename I, typename Op>
-    __requires(Readable(I) && Iterator(I) && BinaryOperation(Op) &&
-        ValueType(I) == Domain(Op))
+template<typename I, BinaryOperation Op>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(Op))
 Domain(Op) reduce_nonempty(I f, I l, Op op)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge f \neq l$
@@ -1612,10 +1487,8 @@ Domain(Op) reduce_nonempty(I f, I l, Op op)
     return r;
 }
 
-template<typename I, typename Op, typename F>
-    __requires(Iterator(I) && BinaryOperation(Op) &&
-        UnaryFunction(F) &&
-        I == Domain(F) && Codomain(F) == Domain(Op))
+template<Iterator I, BinaryOperation Op, UnaryFunction F>
+    __requires(I == Domain(F) && Codomain(F) == Domain(Op))
 Domain(Op) reduce(I f, I l, Op op, F fun, const Domain(Op)& z)
 {
     // Precondition: $\property{bounded\_range}(f, l)$
@@ -1625,9 +1498,8 @@ Domain(Op) reduce(I f, I l, Op op, F fun, const Domain(Op)& z)
     return reduce_nonempty(f, l, op, fun);
 }
 
-template<typename I, typename Op>
-    __requires(ReadableIterator(I) && BinaryOperation(Op) &&
-        ValueType(I) == Domain(Op))
+template<Iterator I, BinaryOperation Op>
+    __requires(ValueType(I) == Domain(Op))
 Domain(Op) reduce(I f, I l, Op op, const Domain(Op)& z)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
@@ -1636,12 +1508,9 @@ Domain(Op) reduce(I f, I l, Op op, const Domain(Op)& z)
     return reduce_nonempty(f, l, op);
 }
 
-template<typename I, typename Op, typename F>
-    __requires(Iterator(I) && BinaryOperation(Op) &&
-        UnaryFunction(F) &&
-        I == Domain(F) && Codomain(F) == Domain(Op))
-Domain(Op) reduce_nonzeroes(I f, I l,
-                            Op op, F fun, const Domain(Op)& z)
+template<Iterator I, BinaryOperation Op, UnaryFunction F>
+    __requires(I == Domain(F) && Codomain(F) == Domain(Op))
+Domain(Op) reduce_nonzeroes(I f, I l, Op op, F fun, const Domain(Op)& z)
 {
     // Precondition: $\property{bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1660,11 +1529,9 @@ Domain(Op) reduce_nonzeroes(I f, I l,
     return x;
 }
 
-template<typename I, typename Op>
-    __requires(ReadableIterator(I) && BinaryOperation(Op) &&
-        ValueType(I) == Domain(Op))
-Domain(Op) reduce_nonzeroes(I f, I l,
-                            Op op, const Domain(Op)& z)
+template<Iterator I, BinaryOperation Op>
+    __requires(ValueType(I) == Domain(Op))
+Domain(Op) reduce_nonzeroes(I f, I l, Op op, const Domain(Op)& z)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1683,8 +1550,7 @@ Domain(Op) reduce_nonzeroes(I f, I l,
 }
 
 template<typename I>
-    __requires(Readable(I) && Iterator(I) &&
-        AdditiveMonoid(ValueType(I)))
+    requires Readable<I>() && Iterator<I>() && AdditiveMonoid<ValueType(I)>()
 ValueType(I) reduce(I f, I l)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
@@ -1693,9 +1559,8 @@ ValueType(I) reduce(I f, I l)
 }
 
 template<typename I, typename Proc>
-    __requires(Readable(I) && Iterator(I) &&
-        Procedure(Proc) && Arity(Proc) == 1 &&
-        ValueType(I) == InputType(Proc, 0))
+    requires Readable<I>() && Iterator<I>()
+    __requires(Procedure(Proc) && Arity(Proc) == 1 && ValueType(I) == InputType(Proc, 0))
 pair<Proc, I> for_each_n(I f, DistanceType(I) n, Proc proc)
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
@@ -1708,9 +1573,8 @@ pair<Proc, I> for_each_n(I f, DistanceType(I) n, Proc proc)
 }
 
 template<typename I>
-    __requires(Readable(I) && Iterator(I))
-pair<I, DistanceType(I)> find_n(I f, DistanceType(I) n,
-                                const ValueType(I)& x)
+    requires Readable<I>() && Iterator<I>()
+pair<I, DistanceType(I)> find_n(I f, DistanceType(I) n, const ValueType(I)& x)
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
     while (!zero(n) && source(f) != x) {
@@ -1725,9 +1589,9 @@ pair<I, DistanceType(I)> find_n(I f, DistanceType(I) n,
 // of all the versions of find, quantifiers, count, and reduce
 
 
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I find_if_unguarded(I f, P p) {
     // Precondition:
     // $(\exists l)\,\func{readable\_bounded\_range}(f, l) \wedge \func{some}(f, l, p)$
@@ -1736,9 +1600,9 @@ I find_if_unguarded(I f, P p) {
     // Postcondition: $p(\func{source}(f))$
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && Domain(P) == ValueType(I))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(Domain(P) == ValueType(I))
 I find_if_not_unguarded(I f, P p) {
     // Let $l$ be the end of the implied range starting with $f$
     // Precondition:
@@ -1747,11 +1611,9 @@ I find_if_not_unguarded(I f, P p) {
     return f;
 }
 
-template<typename I0, typename I1, typename R>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) && Relation(R) &&
-        ValueType(I0) == ValueType(I1) &&
-        ValueType(I0) == Domain(R))
+template<typename I0, typename I1, Relation R>
+    requires Readable<I0>() && Iterator<I0>() && Readable<I1>() && Iterator<I1>()
+    __requires(ValueType(I0) == ValueType(I1) && ValueType(I0) == Domain(R))
 pair<I0, I1> find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r)
 {
     // Precondition: $\func{readable\_bounded\_range}(f0, l0)$
@@ -1763,9 +1625,9 @@ pair<I0, I1> find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r)
     return pair<I0, I1>(f0, f1);
 }
 
-template<typename I, typename R>
-    __requires(Readable(I) && Iterator(I) &&
-        Relation(R) && ValueType(I) == Domain(R))
+template<typename I, Relation R>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(R))
 I find_adjacent_mismatch(I f, I l, R r)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1779,18 +1641,18 @@ I find_adjacent_mismatch(I f, I l, R r)
     return f;
 }
 
-template<typename I, typename R>
-    __requires(Readable(I) && Iterator(I) &&
-        Relation(R) && ValueType(I) == Domain(R))
+template<typename I, Relation R>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(R))
 bool relation_preserving(I f, I l, R r)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_adjacent_mismatch(f, l, r);
 }
 
-template<typename I, typename R>
-    __requires(Readable(I) && Iterator(I) &&
-        Relation(R) && ValueType(I) == Domain(R))
+template<typename I, Relation R>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(R))
 bool strictly_increasing_range(I f, I l, R r)
 {
     // Precondition:
@@ -1798,21 +1660,19 @@ bool strictly_increasing_range(I f, I l, R r)
     return relation_preserving(f, l, r);
 }
 
-template<typename I, typename R>
-    __requires(Readable(I) && Iterator(I) &&
-        Relation(R) && ValueType(I) == Domain(R))
+template<typename I, Relation R>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(R))
 bool increasing_range(I f, I l, R r)
 {
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{weak\_ordering}(r)$
-    return relation_preserving(
-        f, l,
-        complement_of_converse<R>(r));
+    return relation_preserving(f, l, complement_of_converse<R>(r));
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && Iterator<I>()
+    __requires(ValueType(I) == Domain(P))
 bool partitioned(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1823,9 +1683,9 @@ bool partitioned(I f, I l, P p)
 // Exercise 6.6: partitioned_n
 
 
-template<typename I, typename R>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType(I) == Domain(R))
+template<typename I, Relation R>
+    requires Readable<I>() && ForwardIterator<I>()
+    __requires(ValueType(I) == Domain(R))
 I find_adjacent_mismatch_forward(I f, I l, R r)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1838,9 +1698,9 @@ I find_adjacent_mismatch_forward(I f, I l, R r)
     return f;
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && ForwardIterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I partition_point_n(I f, DistanceType(I) n, P p)
 {
     // Precondition:
@@ -1857,9 +1717,9 @@ I partition_point_n(I f, DistanceType(I) n, P p)
     return f;
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && ForwardIterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I partition_point(I f, I l, P p)
 {
     // Precondition:
@@ -1867,22 +1727,20 @@ I partition_point(I f, I l, P p)
     return partition_point_n(f, l - f, p);
 }
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 struct lower_bound_predicate
 {
-    typedef Domain(R) T;
+    using T = Domain(R);
     const T& a;
     R r;
     lower_bound_predicate(const T& a, R r) : a(a), r(r) { }
     bool operator()(const T& x) { return !r(x, a); }
 };
 
-template<typename I, typename R>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType(I) == Domain(R))
-I lower_bound_n(I f, DistanceType(I) n,
-                const ValueType(I)& a, R r)
+template<typename I, Relation R>
+    requires Readable<I>() && ForwardIterator<I>()
+    __requires(ValueType(I) == Domain(R))
+I lower_bound_n(I f, DistanceType(I) n, const ValueType(I)& a, R r)
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
@@ -1890,22 +1748,20 @@ I lower_bound_n(I f, DistanceType(I) n,
     return partition_point_n(f, n, p);
 }
 
-template<typename R>
-    __requires(Relation(R))
+template<Relation R>
 struct upper_bound_predicate
 {
-    typedef Domain(R) T;
+    using T = Domain(R);
     const T& a;
     R r;
     upper_bound_predicate(const T& a, R r) : a(a), r(r) { }
     bool operator()(const T& x) { return r(a, x); }
 };
 
-template<typename I, typename R>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType(I) == Domain(R))
-I upper_bound_n(I f, DistanceType(I) n,
-                const ValueType(I)& a, R r)
+template<typename I, Relation R>
+    requires Readable<I>() && ForwardIterator<I>()
+    __requires(ValueType(I) == Domain(R))
+I upper_bound_n(I f, DistanceType(I) n, const ValueType(I)& a, R r)
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
@@ -1917,8 +1773,7 @@ I upper_bound_n(I f, DistanceType(I) n,
 // Exercise 6.7: equal_range
 
 
-template<typename I>
-    __requires(BidirectionalIterator(I))
+template<BidirectionalIterator I>
 I operator-(I l, DistanceType(I) n)
 {
     // Precondition: $n \geq 0 \wedge (\exists f \in I)\,(\func{weak\_range}(f, n) \wedge l = f+n)$
@@ -1929,9 +1784,9 @@ I operator-(I l, DistanceType(I) n)
     return l;
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && BidirectionalIterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I find_backward_if(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1940,9 +1795,9 @@ I find_backward_if(I f, I l, P p)
     return l;
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && BidirectionalIterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I find_backward_if_not(I f, I l, P p) {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (l != f && p(source(predecessor(l))))
@@ -1957,9 +1812,9 @@ I find_backward_if_not(I f, I l, P p) {
 // Exercise 6.9: palindrome predicate
 
 
-template<typename I, typename P>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && BidirectionalIterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I find_backward_if_unguarded(I l, P p)
 {
     // Precondition:
@@ -1969,9 +1824,9 @@ I find_backward_if_unguarded(I l, P p)
     // Postcondition: $p(\func{source}(l))$
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && BidirectionalIterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I find_backward_if_not_unguarded(I l, P p)
 {
     // Precondition:
@@ -3933,9 +3788,9 @@ bool partitioned_at_point(I f, I m, I l, P p)
 
 // Exercise 11.2:
 
-template<typename I, typename P>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType(I) == Domain(P))
+template<typename I, UnaryPredicate P>
+    requires Readable<I>() && ForwardIterator<I>()
+    __requires(ValueType(I) == Domain(P))
 I potential_partition_point(I f, I l, P p)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
@@ -6577,8 +6432,7 @@ void erase_all(array<T>& x)
     while (!empty(x)) erase(back< array<T> >(x));
 }
 
-template<typename T>
-    __requires(Regular(T))
+template<Regular T>
 void swap_basic(T& x, T& y)
 {
     T tmp = x;
@@ -6745,15 +6599,13 @@ void reserve(array<T>& x, DistanceType(IteratorType(array<T>)) n)
 // arguments, we use adapters that cast from the underlying type to the
 // original type before calling the predicate or relation:
 
-template<typename T>
-    __requires(Regular(T))
+template<Regular T>
 T& original_ref(UnderlyingType(T)& x)
 {
     return reinterpret_cast<T&>(x);
 }
 
-template<typename T>
-    __requires(Regular(T))
+template<Regular T>
 const T& original_ref(const UnderlyingType(T)& x)
 {
     return reinterpret_cast<const T&>(x);
@@ -6822,7 +6674,7 @@ I advanced_sort_n(I f, DistanceType(I) n, R r)
                                     underlying_relation<R>(r)));
 }
 
-template<typename T, typename R>
+template<Regular T, typename R>
     __requires(Regular(T) && Relation(R) && Domain(R) == T)
 void sort(array<T>& x, R r)
 {
