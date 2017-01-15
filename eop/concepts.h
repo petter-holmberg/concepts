@@ -297,7 +297,7 @@ template <typename P>
 concept bool UnaryPredicate() {
     return Predicate<P>()
         && UnaryFunction<P>();
-};
+}
 
 template <typename Op>
 concept bool Operation() {
@@ -318,7 +318,7 @@ template <typename Op>
 concept bool BinaryOperation() {
     return Operation<Op>();
         // Arity(Op) == 2
-};
+}
 
 template <typename I>
 concept bool Integer() {
@@ -347,7 +347,7 @@ concept bool Integer() {
     //     n -> (n mod 2) = 0
     // odd: i -> bool
     //     n -> (n mod 2) != 0
-};
+}
 
 // Chapter 4: Linear Orderings
 
@@ -355,14 +355,14 @@ template <typename Op>
 concept bool Relation() {
     return HomogeneousPredicate<Op>();
     // Arity(Op) == 2
-};
+}
 
 template <typename T>
 concept bool TotallyOrdered() {
     return Regular<T>();
         // <: T * T -> bool
         // total_ordering(<)
-};
+}
 
 // Chapter 5: Ordered Algebraic Structures
 
@@ -370,28 +370,28 @@ template <typename T>
 concept bool AdditiveSemigroup() {
     return Regular<T>();
         // +: T * T -> T
-};
+}
 
 template <typename T>
 concept bool MultiplicativeSemigroup() {
     return Regular<T>();
         // *: T * T -> T
         // associative(*)
-};
+}
 
 template <typename T>
 concept bool AdditiveMonoid() {
     return AdditiveSemigroup<T>();
         // 0 in T
         // identity_element(0, +)
-};
+}
 
 template <typename T>
 concept bool MultiplicativeMonoid() {
     return MultiplicativeSemigroup<T>();
         // 1 in T
         // identity_element(1, *)
-};
+}
 
 template <typename T>
 concept bool AdditiveGroup() {
@@ -400,7 +400,7 @@ concept bool AdditiveGroup() {
         // inverse_operation(unary -, 0, +)
         // - : T * T -> T
         //     (a, b) -> a + (-b)
-};
+}
 
 template <typename T>
 concept bool MultiplicativeGroup() {
@@ -409,7 +409,7 @@ concept bool MultiplicativeGroup() {
         // inverse_operation(multiplicative_inverse, 1, *)
         // / : T * T -> T
         //     (a, b) -> a * multiplicative_inverse(b)
-};
+}
 
 template <typename T>
 concept bool Semiring() {
@@ -420,25 +420,25 @@ concept bool Semiring() {
         // all(a, b, c) in T
         //     a * (b + c) == a * b + a * c
         //     (b + c) * a == b * a + c * a
-};
+}
 
 template <typename T>
 concept bool CommutativeSemiring() {
     return Semiring<T>();
         // commutative(*)
-};
+}
 
 template <typename T>
 concept bool Ring() {
     return AdditiveGroup<T>()
         && Semiring<T>();
-};
+}
 
 template <typename T>
 concept bool CommutativeRing() {
     return AdditiveGroup<T>()
         && CommutativeSemiring<T>();
-};
+}
 
 template <typename T, typename S>
 concept bool Semimodule() {
@@ -450,60 +450,60 @@ concept bool Semimodule() {
         //     (alfa + beta) * a == alfa * a + beta * a
         //     alfa * (a + b) == alfa * a + alfa * b
         //     1 * a == a
-};
+}
 
 template <typename T, typename S>
 concept bool Module() {
     return Semimodule<T, S>()
         && AdditiveGroup<T>()
         && Ring<S>();
-};
+}
 
 template <typename T>
 concept bool OrderedAdditiveSemigroup() {
     return AdditiveSemigroup<T>()
         && TotallyOrdered<T>();
         // all(a, b, c) in T: a < b => a + c > b + c
-};
+}
 
 template <typename T>
 concept bool OrderedAdditiveMonoid() {
     return OrderedAdditiveSemigroup<T>()
         && AdditiveMonoid<T>();
-};
+}
 
 template <typename T>
 concept bool OrderedAdditiveGroup() {
     return OrderedAdditiveMonoid<T>()
         && AdditiveGroup<T>();
-};
+}
 
 template <typename T>
 concept bool CancellableMonoid() {
     return OrderedAdditiveMonoid<T>();
         // - : T * T -> T
         // all(a, b) in T : b <= a => a - b is defined and (a - b) + b == a
-};
+}
 
 template <typename T>
 concept bool ArchimedeanMonoid() {
     return CancellableMonoid<T>();
         // all(a, b) in T : (a >= 0 and b > 0) => slow_remainder(a, b) terminates
         // QuotientType : ArchimedeanMonoid -> Integer
-};
+}
 
 template <typename T>
 concept bool HalvableMonoid() {
     return ArchimedeanMonoid<T>();
         // half : T -> T
         // all(a, b) in T : (b > 0 and a == b + b) => half(a) == b
-};
+}
 
 template <typename T>
 concept bool EuclideanMonoid() {
     return ArchimedeanMonoid<T>();
         // all(a, b) in T : (a > 0 and b > 0) => subtractive_gcd_nonzero(a, b) terminates
-};
+}
 
 template <typename T>
 concept bool EuclideanSemiring() {
@@ -517,7 +517,7 @@ concept bool EuclideanSemiring() {
         // quotient : T * T -> T
         // all(a, b) in T : b != 0 => a == quotient(a, b) * b + remainder(a, b)
         // all(a, b) in T : b != 0 => w(remainder(a, b)) < w(b)
-};
+}
 
 template <typename T, typename S>
 concept bool EuclideanSemimodule() {
@@ -526,13 +526,13 @@ concept bool EuclideanSemimodule() {
         // quotient : T * T -> S
         // all(a, b) in T : b != 0 => a = quotient(a, b) * b + remainder(a, b)
         // all(a, b) in T : (a != 0 or b != 0) => gcd(a, b) terminates
-};
+}
 
 template <typename T>
 concept bool ArchimedeanGroup() {
     return ArchimedeanMonoid<T>()
         && AdditiveGroup<T>();
-};
+}
 
 template <typename T>
 concept bool DiscreteArchimedeanSemiring() {
@@ -540,19 +540,19 @@ concept bool DiscreteArchimedeanSemiring() {
         && ArchimedeanMonoid<T>();
         // all(a, b, c) in T : a < b and 0 < c => a * c < b * c
         // not(exists(a) in T) : 0 < a < 1
-};
+}
 
 template <typename T>
 concept bool NonnegativeDiscreteArchimedeanSemiring() {
     return DiscreteArchimedeanSemiring<T>();
         // all(a in T) : 0 <= a
-};
+}
 
 template <typename T>
 concept bool DiscreteArchimedeanRing() {
     return DiscreteArchimedeanSemiring<T>()
         && AdditiveGroup<T>();
-};
+}
 
 // Chapter 6: Iterators
 
@@ -561,7 +561,7 @@ concept bool Readable() {
     return Regular<T>();
         // ValueType : Readable -> Regular
         // source : T -> ValueType(T)
-};
+}
 
 template <typename T>
 concept bool Iterator() {
@@ -569,13 +569,13 @@ concept bool Iterator() {
         // DistanceType : Iterator -> Integer
         // successor : T -> T
         // successor is not necessarily regular
-};
+}
 
 template <typename T>
 concept bool ForwardIterator() {
     return Iterator<T>();
         // regular_unary_function(successor)
-};
+}
 
 template <typename T>
 concept bool IndexedIterator() {
@@ -584,7 +584,7 @@ concept bool IndexedIterator() {
         // - : T * T -> DistanceType(T)
         // + takes constant time
         // - takes constant time
-};
+}
 
 template <typename T>
 concept bool BidirectionalIterator() {
@@ -595,7 +595,7 @@ concept bool BidirectionalIterator() {
         //     predecessor(successor(i)) is defined and equals i
         // all(i) in T : predecessor(i) is defined =>
         //     successor(predecessor(i)) is defined and equals i
-};
+}
 
 template <typename T>
 concept bool RandomAccessIterator() {
@@ -610,7 +610,7 @@ concept bool RandomAccessIterator() {
         // - : T * T -> DifferenceType(T)
         // < takes constant time
         // - between an iterator and an integer takes constant time
-};
+}
 
 // Chapter 7: Coordinate structures
 
@@ -624,7 +624,7 @@ concept bool BifurcateCoordinate() {
         // left_successor : T -> T
         // right_successor : T -> T
         // all(i, j) in T : (left_successor(i) == j or right_successor(i) == j) >= not(empty(i))
-};
+}
 
 template <typename T>
 concept bool BidirectionalBifurcateCoordinate() {
@@ -635,7 +635,35 @@ concept bool BidirectionalBifurcateCoordinate() {
         // all(i) in T : has_left_successor(i) => predecessor(left_successor(i)) is defined and equals i
         // all(i) in T : has_right_successor(i) => predecessor(right_successor(i)) is defined and equals i
         // all(i) in T : has_predecessor(i) => is_left_successor(i) or is_right_successor(i)
-};
+}
+
+template <typename F>
+concept bool Comparator3Way() {
+    return HomogeneousFunction<F>();
+    //  /\ Arity(F) = 2
+    //  /\ Codomain(F) = int
+}
+
+template <typename F>
+concept bool LinkedForwardIterator() {
+    return true;
+}
+
+template <typename F>
+concept bool LinkedBidirectionalIterator() {
+    return true;
+}
+
+template <typename F>
+concept bool UnaryPseudoPredicate() {
+    return true;
+}
+
+template <typename F>
+concept bool PseudoRelation() {
+    return true;
+}
+
 
 // Chapter 8: Coordinates with Mutable Successors
 
@@ -647,7 +675,7 @@ concept bool ForwardLinker() {
     //     all(s) in S : (s : I * I -> void)
     //     all(s) in S : all(i, j) in I if successor(i) is defined,
     //         then s(i, j) establishes successor(i) == j
-};
+}
 
 template <typename S>
 concept bool BackwardLinker() {
@@ -657,13 +685,13 @@ concept bool BackwardLinker() {
     //     all(s) in S : (s : I * I -> void)
     //     all(s) in S : all(i, j) in I if prececessor(i) is defined,
     //         then s(i, j) establishes i == predecessor(j)
-};
+}
 
 template <typename S>
 concept bool BidirectionalLinker() {
     return ForwardLinker<S>()
         && BackwardLinker<S>();
-};
+}
 
 template <typename T>
 concept bool LinkedBifurcateCoordinate() {
@@ -672,7 +700,7 @@ concept bool LinkedBifurcateCoordinate() {
         //     (i, j) -> establishes left_successor(i) == j
         // set_right_successor : T * T -> void
         //     (i, j) -> establishes right_successor(i) == j
-};
+}
 
 template <typename T>
 concept bool EmptyLinkedBifurcateCoordinate() {
@@ -681,7 +709,7 @@ concept bool EmptyLinkedBifurcateCoordinate() {
         // not(empty(i)) => left_successor(i) and right_successor(i) are defined
         // not(empty(i)) => (not(has_left_successor(i) <=> empty(left_successor(i))))
         // not(empty(i)) => (has_right_successor(i) <=> empty(right_successor(i))))
-};
+}
 
 // Chapter 9: Copying
 
@@ -690,7 +718,7 @@ concept bool Writable() {
     return true;
         // ValueType : Writable -> Regulars
         // all(x in T) : (all(v) in ValueType(T)) : sink(x) <- v is a well-formed statement
-};
+}
 
 template <typename T>
 concept bool Mutable() {
@@ -700,7 +728,7 @@ concept bool Mutable() {
         // all(x) in T : sink(x) is defined => aliased(x, x)
         // deref : t -> ValueType(T)&
         // all(x) in T : sink(x) is defined <=> deref(x) is defined
-};
+}
 
 // Chapter 12: Composite Objects
 
@@ -720,7 +748,7 @@ concept bool Linearizable() {
     //     x -> begin(x) == end(x)
     // [] : W * SizeType(W) -> ValueType(W)&
     //     (w, i) -> deref(begin(w) + i)
-};
+}
 
 template <typename S>
 concept bool Sequence() {
@@ -730,6 +758,66 @@ concept bool Sequence() {
         //     (s, s') -> lexicographical_equal(begin(s), end(s), begin(s'), end(s'))
         // < : S * S -> bool
         //     (s, s') -> lexicographical_less(begin(s), end(s), begin(s'), end(s'))
-};
+}
+
+template <typename S>
+concept bool BinaryPredicate() {
+    return true;
+}
+
+template <typename T>
+concept bool Position() {
+    return true;
+    //     BaseType : Position -> Linearizable
+    //  /\ IteratorType : Position -> Iterator
+    //  /\ ValueType : Position -> Regular
+    //         T |- ValueType(IteratorType(T))
+    //  /\ SizeType : Position -> Integer
+    //         T |- SizeType(IteratorType(T))
+    //  /\ base : T -> BaseType(T)
+    //  /\ current : T -> IteratorType(T)
+    //  /\ begin : T -> IteratorType(T)
+    //         x |- begin(base(x))
+    //  /\ end : T -> IteratorType(T)
+    //         x |- end(base(x))
+}
+
+template <typename T>
+concept bool DynamicSequence() {
+    return Sequence<T>();
+    //  /\ T supports insert and erase
+}
+
+template <typename T>
+concept bool InsertPosition() {
+    return Position<T>();
+    //  /\ BaseType : Position -> DynamicSequence
+}
+
+template <typename T>
+concept bool ErasePosition() {
+    return Position<T>();
+    //  /\ BaseType : Position -> DynamicSequence
+}
+
+template <typename T, typename U>
+concept bool Constructible() {
+    return true;
+}
+
+template <typename T, typename U>
+concept bool Destroyable() {
+    return true;
+}
+
+template <typename T>
+concept bool TreeNodeConstructor() {
+    return true;
+}
+
+template <typename T>
+concept bool TreeNodeDeleter() {
+    return true;
+}
 
 #endif // EOP_CONCEPTS

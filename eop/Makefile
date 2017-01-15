@@ -1,6 +1,6 @@
 # eop Makefile
 
-CC       = ~/gcc/bin/g++
+CC       = /usr/local/bin/g++
 DEBUG    = -O0 -ggdb -pg
 //CFLAGS   = -Wall
 CFLAGS   = -std=c++1z -fconcepts
