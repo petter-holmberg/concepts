@@ -255,7 +255,7 @@ concept bool StrictTotallyOrdered() {
 
 template <class T>
 concept bool Regular() {
-    return true;
+    return experimental::Destructible<T>();
 }
 
 template <typename F, typename...Args>
@@ -322,31 +322,33 @@ concept bool BinaryOperation() {
 
 template <typename I>
 concept bool Integer() {
-    return std::is_integral<I>::value;
-    // successor: I -> I
-    //     n -> n + 1
-    // predecessor: I - I
-    //     n -> n - 1
-    // twice: I -> I
-    //     n -> n + n
-    // half_nonnegative: I -> I
-    //     n -> floor(n / 2), wher n >= 0
-    // binary_scale_down_nonnegative: I * I -> I
-    //     (n, k) -> floor(n / 2^k), where n, k >= 0
-    // binary_scale_up_nonnegative: I * I -> I
-    //     (n, k) -> 2^k * n, where n, k >= 0
-    // positive: I -> bool
-    //     n -> n > 0
-    // negative: I -> bool
-    //     n -> n < 0
-    // zero: I -> bool
-    //     n -> n = 0
-    // one: I -> bool
-    //     n -> n = 1
-    // even: I -> bool
-    //     n -> (n mod 2) = 0
-    // odd: i -> bool
-    //     n -> (n mod 2) != 0
+    //return std::is_integral<I>::value &&
+    return requires (I i) {
+        { successor(i) } -> I
+            // n -> n + 1
+        { predecessor(i) } -> I
+            // n -> n - 1
+        { twice(i) } -> I
+            // n -> n + n
+        { half_nonnegative(i) } -> I
+            // n -> floor(n / 2), where n >= 0
+        { binary_scale_down_nonnegative(i, i) } -> I
+            // (n, k) -> floor(n / 2^k), where n, k >= 0
+        { binary_scale_up_nonnegative(i, i) } -> I
+            // (n, k) -> 2^k * n, where n, k >= 0
+        { positive(i) } -> bool
+            // n -> n > 0
+        { negative(i) } -> bool
+            // n -> n < 0
+        { zero(i) } -> bool
+            // n -> n = 0
+        { one(i) } -> bool
+            // n -> n = 1
+        { even(i) } -> bool
+            // n -> (n mod 2) = 0
+        { odd(i) } -> bool
+            // n -> (n mod 2) != 0
+    };
 }
 
 // Chapter 4: Linear Orderings
