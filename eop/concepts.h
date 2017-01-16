@@ -251,11 +251,41 @@ concept bool StrictTotallyOrdered() {
 
 // EoP concepts
 
-// Chapter 1: Foundations
+// For types X and Y, Same<X, Y> is true iff X and Y
+// denote exactly the same type after elimination of aliases.
+template <class T, class U>
+concept bool Same() {
+    return std::is_same<T, U>::value;
+}
+
+template <class T, class... Args>
+concept bool DefaultConstructible() {
+    return requires (Args&& ...args) {
+        T{std::forward<Args>(args)...}; // not required to be equality preserving
+        new T{std::forward<Args>(args)...}; // not required to be equality preserving
+    }
+    && requires (const size_t n) {
+        new T[n]{}; // Not required to be equality preserving.
+    };
+}
 
 template <class T>
+concept bool Destructible() {
+    return requires (T t, const T ct, T* p) {
+        { t.~T() } noexcept;
+        { &t } -> Same<T*>; // Not required to be equality preserving.
+        { &ct } -> Same<const T*>; // Not required to be equality preserving.
+        delete p;
+        delete[] p;
+    };
+}
+
+// Chapter 1: Foundations
+
+template <class T, class... Args>
 concept bool Regular() {
-    return experimental::Destructible<T>();
+    return DefaultConstructible<T>()
+        && Destructible<T>();
 }
 
 template <typename F, typename...Args>

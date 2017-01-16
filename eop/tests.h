@@ -1992,6 +1992,7 @@ template<typename T>
     __requires(Semiring(T))
 struct square_of_i {
     T i;
+    square_of_i() { }
     square_of_i(T i) : i(i) { }
 };
 
@@ -2030,6 +2031,7 @@ struct accumulate
     typedef Domain(Op) T;
     Op op;
     T sum;
+    accumulate() { }
     accumulate(Op op, const T& x) : op(op), sum(x) { }
     void operator()(const T& x) { sum = op(sum, x); }
 };

@@ -4833,6 +4833,7 @@ struct insert_iterator
 {
     using I = insert_iterator;
     P p;
+    insert_iterator() { }
     insert_iterator(const P& p) : p(p) { }
     void operator=(const ValueType(P)& x) { p = insert(p, x); }
 };

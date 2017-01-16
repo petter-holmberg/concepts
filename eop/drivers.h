@@ -215,6 +215,7 @@ struct LCG // linear congruential generator
     typedef long long T;
     T m, a, b, x0;
     const pointer(char) name;
+    LCG() { }
     LCG(T m, T a, T b, T x0, const pointer(char) name) :
         m(m), a(a), b(b), x0(x0), name(name) { }
     T operator()(T x) { return (a * x + b) % m; }
@@ -835,6 +836,10 @@ template<typename T>
 struct tracer
 {
     T t;
+    tracer()
+    {
+        print("Default-constructing tracer("); print(")\n");
+    }
     tracer(const T& t) : t(t)
     {
         print("Constructing tracer("); print(t); print(")\n");
