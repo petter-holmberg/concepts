@@ -295,16 +295,16 @@ concept bool FunctionalProcedure() {
 
 template <typename F>
 concept bool UnaryFunction() {
-    return FunctionalProcedure<F>();
-        // && Arity<F>() == 1
+    return FunctionalProcedure<F>()
+        && Arity(F) == 1;
         // && Domain : UnaryFunction -> Regular
         //     F -> InputType(F, 0)
 }
 
 template <typename F>
 concept bool HomogeneousFunction() {
-    return FunctionalProcedure<F>();
-        // && Arity<F>() > 0
+    return FunctionalProcedure<F>()
+        && Arity(F) > 0;
         // && Regular<T>() // Domain : UnaryFunction -> Regular
         // && ConvertibleTo<std::result_of_t<F(T)>, T>(); // f -> InputType(F, 0)
 }
@@ -346,8 +346,8 @@ concept bool Transformation() {
 
 template <typename Op>
 concept bool BinaryOperation() {
-    return Operation<Op>();
-        // Arity(Op) == 2
+    return Operation<Op>()
+        && Arity(Op) == 2;
 }
 
 template <typename I>
@@ -385,8 +385,8 @@ concept bool Integer() {
 
 template <typename Op>
 concept bool Relation() {
-    return HomogeneousPredicate<Op>();
-    // Arity(Op) == 2
+    return HomogeneousPredicate<Op>()
+        && Arity(Op) == 2;
 }
 
 template <typename T>
@@ -671,9 +671,9 @@ concept bool BidirectionalBifurcateCoordinate() {
 
 template <typename F>
 concept bool Comparator3Way() {
-    return HomogeneousFunction<F>();
-    //  /\ Arity(F) = 2
-    //  /\ Codomain(F) = int
+    return HomogeneousFunction<F>()
+        && Arity(F) == 2;
+        //  /\ Codomain(F) = int
 }
 
 template <typename F>

@@ -1207,9 +1207,8 @@ Domain(Op) remainder(Domain(Op) a, Domain(Op) b, Op rem)
 }
 
 template<HomogeneousFunction F>
-    requires ArchimedeanGroup<Domain(F)>()
-    __requires(Arity(F) == 2 &&
-        Codomain(F) == pair<QuotientType(Domain(F)), Domain(F)>)
+    requires ArchimedeanGroup<Domain(F)>() && Arity(F) == 2
+    __requires(Codomain(F) == pair<QuotientType(Domain(F)), Domain(F)>)
 pair<QuotientType(Domain(F)), Domain(F)> quotient_remainder(Domain(F) a, Domain(F) b, F quo_rem)
 {
     // Precondition: $b \neq 0$
@@ -1278,9 +1277,9 @@ DistanceType(I) operator-(I l, I f)
 }
 
 template<typename I, typename Proc>
-    requires Readable<I>() && Iterator<I>()
-        __requires(Procedure(Proc) && Arity(Proc) == 1 &&
-            ValueType(I) == InputType(Proc, 0))
+    requires Readable<I>() && Iterator<I>() && Arity(Proc) == 1
+    __requires(Procedure(Proc) &&
+        ValueType(I) == InputType(Proc, 0))
 Proc for_each(I f, I l, Proc proc)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -1559,8 +1558,8 @@ ValueType(I) reduce(I f, I l)
 }
 
 template<typename I, typename Proc>
-    requires Readable<I>() && Iterator<I>()
-    __requires(Procedure(Proc) && Arity(Proc) == 1 && ValueType(I) == InputType(Proc, 0))
+    requires Readable<I>() && Iterator<I>() && Arity(Proc) == 1
+    __requires(Procedure(Proc) && ValueType(I) == InputType(Proc, 0))
 pair<Proc, I> for_each_n(I f, DistanceType(I) n, Proc proc)
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
@@ -1875,7 +1874,8 @@ WeightType(C) height_recursive(C c)
 enum visit { pre, in, post };
 
 template<BifurcateCoordinate C, typename Proc>
-    __requires(Procedure(Proc) && Arity(Proc) == 2 &&
+    requires Arity(Proc) == 2
+    __requires(Procedure(Proc) &&
         visit == InputType(Proc, 0) &&
         C == InputType(Proc, 1))
 Proc traverse_nonempty(C c, Proc proc)
@@ -1975,7 +1975,8 @@ WeightType(C) height(C c)
 }
 
 template<BidirectionalBifurcateCoordinate C, typename Proc>
-    __requires(Procedure(Proc) && Arity(Proc) == 2 &&
+    requires Arity(Proc) == 2
+    __requires(Procedure(Proc) &&
         visit == InputType(Proc, 0) &&
         C == InputType(Proc, 1))
 Proc traverse(C c, Proc proc)
@@ -2593,7 +2594,8 @@ void tree_rotate(C& curr, C& prev)
 }
 
 template<EmptyLinkedBifurcateCoordinate C, typename Proc>
-    __requires(Procedure(Proc) && Arity(Proc) == 1 &&
+    requires Arity(Proc) == 1
+    __requires(Procedure(Proc) &&
         C == InputType(Proc, 0))
 Proc traverse_rotating(C c, Proc proc)
 {
@@ -2636,7 +2638,8 @@ WeightType(C) weight_rotating(C c)
 }
 
 template<Integer N, typename Proc>
-    __requires(Procedure(Proc) && Arity(Proc) == 1)
+    requires Arity(Proc) == 1
+    __requires(Procedure(Proc))
 struct phased_applicator
 {
     N period;
@@ -5703,7 +5706,8 @@ bool operator<(const stree<T>& x, const stree<T>& y)
 }
 
 template<Regular T, typename Proc>
-    __requires(Procedure(Proc) && Arity(Proc) == 2 &&
+    requires Arity(Proc) == 2
+    __requires(Procedure(Proc) &&
         visit == InputType(Proc, 0) &&
         CoordinateType(stree<T>) == InputType(Proc, 1))
 void traverse(stree<T>& x, Proc proc)
@@ -5927,7 +5931,8 @@ bool operator<(const tree<T>& x, const tree<T>& y)
 }
 
 template<Regular T, typename Proc>
-    __requires(Procedure(Proc) && Arity(Proc) == 2 &&
+    requires Arity(Proc) == 2
+    __requires(Procedure(Proc) &&
         visit == InputType(Proc, 0) &&
         CoordinateType(tree<T>) == InputType(Proc, 1))
 void traverse(tree<T>& x, Proc proc)
