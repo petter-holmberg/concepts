@@ -35,12 +35,12 @@
 
 
 template<typename F, typename P>
-    __requires(Transformation(F) && T == Domain(F) &&
+    requires Transformation<F>()
+    __requires(T == Domain(F) &&
         UnaryPredicate(P) && Domain(F) == Domain(P))
 void output_orbit_structure(Domain(F) x, F f, P p)
 {
-    triple<DistanceType(F), DistanceType(F), Domain(F)> t =
-        orbit_structure(x, f, p);
+    triple<DistanceType(F), DistanceType(F), Domain(F)> t = orbit_structure(x, f, p);
     if (!p(t.m2)) {
         print("terminating with h-1 = "); print(t.m0);
         print(" and terminal point "); print(t.m2);
@@ -56,8 +56,7 @@ void output_orbit_structure(Domain(F) x, F f, P p)
     print_eol();
 }
 
-template<typename I>
-    __requires(Integer(I))
+template<Integer I>
 struct additive_congruential_transformation
 {
     I modulus;
@@ -67,26 +66,25 @@ struct additive_congruential_transformation
     I operator()(I x) { return remainder(x + index, modulus); }
 };
 
-template<typename I>
-    __requires(Integer(I))
+template<Integer I>
 struct input_type<additive_congruential_transformation<I>, 0>
 {
-    typedef I type;
+    using type = I;
 };
 
 
 // Definition space predicate for total transformation
 
-template <typename T>
+template<typename T>
 bool always_defined(const T&)
 {
     return true;
 }
 
 template<>
-struct distance_type< additive_congruential_transformation<int> >
+struct distance_type<additive_congruential_transformation<int>>
 {
-    typedef unsigned int type;
+    using type = unsigned int;
 };
 
 void run_additive_congruential_transformation()
@@ -106,10 +104,12 @@ void run_additive_congruential_transformation()
 }
 
 template<typename I>
-    __requires(Readable(I) && IndexedIterator(I) && ValueType(I) == DistanceType(I))
+    requires Readable<I>()
+        && IndexedIterator<I>()
+        && Same<ValueType(I), DistanceType(I)>()
 struct table_transformation
 {
-    typedef DistanceType(I) N;
+    using N = DistanceType(I);
     const I p;
     const N n;
     table_transformation(const I p, const N n) : p(p), n(n) {}
@@ -120,11 +120,13 @@ struct table_transformation
 };
 
 template<typename I>
-    __requires(Readable(I) && IndexedIterator(I) && ValueType(I) == DistanceType(I))
+    requires Readable<I>()
+        && IndexedIterator<I>()
+        && Same<ValueType(I), DistanceType(I)>()
 struct table_transformation_definition_space_predicate
 {
-    typedef table_transformation<I> T;
-    typedef DistanceType(I) N;
+    using T = table_transformation<I>;
+    using N = DistanceType(I);
     const T& tbl;
     table_transformation_definition_space_predicate(const T& tbl) : tbl(tbl) { }
     bool operator()(N x)
@@ -134,17 +136,21 @@ struct table_transformation_definition_space_predicate
 };
 
 template<typename I>
-    __requires(Readable(I) && IndexedIterator(I) && ValueType(I) == DistanceType(I))
+    requires Readable<I>()
+        && IndexedIterator<I>()
+        && Same<ValueType(I), DistanceType(I)>()
 struct input_type<table_transformation<I>, 0>
 {
-    typedef ValueType(I) type;
+    using type = ValueType(I);
 };
 
 template<typename I>
-    __requires(Readable(I) && IndexedIterator(I) && ValueType(I) == DistanceType(I))
-struct distance_type< table_transformation<I> >
+    requires Readable<I>()
+        && IndexedIterator<I>()
+        && Same<ValueType(I), DistanceType(I)>()
+struct distance_type<table_transformation<I>>
 {
-    typedef DistanceType(I) type;
+    using type = DistanceType(I);
 };
 
 void run_table_transformation()
@@ -153,17 +159,17 @@ void run_table_transformation()
         "Enter sequence of integers terminated by negative integer;\n"
         "enter empty sequence (a single negative integer) to end:\n");
     while (true) {
-        typedef array<int> T_0;
-        typedef size_type< T_0 >::type N_0;
-        typedef array<N_0> T;
-        typedef size_type< T   >::type N; // hopefully N = N_0
-        typedef iterator_type< T >::type I; // i.e., pointer(int)
+        using T_0 = array<int>;
+        using N_0 = size_type<T_0>::type;
+        using T = array<N_0>;
+        using N = size_type<T>::type; // hopefully N = N_0
+        using I = iterator_type<T>::type; // i.e., pointer(int)
         T a;
         while (true) {
   	        N x;
 	        read(x);
             if (x < 0) break;
-            insert(back< T >(a), x);
+            insert(back<T>(a), x);
         }
         if (empty(a)) return;
         table_transformation<I> trans(begin(a), size(a));
@@ -184,13 +190,13 @@ struct srand_transformation // Transformation(srand_transformation)
 template<>
 struct input_type<srand_transformation, 0>
 {
-    typedef int type;
+    using type = int;
 };
 
 template<>
 struct distance_type<srand_transformation>
 {
-    typedef unsigned int type;
+    using type = unsigned int;
 };
 
 void run_srand_transformation()
@@ -204,15 +210,14 @@ void run_srand_transformation()
     }
 }
 
-template<typename T>
-    __requires(Regular(T))
+template<Regular T>
 void push(array<T>& x, const T& y) {
-    insert(back< array<T> >(x), y);
+    insert(back<array<T>>(x), y);
 }
 
 struct LCG // linear congruential generator
 {
-    typedef long long T;
+    using T = long long;
     T m, a, b, x0;
     const pointer(char) name;
     LCG() { }
@@ -224,13 +229,13 @@ struct LCG // linear congruential generator
 template<>
 struct input_type<LCG, 0>
 {
-    typedef long long type;
+    using type = long long;
 };
 
 template<>
 struct distance_type<LCG>
 {
-    typedef unsigned long long type;
+    using type = unsigned long long;
 };
 
 void run_lcg_transformation()
@@ -319,9 +324,9 @@ struct multiplies_modulo {
 
 template<typename T>
     __requires(DiscreteEuclideanSemiring(T))
-struct input_type< multiplies_modulo<T>, 0 >
+struct input_type<multiplies_modulo<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 void run_idempotent_power()
@@ -330,11 +335,11 @@ void run_idempotent_power()
     print(" or two zeroes to end:\n");
     while (true)
     {
-        typedef multiplies_modulo<int> M;
+        using M = multiplies_modulo<int>;
         int n, m;
         read(n); read(m);
         if (n == 0 && m == 0) return;
-        multiplies_transformation< M > g(n, M(m));
+        multiplies_transformation<M> g(n, M(m));
         int p = collision_point(n, g, always_defined<int>);
         print("idempotent_power()("); print(n); print(", multiplication modulo ");
             print(m); print(") == ");
@@ -356,8 +361,7 @@ void run_fibonacci()
     }
 }
 
-template<typename T>
-    __requires(AdditiveMonoid(T))
+template<AdditiveMonoid T>
 struct annotated_plus
 {
     T operator()(const T& x, const T& y)
@@ -368,22 +372,19 @@ struct annotated_plus
     }
 };
 
-template<typename T>
-    __requires(AdditiveMonoid(T))
-struct input_type< annotated_plus<T>, 0>
+template<AdditiveMonoid T>
+struct input_type<annotated_plus<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename T>
-    __requires(AdditiveMonoid(T))
-struct codomain_type< annotated_plus<T> >
+template<AdditiveMonoid T>
+struct codomain_type<annotated_plus<T>>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename T>
-    __requires(AdditiveMonoid(T))
+template<AdditiveMonoid T>
 struct annotated_negate
 {
     T operator()(const T& x)
@@ -394,8 +395,7 @@ struct annotated_negate
     }
 };
 
-template<typename T>
-    __requires(AdditiveGroup(T))
+template<AdditiveGroup T>
 annotated_negate<T> inverse_operation(annotated_plus<T>& plus)
 {
     return annotated_negate<T>(source(plus.o));
@@ -422,36 +422,32 @@ void run_egyptian_multiplication()
 
 // Chapter 5 - Combining concepts
 
-template<typename T>
-    __requires(EuclideanSemiring(T))
+template<EuclideanSemiring T>
 struct modulus
 {
     T operator()(const T& x, const T& y) const { return x % y; }
 };
 
-template<typename T>
-    __requires(EuclideanSemiring(T))
-struct input_type< modulus<T>, 0 >
+template<EuclideanSemiring T>
+struct input_type<modulus<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename T>
-    __requires(EuclideanSemiring(T))
+template<EuclideanSemiring T>
 struct quo_rem
 {
-    typedef QuotientType(T) I;
+    using I = QuotientType(T);
     pair<I, T> operator()(const T& a, const T& b)
     {
         return pair<I, T>(a / b, a % b);
     }
 };
 
-template<typename T>
-    __requires(EuclideanSemiring(T))
-struct input_type< quo_rem<T>, 0 >
+template<EuclideanSemiring T>
+struct input_type<quo_rem<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 void run_quotient_remainder()
@@ -481,8 +477,7 @@ void run_quotient_remainder()
 
 // Default remainder for EuclideanSemiring
 
-template<typename T>
-    __requires(EuclideanSemiring(T))
+template<EuclideanSemiring T>
 T remainder(T a, T b)
 {
     return a % b;
@@ -492,7 +487,7 @@ T remainder(T a, T b)
 // Default remainder for EuclideanSemimodule
 
 template<typename T, typename S>
-    __requires(EuclideanSemimodule(T, S))
+    requires EuclideanSemimodule<T, S>()
 T remainder(T a, T b)
 {
     return remainder_nonnegative(a, b);
@@ -526,8 +521,7 @@ void run_gcd()
 
 // Chapter 12 - Composite objects
 
-template<typename T>
-    __requires(Regular(T))
+template<Regular T>
 struct verify_conservation
 {
     const T* t;
@@ -535,7 +529,7 @@ struct verify_conservation
     verify_conservation(const T& t) : t(addressof(t)), t_0(t) { }
     ~verify_conservation()
     {
-      Assert(source(t) == t_0);
+        Assert(source(t) == t_0);
     }
 };
 
@@ -555,8 +549,8 @@ void run_slist_tests()
     print("partition     odd: "); print(l2); print_eol();
     print("partition not odd: "); print(l1); print_eol();
     erase_all(l1);
-    merge_copy_n(a1, 3, a2, 3, insert_iterator< after< slist<int> > >(
-        after< slist<int> >(l1, end(l1))), less<int>());
+    merge_copy_n(a1, 3, a2, 3, insert_iterator<after<slist<int>>>(
+        after<slist<int>>(l1, end(l1))), less<int>());
     print("merge copy: "); print(l1); print_eol();
 
     int a[] = {17, 29, 0, 1001, 47, 3, 2, 1, 124, 49, 981, 3, 29};
@@ -572,7 +566,6 @@ void run_slist_tests()
 
 void run_list_tests()
 {
-
     verify_conservation<int> v(list_node_count);
 
     int a1[] = {1, 3, 5};
@@ -587,8 +580,8 @@ void run_list_tests()
     print("partition     odd: "); print(l2); print_eol();
     print("partition not odd: "); print(l1); print_eol();
     erase_all(l1);
-    merge_copy_n(a1, 3, a2, 3, insert_iterator< after< list<int> > >(
-        after< list<int> >(l1, end(l1))), less<int>());
+    merge_copy_n(a1, 3, a2, 3, insert_iterator<after<list<int>>>(
+        after<list<int>>(l1, end(l1))), less<int>());
     print("merge copy: "); print(l1); print_eol();
 
     int a[] = {17, 29, 0, 1001, 47, 3, 2, 1, 124, 49, 981, 3, 29};
@@ -602,11 +595,10 @@ void run_list_tests()
     print("Sorted:       "); print(l); print_eol();
 }
 
-template<typename C>
-    __requires(EmptyLinkedBifurcateCoordinate(C))
+template<EmptyLinkedBifurcateCoordinate C>
 struct serializer
 {
-    typedef WeightType(C) N;
+    using N = WeightType(C);
     N n;
     serializer() : n(0) { }
     void operator()(C c) {
@@ -618,15 +610,13 @@ struct serializer
     }
 };
 
-template<typename C>
-    __requires(EmptyLinkedBifurcateCoordinate(C))
+template<EmptyLinkedBifurcateCoordinate C>
 void stree_serialize(C c)
 {
     traverse_rotating(c, serializer<C>());
 }
 
-template<typename C>
-    __requires(EmptyLinkedBifurcateCoordinate(C))
+template<EmptyLinkedBifurcateCoordinate C>
 void tree_serialize(C c)
 {
     traverse_rotating(c, serializer<C>());
@@ -634,10 +624,10 @@ void tree_serialize(C c)
 
 void run_stree_tests()
 {
-    typedef stree<int> T;
-    typedef stree<char> TT;
-    typedef stree_coordinate<int> I;
-    typedef stree_coordinate<char> II;
+    using T = stree<int>;
+    using TT = stree<char>;
+    using I = stree_coordinate<int>;
+    using II = stree_coordinate<char>;
 
     verify_conservation<int> v(stree_node_count);
     T t4(4);
@@ -678,7 +668,7 @@ void run_stree_tests()
     Assert(T(0, T(0), T()) < T(0, T(0), T(0)));
     Assert(!(T(0, T(0), T(0)) < T(0, T(0), T())));
     {
-        array< T > a;
+        array<T> a;
         push(a, T(0, T(0), T()));
         push(a, T(0, T(0), T(0)));
         push(a, T(0, T(), T()));
@@ -694,8 +684,8 @@ void run_stree_tests()
         push(a, T());
         push(a, T(0));
         {
-            slist< T > sl(a);
-            list< T > l(a);
+            slist<T> sl(a);
+            list<T> l(a);
 
             print("a before sorting: "); print(a); print_eol();
             sort(a, less<T>());
@@ -723,10 +713,10 @@ void run_stree_tests()
 
 void run_tree_tests()
 {
-    typedef tree<int> T;
-    typedef tree<char> TT;
-    typedef tree_coordinate<int> I;
-    typedef tree_coordinate<char> II;
+    using T = tree<int>;
+    using TT = tree<char>;
+    using I = tree_coordinate<int>;
+    using II = tree_coordinate<char>;
 
     verify_conservation<int> v(tree_node_count);
     T t4(4);
@@ -767,7 +757,7 @@ void run_tree_tests()
     Assert(T(0, T(0), T()) < T(0, T(0), T(0)));
     Assert(!(T(0, T(0), T(0)) < T(0, T(0), T())));
     {
-        array< T > a;
+        array<T> a;
         push(a, T(0, T(0), T()));
         push(a, T(0, T(0), T(0)));
         push(a, T(0, T(), T()));
@@ -783,8 +773,8 @@ void run_tree_tests()
         push(a, T());
         push(a, T(0));
         {
-            slist< T > sl(a);
-            list< T > l(a);
+            slist<T> sl(a);
+            list<T> l(a);
 
             print("a before sorting: "); print(a); print_eol();
             sort(a, less<T>());
@@ -810,8 +800,8 @@ void run_tree_tests()
     print_eol();
 }
 
-template<typename R, typename I>
-    __requires(Relation(R) && Mutable(I) && Integer(ValueType(I)))
+template<Relation R, typename I>
+    requires Mutable<I>() && Integer<ValueType(I)>()
 struct instrumented_less
 {
     R r;
@@ -824,15 +814,14 @@ struct instrumented_less
     }
 };
 
-template<typename R, typename I>
-    __requires(Relation(R) && Mutable(I) && Integer(ValueType(I)))
-struct input_type< instrumented_less<R, I>, 0 >
+template<Relation R, typename I>
+    requires Mutable<I>() && Integer<ValueType(I)>()
+struct input_type<instrumented_less<R, I>, 0>
 {
-    typedef Domain(R) type;
+    using type = Domain(R);
 };
 
-template<typename T>
-    __requires(Regular(T))
+template<Regular T>
 struct tracer
 {
     T t;
@@ -860,15 +849,15 @@ struct tracer
 };
 
 template<>
-struct needs_construction_type< underlying_type< array<double> > >
+struct needs_construction_type<underlying_type<array<double>>>
 {
-    typedef false_type type;
+    using type = false_type;
 };
 
 template<>
-struct needs_destruction_type< underlying_type< array<double> > >
+struct needs_destruction_type<underlying_type<array<double>>>
 {
-    typedef false_type type;
+    using type = false_type;
 };
 
 template<int kkkk>
@@ -876,7 +865,7 @@ void run_array_tests()
 {
     {
         print("Entering block with traced array\n");
-        array< tracer<int> > traced_array;
+        array<tracer<int>> traced_array;
         push(traced_array, tracer<int>(0));
         push(traced_array, tracer<int>(1));
         print("Leaving block with traced array\n");
@@ -884,17 +873,17 @@ void run_array_tests()
 
     array<int> v;
     int buf[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-    insert_range(back< array<int> >(v), counted_range< pointer(int) >(buf, 9));
+    insert_range(back<array<int>>(v), counted_range<pointer(int)>(buf, 9));
     print("v: "); print(v); print_eol();
-    array< array<int> > vv(12, 12, v);
+    array<array<int>> vv(12, 12, v);
     print("vv: "); print(vv); print_eol();
     array<int> v1;
-    array< array<int> > uu(12, 12, v);
+    array<array<int>> uu(12, 12, v);
     print("uu: "); print(uu); print_eol();
 
     const int matrix_size = 10;
-    typedef array< double > row;
-    typedef array< row > matrix;
+    using row = array<double>;
+    using matrix = array<row>;
     matrix m;
     for (int i = 0; i < matrix_size; ++i) {
         push(m, row());
@@ -909,7 +898,7 @@ void run_array_tests()
     print_eol();
     print("sorted:  "); print(m); print_eol();
 
-    typedef DistanceType(IteratorType(matrix)) N;
+    using N = DistanceType(IteratorType(matrix));
     N n = max(size(m) / N(10), N(100));
     UnderlyingType(row) r;
     array<UnderlyingType(row)> buffer(n, n, r);
@@ -921,7 +910,7 @@ void run_array_tests()
     array<int> copy_of_a(a);
     print_eol();
     print("array: "); print_range(begin(a), end(a)); print_eol();
-    typedef pointer(int) I;
+    using I = pointer(int);
 
     print("merge: "); print_range(begin(a), end(a)); print_eol();
     pair<int*, int*> p = partition_stable_n(begin(a), 6, odd<int>);

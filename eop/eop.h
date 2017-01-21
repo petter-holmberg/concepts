@@ -55,7 +55,7 @@ void plus_2(int* a, int* b, int* c)
 int square(int n) { return n * n; }
 
 template<typename Op>
-    __requires(BinaryOperation(Op))
+    requires BinaryOperation<Op>()
 Domain(Op) square(const Domain(Op)& x, Op op)
 {
     return op(x, x);
@@ -209,7 +209,7 @@ Domain(F) collision_point(const Domain(F)& x, F f, P p)
 }
 
 template<Transformation F, UnaryPredicate P>
-    __requires(Domain(F) == Domain(P))
+    requires Same<Domain(F), Domain(P)>()
 bool terminating(const Domain(F)& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
@@ -239,7 +239,7 @@ bool circular_nonterminating_orbit(const Domain(F)& x, F f)
 }
 
 template<Transformation F, UnaryPredicate P>
-    __requires(Domain(F) == Domain(P))
+    requires Same<Domain(F), Domain(P)>()
 bool circular(const Domain(F)& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
@@ -2658,8 +2658,9 @@ struct phased_applicator
 };
 
 template<EmptyLinkedBifurcateCoordinate C, typename Proc>
-    __requires(Procedure(Proc) && Arity(Proc) == 1 &&
-        C == InputType(Proc, 0))
+    requires Arity(Proc) == 1
+        && Same<C, InputType(Proc, 0)>()
+    __requires(Procedure(Proc))
 Proc traverse_phased_rotating(C c, int phase, Proc proc)
 {
     // Precondition: $\property{tree}(c) \wedge 0 \leq phase < 3$
@@ -3973,7 +3974,7 @@ struct partition_trivial
 
 template<ForwardIterator I, UnaryPredicate P>
     __requires(ValueType(I) == Domain(P))
-struct codomain_type< partition_trivial<I, P> >
+struct codomain_type< partition_trivial<I, P>>
 {
     using type = pair<I, I>;
 };
@@ -4029,7 +4030,7 @@ struct transpose_operation
 };
 
 template<BinaryOperation Op>
-struct input_type< transpose_operation<Op>, 0 >
+struct input_type< transpose_operation<Op>, 0>
 {
     using type = Domain(Op);
 };
@@ -4223,7 +4224,7 @@ I sort_n(I f, DistanceType(I) n, R r)
 // pair type: see Chapter 1 of this file
 
 
-// Exercise 12.1: less< pair<T0, T1> > using less<T0> and less<T1>
+// Exercise 12.1: less< pair<T0, T1>> using less<T0> and less<T1>
 
 
 // triple type: see Chapter 1 of this file
@@ -4259,7 +4260,7 @@ struct iterator_type<array_k<k, T>>
 };
 
 template<int k, Regular T>
-struct value_type< array_k<k, T> >
+struct value_type< array_k<k, T>>
 {
     using type = T;
 };
@@ -4272,7 +4273,7 @@ struct size_type<array_k<k, T>>
 
 template<int k, Regular T>
     __requires(0 < k && k <= MaximumValue(int) / sizeof(T))
-struct underlying_type< array_k<k, T> >
+struct underlying_type< array_k<k, T>>
 {
     using type = array_k<k, UnderlyingType(T)>;
 };
@@ -4453,7 +4454,7 @@ struct counted_range {
 
 template<typename I>
     requires Readable<I>() && Iterator<I>()
-struct iterator_type< counted_range<I> >
+struct iterator_type< counted_range<I>>
 {
     using type = I;
 };
@@ -4948,7 +4949,7 @@ bool operator==(slist_iterator<T> i, slist_iterator<T> j)
 }
 
 template<Regular T>
-struct less< slist_iterator<T> >
+struct less< slist_iterator<T>>
 {
     bool operator()(slist_iterator<T> i, slist_iterator<T> j)
     {
@@ -5108,7 +5109,7 @@ after<slist<T>> insert(after<slist<T>> p, const U& u)
         set_link_forward(i, successor(current(p)));
         set_link_forward(current(p), i);
     }
-    return after< slist<T> >(base(p), i);
+    return after<slist<T>>(base(p), i);
 }
 
 template<Regular T>
@@ -5702,7 +5703,7 @@ bool operator<(const stree<T>& x, const stree<T>& y)
     less<T> lt;
     return 1 == bifurcate_compare_nonempty(
         begin(x), begin(y),
-        comparator_3_way< less<T> >(lt));
+        comparator_3_way<less<T>>(lt));
 }
 
 template<Regular T, typename Proc>
@@ -5987,19 +5988,19 @@ struct array
     }
     array(const array& x) : p(allocate_array<T>(size(x)))
     {
-        insert_range(back< array<T> >(sink(this)), x);
+        insert_range(back<array<T>>(sink(this)), x);
     }
     template<Linearizable W>
         __requires(T == ValueType(W))
     array(const W& w) : p(allocate_array<T>(0))
     {
-        insert_range(back< array<T> >(sink(this)), w);
+        insert_range(back<array<T>>(sink(this)), w);
     }
     template<typename I>
         __requires(Readable(I) && Iterator(I) && T == ValueType(I))
     array(const counted_range<I>& w) : p(allocate_array<T>(size(w)))
     {
-        insert_range(back< array<T> >(sink(this)), w);
+        insert_range(back<array<T>>(sink(this)), w);
     }
     void operator=(array x)
     {
@@ -6136,7 +6137,7 @@ back<array<T>> erase(back<array<T>> x)
 template<Regular T>
 void erase_all(array<T>& x)
 {
-    while (!empty(x)) erase(back< array<T> >(x));
+    while (!empty(x)) erase(back<array<T>>(x));
 }
 
 template<Regular T>
@@ -6270,7 +6271,7 @@ void reserve_basic(array<T>& x, DistanceType(IteratorType(array<T>)) n)
 {
     if (n < size(x) || n == capacity(x)) return;
     array<T> tmp(n);
-    insert_range(back< array<T> >(tmp), x);
+    insert_range(back<array<T>>(tmp), x);
     swap(tmp, x);
 }
 

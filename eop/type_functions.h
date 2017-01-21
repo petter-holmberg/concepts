@@ -51,7 +51,7 @@
 // only inside a template definition because of the use of the keyword
 // typename):
 
-// #define ValueType(T) typename value_type< T >::type
+// #define ValueType(T) typename value_type<T>::type
 
 // We refine the global definition for a particular type by
 // specializing:
@@ -72,7 +72,7 @@ template<typename T>
     __requires(FunctionalProcedure(T))
 struct codomain_type;
 
-#define Codomain(T) typename codomain_type< T >::type
+#define Codomain(T) typename codomain_type<T>::type
 
 
 // InputType : FunctionalProcedure x unsigned int -> Regular
@@ -81,7 +81,7 @@ template<typename T, int i>
     __requires(FunctionalProcedure(T))
 struct input_type;
 
-#define InputType(T, i) typename input_type< T, i >::type
+#define InputType(T, i) typename input_type<T, i>::type
 
 
 // Domain : HomogeneousFunction -> Regular
@@ -119,7 +119,7 @@ struct distance_type<long long>
 };
 
 
-#define DistanceType(T) typename distance_type< T >::type
+#define DistanceType(T) typename distance_type<T>::type
 
 
 // Chapter 3 - Associative operations
@@ -195,7 +195,7 @@ struct input_type<bool (*)(const T& x, const T& y), 0>
 template<typename T>
     __requires(ArchimedeanMonoid(T))
 struct quotient_type;
-#define QuotientType(T) typename quotient_type< T >::type
+#define QuotientType(T) typename quotient_type<T>::type
 
 
 // Lemma: For an integral type T, QuotientType(T) has to be at least as large as T.
@@ -225,7 +225,7 @@ struct value_type
     typedef T type;
 };
 
-#define ValueType(T) typename value_type< T >::type
+#define ValueType(T) typename value_type<T>::type
 
 
 // DifferenceType : RandomAccessIterator -> Integer
@@ -234,7 +234,7 @@ template<typename I>
     __requires(RandomAccessIterator(I))
 struct difference_type;
 
-#define DifferenceType(T) typename difference_type< T >::type
+#define DifferenceType(T) typename difference_type<T>::type
 
 
 // Chapter 7 - Coordinate structures
@@ -246,7 +246,7 @@ template<typename T>
     __requires(WeakBifurcateCoordinate(T))
 struct weight_type;
 
-#define WeightType(T) typename weight_type< T >::type
+#define WeightType(T) typename weight_type<T>::type
 
 
 // Chapter 8 - Coordinates with mutable successors
@@ -259,7 +259,7 @@ template<typename T>
     __requires(ImplementsIteratorType(T))
 struct iterator_type;
 
-#define IteratorType(T) typename iterator_type< T >::type
+#define IteratorType(T) typename iterator_type<T>::type
 
 
 // Chapter 10 - Rearrangements
@@ -283,7 +283,7 @@ struct iterator_concept
     typedef iterator_tag __concept;
 };
 
-#define IteratorConcept(T) typename iterator_concept< T >::__concept
+#define IteratorConcept(T) typename iterator_concept<T>::__concept
 
 
 // Chapter 12 - Composite objects
