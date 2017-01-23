@@ -400,47 +400,61 @@ concept bool TotallyOrdered() {
 
 template <typename T>
 concept bool AdditiveSemigroup() {
-    return Regular<T>();
-        // +: T * T -> T
+    return Regular<T>()
+        && requires (const T& a, const T& b) {
+            { a + b } -> T
+        };
+        // associative(+)
+        // commutative(+)
 }
 
 template <typename T>
 concept bool MultiplicativeSemigroup() {
-    return Regular<T>();
-        // *: T * T -> T
+    return Regular<T>()
+        && requires (const T& a, const T& b) {
+            { a * b } -> T
+        };
         // associative(*)
 }
 
 template <typename T>
 concept bool AdditiveMonoid() {
-    return AdditiveSemigroup<T>();
-        // 0 in T
-        // identity_element(0, +)
+    return AdditiveSemigroup<T>()
+        && requires (const T& a) {
+            { zero(a) } -> T
+            // identity_element(0, +)
+        };
 }
 
 template <typename T>
 concept bool MultiplicativeMonoid() {
-    return MultiplicativeSemigroup<T>();
-        // 1 in T
-        // identity_element(1, *)
+    return MultiplicativeSemigroup<T>()
+        && requires (const T& a) {
+            { one(a) } -> T
+            // identity_element(1, *)
+        };
 }
 
 template <typename T>
 concept bool AdditiveGroup() {
-    return AdditiveMonoid<T>();
-        // - : T -> T
-        // inverse_operation(unary -, 0, +)
-        // - : T * T -> T
-        //     (a, b) -> a + (-b)
+    return AdditiveMonoid<T>()
+        && requires (const T& a, const T& b) {
+            { -a } -> T
+            // inverse_operation(unary -, 0, +)
+            { a - b } -> T
+                // (a, b) -> a + (-b)
+        };
 }
 
 template <typename T>
 concept bool MultiplicativeGroup() {
-    return MultiplicativeMonoid<T>();
-        // multiplicative_inverse : T -> T
-        // inverse_operation(multiplicative_inverse, 1, *)
-        // / : T * T -> T
-        //     (a, b) -> a * multiplicative_inverse(b)
+    return MultiplicativeMonoid<T>()
+        && requires (const T& a, const T& b) {
+            { multiplicative_inverse(a) } -> T
+            // inverse_operation(multiplicative_inverse, 1, *)
+            { a / b } -> T
+                // (a, b) -> a * multiplicative_inverse(b)
+        };
 }
 
 template <typename T>
@@ -475,13 +489,15 @@ concept bool CommutativeRing() {
 template <typename T, typename S>
 concept bool Semimodule() {
     return AdditiveMonoid<T>()
-        && CommutativeSemiring<T>();
-        // * : S * T -> T
-        // all(alfa, beta) in S and all(a, b in T)
-        //     alfa * (beta * a) == (alfa * beta) * a
-        //     (alfa + beta) * a == alfa * a + beta * a
-        //     alfa * (a + b) == alfa * a + alfa * b
-        //     1 * a == a
+        && CommutativeSemiring<T>()
+        && requires (const S& a, const T& b) {
+            { a * b } -> T
+            // all(alfa, beta) in S and all(a, b in T)
+            //     alfa * (beta * a) == (alfa * beta) * a
+            //     (alfa + beta) * a == alfa * a + beta * a
+            //     alfa * (a + b) == alfa * a + alfa * b
+            //     1 * a == a
+        };
 }
 
 template <typename T, typename S>
@@ -512,9 +528,11 @@ concept bool OrderedAdditiveGroup() {
 
 template <typename T>
 concept bool CancellableMonoid() {
-    return OrderedAdditiveMonoid<T>();
-        // - : T * T -> T
-        // all(a, b) in T : b <= a => a - b is defined and (a - b) + b == a
+    return OrderedAdditiveMonoid<T>()
+        && requires (const T& a, const T& b) {
+            { a - b } -> T
+            // all(a, b) in T : b <= a => a - b is defined and (a - b) + b == a
+        };
 }
 
 template <typename T>
@@ -526,9 +544,11 @@ concept bool ArchimedeanMonoid() {
 
 template <typename T>
 concept bool HalvableMonoid() {
-    return ArchimedeanMonoid<T>();
-        // half : T -> T
-        // all(a, b) in T : (b > 0 and a == b + b) => half(a) == b
+    return ArchimedeanMonoid<T>()
+        && requires (const T& a) {
+            { half(a) } -> T
+            // all(a, b) in T : (b > 0 and a == b + b) => half(a) == b
+        };
 }
 
 template <typename T>
@@ -554,10 +574,12 @@ concept bool EuclideanSemiring() {
 template <typename T, typename S>
 concept bool EuclideanSemimodule() {
     return Semimodule<T, S>();
-        // remainder : T * T -> T
-        // quotient : T * T -> S
-        // all(a, b) in T : b != 0 => a = quotient(a, b) * b + remainder(a, b)
-        // all(a, b) in T : (a != 0 or b != 0) => gcd(a, b) terminates
+        // && requires (T& a, T& b) {
+        //     { remainder(a, b) } -> T
+        //     { quotient(a, b) } -> T
+        //     all(a, b) in T : b != 0 => a = quotient(a, b) * b + remainder(a, b)
+        //     all(a, b) in T : (a != 0 or b != 0) => gcd(a, b) terminates
+        // };
 }
 
 template <typename T>
@@ -590,17 +612,21 @@ concept bool DiscreteArchimedeanRing() {
 
 template <typename T>
 concept bool Readable() {
-    return Regular<T>();
-        // ValueType : Readable -> Regular
-        // source : T -> ValueType(T)
+    return Regular<T>()
+        && Regular<ValueType(T)>()
+        && requires (T a) {
+            { source(a) } -> ValueType(T)
+        };
 }
 
 template <typename T>
 concept bool Iterator() {
-    return Regular<T>();
+    return Regular<T>()
         // DistanceType : Iterator -> Integer
-        // successor : T -> T
-        // successor is not necessarily regular
+        && requires (T a) {
+            { successor(a) } -> T
+            // successor is not necessarily regular
+        };
 }
 
 template <typename T>
@@ -611,9 +637,11 @@ concept bool ForwardIterator() {
 
 template <typename T>
 concept bool IndexedIterator() {
-    return ForwardIterator<T>();
-        // + : T * DistanceType(T) -> T
-        // - : T * T -> DistanceType(T)
+    return ForwardIterator<T>()
+        && requires(T a, DistanceType(T) b) {
+            { a + b } -> T
+            // { a - c } -> T // - : T * T -> DistanceType(T)
+        };
         // + takes constant time
         // - takes constant time
 }
@@ -621,7 +649,7 @@ concept bool IndexedIterator() {
 template <typename T>
 concept bool BidirectionalIterator() {
     return ForwardIterator<T>();
-        // predecessor : T -> T
+        // { predecessor(a) } -> T
         // predecessor takes constant time
         // all(i) in T : successor(i) is defined =>
         //     predecessor(successor(i)) is defined and equals i
@@ -634,39 +662,45 @@ concept bool RandomAccessIterator() {
     return IndexedIterator<T>()
         && BidirectionalIterator<T>()
         && ForwardIterator<T>()
-        && TotallyOrdered<T>();
-        // all(i, j) in T : i < j <=> i < j
-        // DifferenceType : RandomAccessIterator -> Integer
-        // + : T * DifferenceType(T) -> T
-        // - : T * DifferenceType(T) -> T
-        // - : T * T -> DifferenceType(T)
-        // < takes constant time
-        // - between an iterator and an integer takes constant time
+        && TotallyOrdered<T>()
+        && requires(T a, DistanceType(T) b) {
+            // all(i, j) in T : i < j <=> i < j
+            // DifferenceType : RandomAccessIterator -> Integer
+            { a + b } -> T
+            // - : T * DifferenceType(T) -> T
+            // - : T * T -> DifferenceType(T)
+            // < takes constant time
+            // - between an iterator and an integer takes constant time
+        };
 }
 
 // Chapter 7: Coordinate structures
 
 template <typename T>
 concept bool BifurcateCoordinate() {
-    return Regular<T>();
-        // WeightType : BifurcateCoordinate -> Integer
-        // empty : T -> bool
-        // has_left_successor : T -> bool
-        // has_right_successor : T -> bool
-        // left_successor : T -> T
-        // right_successor : T -> T
-        // all(i, j) in T : (left_successor(i) == j or right_successor(i) == j) >= not(empty(i))
+    return Regular<T>()
+        && Integer<WeightType(T)>()
+        && requires(T a) {
+            { empty(a) } -> bool
+            { has_left_successor(a) } -> bool
+            { has_right_successor(a) } -> bool
+            { left_successor(a) } -> T
+            { right_successor(a) } -> T
+            // all(i, j) in T : (left_successor(i) == j or right_successor(i) == j) >= not(empty(i))
+        };
 }
 
 template <typename T>
 concept bool BidirectionalBifurcateCoordinate() {
-    return BifurcateCoordinate<T>();
-        // has_predecessor : T -> bool
-        // all(i) in T : not(empty(i)) => has_predecessor(i) is defined
-        // predecessor : T -> T
-        // all(i) in T : has_left_successor(i) => predecessor(left_successor(i)) is defined and equals i
-        // all(i) in T : has_right_successor(i) => predecessor(right_successor(i)) is defined and equals i
-        // all(i) in T : has_predecessor(i) => is_left_successor(i) or is_right_successor(i)
+    return BifurcateCoordinate<T>()
+        && requires(T a) {
+            { has_predecessor(a) } -> bool
+            // all(i) in T : not(empty(i)) => has_predecessor(i) is defined
+            { predecessor(a) } -> T
+            // all(i) in T : has_left_successor(i) => predecessor(left_successor(i)) is defined and equals i
+            // all(i) in T : has_right_successor(i) => predecessor(right_successor(i)) is defined and equals i
+            // all(i) in T : has_predecessor(i) => is_left_successor(i) or is_right_successor(i)
+        };
 }
 
 template <typename F>
@@ -701,8 +735,7 @@ concept bool PseudoRelation() {
 
 template <typename S>
 concept bool ForwardLinker() {
-    return true;
-    // IteratorType : ForwardLinker -> ForwardIterator
+    return ForwardIterator<IteratorType(S)>();
     // Let I = IteratorType(S) in:
     //     all(s) in S : (s : I * I -> void)
     //     all(s) in S : all(i, j) in I if successor(i) is defined,
@@ -711,8 +744,7 @@ concept bool ForwardLinker() {
 
 template <typename S>
 concept bool BackwardLinker() {
-    return true;
-    // IteratorType : BackwardLinker -> BidirectionalIterator
+    return BidirectionalIterator<IteratorType(S)>();
     // Let I = IteratorType(S) in:
     //     all(s) in S : (s : I * I -> void)
     //     all(s) in S : all(i, j) in I if prececessor(i) is defined,
@@ -727,69 +759,86 @@ concept bool BidirectionalLinker() {
 
 template <typename T>
 concept bool LinkedBifurcateCoordinate() {
-    return BifurcateCoordinate<T>();
-        // set_left_successor : T * T -> void
-        //     (i, j) -> establishes left_successor(i) == j
-        // set_right_successor : T * T -> void
-        //     (i, j) -> establishes right_successor(i) == j
+    return BifurcateCoordinate<T>()
+        && requires(T a) {
+            { set_left_successor(a, a) } -> void
+            //     (i, j) -> establishes left_successor(i) == j
+            { set_right_successor(a, a) } -> void
+            //     (i, j) -> establishes right_successor(i) == j
+        };
 }
 
 template <typename T>
 concept bool EmptyLinkedBifurcateCoordinate() {
-    return LinkedBifurcateCoordinate<T>();
-        // empty(T())
-        // not(empty(i)) => left_successor(i) and right_successor(i) are defined
-        // not(empty(i)) => (not(has_left_successor(i) <=> empty(left_successor(i))))
-        // not(empty(i)) => (has_right_successor(i) <=> empty(right_successor(i))))
+    return LinkedBifurcateCoordinate<T>()
+        && requires(T a) {
+            empty(a);
+            // empty(T()) (In other words, empty is true on the default constructed value and possibly on other values as well)
+            // not(empty(i)) => left_successor(i) and right_successor(i) are defined
+            // not(empty(i)) => (not(has_left_successor(i) <=> empty(left_successor(i))))
+            // not(empty(i)) => (has_right_successor(i) <=> empty(right_successor(i))))
+        };
 }
 
 // Chapter 9: Copying
 
 template <typename T>
 concept bool Writable() {
-    return true;
-        // ValueType : Writable -> Regulars
-        // all(x in T) : (all(v) in ValueType(T)) : sink(x) <- v is a well-formed statement
+    return Regular<ValueType(T)>()
+        && requires(T x) {
+            sink(x);
+            // all(x in T) : (all(v) in ValueType(T)) : sink(x) <- v is a well-formed statement
+    };
 }
 
 template <typename T>
 concept bool Mutable() {
     return Readable<T>()
-        && Writable<T>();
-        // all(x) in T : sink(x) is defined <=> source(x) is defined
-        // all(x) in T : sink(x) is defined => aliased(x, x)
-        // deref : t -> ValueType(T)&
-        // all(x) in T : sink(x) is defined <=> deref(x) is defined
+        && Writable<T>()
+        && requires(T x) {
+            sink(x);
+            source(x);
+            // all(x) in T : sink(x) is defined <=> source(x) is defined
+            // all(x) in T : sink(x) is defined => aliased(x, x)
+            { deref(x) } -> ValueType(T)&
+            // all(x) in T : sink(x) is defined <=> deref(x) is defined
+        };
 }
 
 // Chapter 12: Composite Objects
 
 template <typename W>
 concept bool Linearizable() {
-    return Regular<W>();
-    // IteratorType : Linearizable -> Integer
-    // ValueType : Linearizabe -> Regular
-    //     W -> ValueType(IteratorType(W))
-    // SizeType : Linearizable -> Integer
-    //     W -> DistanceType(IteratorType(W))
-    // begin : W -> IteratorType(W)
-    // end : W -> IteratorType(W)
-    // size : W -> SizeType(W)
-    //     x -> end(x) - begin(x)
-    // empty : W -> bool
-    //     x -> begin(x) == end(x)
-    // [] : W * SizeType(W) -> ValueType(W)&
-    //     (w, i) -> deref(begin(w) + i)
+    return Regular<W>()
+        // IteratorType : Linearizable -> Integer
+        && Regular<ValueType(W)>()
+        //     W -> ValueType(IteratorType(W))
+        && Integer<SizeType(W)>()
+        //     W -> DistanceType(IteratorType(W))
+        && requires(W x) {
+            { begin(x) } -> IteratorType(W)
+            { end(x) } -> IteratorType(W)
+            // { size(x) } -> SizeType(W)
+            //     x -> end(x) - begin(x)
+            // { empty(x) } -> bool
+            //     x -> begin(x) == end(x)
+            // [] : W * SizeType(W) -> ValueType(W)&
+            //     (w, i) -> deref(begin(w) + i)
+        };
 }
 
 template <typename S>
 concept bool Sequence() {
-    return Linearizable<S>();
-        // all(s) in S : all(i) in [begin(s), end(s))) deref(i) is a part of s
-        // = : S * S -> bool
-        //     (s, s') -> lexicographical_equal(begin(s), end(s), begin(s'), end(s'))
-        // < : S * S -> bool
-        //     (s, s') -> lexicographical_less(begin(s), end(s), begin(s'), end(s'))
+    return Linearizable<S>()
+        && requires(S x) {
+            begin(x);
+            end(x);
+            // all(s) in S : all(i) in [begin(s), end(s))) deref(i) is a part of s
+            // = : S * S -> bool
+            //     (s, s') -> lexicographical_equal(begin(s), end(s), begin(s'), end(s'))
+            // < : S * S -> bool
+            //     (s, s') -> lexicographical_less(begin(s), end(s), begin(s'), end(s'))
+        };
 }
 
 template <typename S>
@@ -799,19 +848,20 @@ concept bool BinaryPredicate() {
 
 template <typename T>
 concept bool Position() {
-    return true;
-    //     BaseType : Position -> Linearizable
-    //  /\ IteratorType : Position -> Iterator
-    //  /\ ValueType : Position -> Regular
-    //         T |- ValueType(IteratorType(T))
-    //  /\ SizeType : Position -> Integer
-    //         T |- SizeType(IteratorType(T))
-    //  /\ base : T -> BaseType(T)
-    //  /\ current : T -> IteratorType(T)
-    //  /\ begin : T -> IteratorType(T)
-    //         x |- begin(base(x))
-    //  /\ end : T -> IteratorType(T)
-    //         x |- end(base(x))
+    return Linearizable<BaseType(T)>()
+        && Iterator<IteratorType(T)>()
+        && Regular<ValueType(T)>()
+        //         T |- ValueType(IteratorType(T))
+        && Integer<SizeType(T)>()
+        //         T |- SizeType(IteratorType(T))
+        && requires(T x) {
+        { base(x) } -> BaseType(T)
+        { current(x) } -> IteratorType(T)
+        { begin(x) } -> IteratorType(T)
+        //         x |- begin(base(x))
+        { end(x) } -> IteratorType(T)
+        //         x |- end(base(x))
+    };
 }
 
 template <typename T>
@@ -822,14 +872,14 @@ concept bool DynamicSequence() {
 
 template <typename T>
 concept bool InsertPosition() {
-    return Position<T>();
-    //  /\ BaseType : Position -> DynamicSequence
+    return Position<T>()
+        && DynamicSequence<BaseType(T)>();
 }
 
 template <typename T>
 concept bool ErasePosition() {
-    return Position<T>();
-    //  /\ BaseType : Position -> DynamicSequence
+    return Position<T>()
+        && DynamicSequence<BaseType(T)>();
 }
 
 template <typename T, typename U>
