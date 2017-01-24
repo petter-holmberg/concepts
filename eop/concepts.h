@@ -613,9 +613,9 @@ concept bool DiscreteArchimedeanRing() {
 template <typename T>
 concept bool Readable() {
     return Regular<T>()
-        && Regular<ValueType(T)>()
+        && Regular<ValueType<T>>()
         && requires (T a) {
-            { source(a) } -> ValueType(T)
+            { source(a) } -> ValueType<T>
         };
 }
 
@@ -638,7 +638,7 @@ concept bool ForwardIterator() {
 template <typename T>
 concept bool IndexedIterator() {
     return ForwardIterator<T>()
-        && requires(T a, DistanceType(T) b) {
+        && requires(T a, DistanceType<T> b) {
             { a + b } -> T
             // { a - c } -> T // - : T * T -> DistanceType(T)
         };
@@ -663,7 +663,7 @@ concept bool RandomAccessIterator() {
         && BidirectionalIterator<T>()
         && ForwardIterator<T>()
         && TotallyOrdered<T>()
-        && requires(T a, DistanceType(T) b) {
+        && requires(T a, DistanceType<T> b) {
             // all(i, j) in T : i < j <=> i < j
             // DifferenceType : RandomAccessIterator -> Integer
             { a + b } -> T
@@ -679,7 +679,7 @@ concept bool RandomAccessIterator() {
 template <typename T>
 concept bool BifurcateCoordinate() {
     return Regular<T>()
-        && Integer<WeightType(T)>()
+        && Integer<WeightType<T>>()
         && requires(T a) {
             { empty(a) } -> bool
             { has_left_successor(a) } -> bool
@@ -735,8 +735,8 @@ concept bool PseudoRelation() {
 
 template <typename S>
 concept bool ForwardLinker() {
-    return ForwardIterator<IteratorType(S)>();
-    // Let I = IteratorType(S) in:
+    return ForwardIterator<IteratorType<S>>();
+    // Let I = IteratorType<S> in:
     //     all(s) in S : (s : I * I -> void)
     //     all(s) in S : all(i, j) in I if successor(i) is defined,
     //         then s(i, j) establishes successor(i) == j
@@ -744,8 +744,8 @@ concept bool ForwardLinker() {
 
 template <typename S>
 concept bool BackwardLinker() {
-    return BidirectionalIterator<IteratorType(S)>();
-    // Let I = IteratorType(S) in:
+    return BidirectionalIterator<IteratorType<S>>();
+    // Let I = IteratorType<S> in:
     //     all(s) in S : (s : I * I -> void)
     //     all(s) in S : all(i, j) in I if prececessor(i) is defined,
     //         then s(i, j) establishes i == predecessor(j)
@@ -784,10 +784,10 @@ concept bool EmptyLinkedBifurcateCoordinate() {
 
 template <typename T>
 concept bool Writable() {
-    return Regular<ValueType(T)>()
+    return Regular<ValueType<T>>()
         && requires(T x) {
             sink(x);
-            // all(x in T) : (all(v) in ValueType(T)) : sink(x) <- v is a well-formed statement
+            // all(x in T) : (all(v) in ValueType<T>) : sink(x) <- v is a well-formed statement
     };
 }
 
@@ -800,7 +800,7 @@ concept bool Mutable() {
             source(x);
             // all(x) in T : sink(x) is defined <=> source(x) is defined
             // all(x) in T : sink(x) is defined => aliased(x, x)
-            { deref(x) } -> ValueType(T)&
+            { deref(x) } -> ValueType<T>&
             // all(x) in T : sink(x) is defined <=> deref(x) is defined
         };
 }
@@ -811,18 +811,18 @@ template <typename W>
 concept bool Linearizable() {
     return Regular<W>()
         // IteratorType : Linearizable -> Integer
-        && Regular<ValueType(W)>()
-        //     W -> ValueType(IteratorType(W))
-        && Integer<SizeType(W)>()
-        //     W -> DistanceType(IteratorType(W))
+        && Regular<ValueType<W>>()
+        //     W -> ValueType<IteratorType<W>>
+        && Integer<SizeType<W>>()
+        //     W -> DistanceType(IteratorType<W>)
         && requires(W x) {
-            { begin(x) } -> IteratorType(W)
-            { end(x) } -> IteratorType(W)
-            // { size(x) } -> SizeType(W)
+            { begin(x) } -> IteratorType<W>
+            { end(x) } -> IteratorType<W>
+            // { size(x) } -> SizeType<W>
             //     x -> end(x) - begin(x)
             // { empty(x) } -> bool
             //     x -> begin(x) == end(x)
-            // [] : W * SizeType(W) -> ValueType(W)&
+            // [] : W * SizeType<W> -> ValueType<W>&
             //     (w, i) -> deref(begin(w) + i)
         };
 }
@@ -848,18 +848,18 @@ concept bool BinaryPredicate() {
 
 template <typename T>
 concept bool Position() {
-    return Linearizable<BaseType(T)>()
-        && Iterator<IteratorType(T)>()
-        && Regular<ValueType(T)>()
-        //         T |- ValueType(IteratorType(T))
-        && Integer<SizeType(T)>()
-        //         T |- SizeType(IteratorType(T))
+    return Linearizable<BaseType<T>>()
+        && Iterator<IteratorType<T>>()
+        && Regular<ValueType<T>>()
+        //         T |- ValueType<IteratorType<T>>
+        && Integer<SizeType<T>>()
+        //         T |- SizeType<IteratorType<T>>
         && requires(T x) {
-        { base(x) } -> BaseType(T)
-        { current(x) } -> IteratorType(T)
-        { begin(x) } -> IteratorType(T)
+        { base(x) } -> BaseType<T>
+        { current(x) } -> IteratorType<T>
+        { begin(x) } -> IteratorType<T>
         //         x |- begin(base(x))
-        { end(x) } -> IteratorType(T)
+        { end(x) } -> IteratorType<T>
         //         x |- end(base(x))
     };
 }
@@ -873,13 +873,13 @@ concept bool DynamicSequence() {
 template <typename T>
 concept bool InsertPosition() {
     return Position<T>()
-        && DynamicSequence<BaseType(T)>();
+        && DynamicSequence<BaseType<T>>();
 }
 
 template <typename T>
 concept bool ErasePosition() {
     return Position<T>()
-        && DynamicSequence<BaseType(T)>();
+        && DynamicSequence<BaseType<T>>();
 }
 
 template <typename T, typename U>

@@ -35,7 +35,7 @@
 struct measure_time
 {
     typedef measure_time M;
-    typedef long int N; // DistanceType(M)
+    typedef long int N; // DistanceType<M>
     const int inverse_accuracy;
     const clock_t epsilon;
     const pointer(char) legend;
@@ -79,7 +79,7 @@ template<typename M, typename F>
     __requires(Measure(M) && Measurement(F))
 M perform()
 {
-    typedef DistanceType(M) N;
+    typedef DistanceType<M> N;
     F f;
     M m(f.legend);
     N n(1);
@@ -283,7 +283,7 @@ void measure_sort_n_adaptive_compares()
 {
     for (int n = 64; n <= 32768; n *= 4) {
         typedef pointer(int) I;
-//        typedef DistanceType(IteratorType(array<T>)) N;
+//        typedef DistanceType<IteratorType(array<T>)> N;
         typedef ptrdiff_t N;
         array<int> a = array<int>(N(n), N(n), 0);
         iota(n, begin(a));

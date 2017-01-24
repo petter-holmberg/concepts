@@ -36,11 +36,11 @@
 
 template<typename F, typename P>
     requires Transformation<F>()
-    __requires(T == Domain(F) &&
-        UnaryPredicate(P) && Domain(F) == Domain(P))
-void output_orbit_structure(Domain(F) x, F f, P p)
+    __requires(T == Domain<F> &&
+        UnaryPredicate(P) && Domain<F> == Domain<P>)
+void output_orbit_structure(Domain<F> x, F f, P p)
 {
-    triple<DistanceType(F), DistanceType(F), Domain(F)> t = orbit_structure(x, f, p);
+    triple<DistanceType<F>, DistanceType<F>, Domain<F>> t = orbit_structure(x, f, p);
     if (!p(t.m2)) {
         print("terminating with h-1 = "); print(t.m0);
         print(" and terminal point "); print(t.m2);
@@ -106,10 +106,10 @@ void run_additive_congruential_transformation()
 template<typename I>
     requires Readable<I>()
         && IndexedIterator<I>()
-        && Same<ValueType(I), DistanceType(I)>()
+        && Same<ValueType<I>, DistanceType<I>>()
 struct table_transformation
 {
-    using N = DistanceType(I);
+    using N = DistanceType<I>;
     const I p;
     const N n;
     table_transformation(const I p, const N n) : p(p), n(n) {}
@@ -122,11 +122,11 @@ struct table_transformation
 template<typename I>
     requires Readable<I>()
         && IndexedIterator<I>()
-        && Same<ValueType(I), DistanceType(I)>()
+        && Same<ValueType<I>, DistanceType<I>>()
 struct table_transformation_definition_space_predicate
 {
     using T = table_transformation<I>;
-    using N = DistanceType(I);
+    using N = DistanceType<I>;
     const T& tbl;
     table_transformation_definition_space_predicate(const T& tbl) : tbl(tbl) { }
     bool operator()(N x)
@@ -138,19 +138,19 @@ struct table_transformation_definition_space_predicate
 template<typename I>
     requires Readable<I>()
         && IndexedIterator<I>()
-        && Same<ValueType(I), DistanceType(I)>()
+        && Same<ValueType<I>, DistanceType<I>>()
 struct input_type<table_transformation<I>, 0>
 {
-    using type = ValueType(I);
+    using type = ValueType<I>;
 };
 
 template<typename I>
     requires Readable<I>()
         && IndexedIterator<I>()
-        && Same<ValueType(I), DistanceType(I)>()
+        && Same<ValueType<I>, DistanceType<I>>()
 struct distance_type<table_transformation<I>>
 {
-    using type = DistanceType(I);
+    using type = DistanceType<I>;
 };
 
 void run_table_transformation()
@@ -437,7 +437,7 @@ struct input_type<modulus<T>, 0>
 template<EuclideanSemiring T>
 struct quo_rem
 {
-    using I = QuotientType(T);
+    using I = QuotientType<T>;
     pair<I, T> operator()(const T& a, const T& b)
     {
         return pair<I, T>(a / b, a % b);
@@ -598,7 +598,7 @@ void run_list_tests()
 template<EmptyLinkedBifurcateCoordinate C>
 struct serializer
 {
-    using N = WeightType(C);
+    using N = WeightType<C>;
     N n;
     serializer() : n(0) { }
     void operator()(C c) {
@@ -801,13 +801,13 @@ void run_tree_tests()
 }
 
 template<Relation R, typename I>
-    requires Mutable<I>() && Integer<ValueType(I)>()
+    requires Mutable<I>() && Integer<ValueType<I>>()
 struct instrumented_less
 {
     R r;
     I p;
     instrumented_less(R r, I p) : r(r), p(p) { }
-    bool operator()(const Domain(R)& x, const Domain(R)& y)
+    bool operator()(const Domain<R>& x, const Domain<R>& y)
     {
         ++sink(p);
         return r(x, y);
@@ -815,10 +815,10 @@ struct instrumented_less
 };
 
 template<Relation R, typename I>
-    requires Mutable<I>() && Integer<ValueType(I)>()
+    requires Mutable<I>() && Integer<ValueType<I>>()
 struct input_type<instrumented_less<R, I>, 0>
 {
-    using type = Domain(R);
+    using type = Domain<R>;
 };
 
 template<Regular T>
@@ -898,10 +898,10 @@ void run_array_tests()
     print_eol();
     print("sorted:  "); print(m); print_eol();
 
-    using N = DistanceType(IteratorType(matrix));
+    using N = DistanceType<IteratorType<matrix>>;
     N n = max(size(m) / N(10), N(100));
-    UnderlyingType(row) r;
-    array<UnderlyingType(row)> buffer(n, n, r);
+    UnderlyingType<row> r;
+    array<UnderlyingType<row>> buffer(n, n, r);
     //reverse_n_adaptive(begin(m), size(m), begin(buffer), size(buffer));
     //print("reversed: "); print(m); print_eol();
 

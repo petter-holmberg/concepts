@@ -72,7 +72,8 @@ template<typename T>
     __requires(FunctionalProcedure(T))
 struct codomain_type;
 
-#define Codomain(T) typename codomain_type<T>::type
+template<typename T>
+using Codomain = typename codomain_type<T>::type;
 
 
 // InputType : FunctionalProcedure x unsigned int -> Regular
@@ -81,12 +82,14 @@ template<typename T, int i>
     __requires(FunctionalProcedure(T))
 struct input_type;
 
-#define InputType(T, i) typename input_type<T, i>::type
+template<typename T, int i>
+using InputType = typename input_type<T, i>::type;
 
 
 // Domain : HomogeneousFunction -> Regular
 
-#define Domain(T) InputType(T, 0)
+template<typename T>
+using Domain = InputType<T, 0>;
 
 
 // Chapter 2 - Transformations and their orbits
@@ -109,18 +112,17 @@ struct distance_type;
 template<>
 struct distance_type<int>
 {
-    typedef unsigned int type;
+    using type = unsigned int;
 };
 
 template<>
 struct distance_type<long long>
 {
-    typedef unsigned long long type;
+    using type = unsigned long long;
 };
 
-
-#define DistanceType(T) typename distance_type<T>::type
-
+template<typename T>
+using DistanceType = typename distance_type<T>::type;
 
 // Chapter 3 - Associative operations
 
@@ -128,28 +130,28 @@ template<typename T>
     __requires(Regular(T))
 struct input_type<T (*)(T x, T y), 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
     __requires(Regular(T))
 struct codomain_type<T (*)(T x, T y)>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
     __requires(Regular(T))
 struct input_type<T (*)(const T& x, const T& y), 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
     __requires(Regular(T))
 struct codomain_type<T (*)(const T& x, const T& y)>
 {
-    typedef T type;
+    using type = T;
 };
 
 
@@ -162,14 +164,14 @@ template<typename T>
     __requires(Regular(T))
 struct input_type<bool (*)(T x), 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
     __requires(Regular(T))
 struct input_type<bool (*)(const T& x), 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 
@@ -179,14 +181,14 @@ template<typename T>
     __requires(Regular(T))
 struct input_type<bool (*)(T x, T y), 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
     __requires(Regular(T))
 struct input_type<bool (*)(const T& x, const T& y), 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 
@@ -195,7 +197,9 @@ struct input_type<bool (*)(const T& x, const T& y), 0>
 template<typename T>
     __requires(ArchimedeanMonoid(T))
 struct quotient_type;
-#define QuotientType(T) typename quotient_type<T>::type
+
+template<typename T>
+using QuotientType = typename quotient_type<T>::type;
 
 
 // Lemma: For an integral type T, QuotientType(T) has to be at least as large as T.
@@ -203,13 +207,13 @@ struct quotient_type;
 template<>
 struct quotient_type<int>
 {
-    typedef int type;
+    using type = int;
 };
 
 template<>
 struct quotient_type<long>
 {
-    typedef long type;
+    using type = long;
 };
 
 
@@ -222,10 +226,11 @@ template<typename T>
     __requires(Regular(T))
 struct value_type
 {
-    typedef T type;
+    using type = T;
 };
 
-#define ValueType(T) typename value_type<T>::type
+template<typename T>
+using ValueType = typename value_type<T>::type;
 
 
 // DifferenceType : RandomAccessIterator -> Integer
@@ -234,7 +239,8 @@ template<typename I>
     __requires(RandomAccessIterator(I))
 struct difference_type;
 
-#define DifferenceType(T) typename difference_type<T>::type
+template<typename T>
+using DifferenceType = typename difference_type<T>::type;
 
 
 // Chapter 7 - Coordinate structures
@@ -246,7 +252,8 @@ template<typename T>
     __requires(WeakBifurcateCoordinate(T))
 struct weight_type;
 
-#define WeightType(T) typename weight_type<T>::type
+template<typename T>
+using WeightType = typename weight_type<T>::type;
 
 
 // Chapter 8 - Coordinates with mutable successors
@@ -259,7 +266,8 @@ template<typename T>
     __requires(ImplementsIteratorType(T))
 struct iterator_type;
 
-#define IteratorType(T) typename iterator_type<T>::type
+template<typename T>
+using IteratorType = typename iterator_type<T>::type;
 
 
 // Chapter 10 - Rearrangements
@@ -295,7 +303,8 @@ template<typename W>
     __requires(Linearizable(W))
 struct size_type;
 
-#define SizeType(W) typename size_type<W>::type
+template<typename W>
+using SizeType = typename size_type<W>::type;
 
 
 // Size : ConstantSizeSequence -> Integer
@@ -315,7 +324,8 @@ template<typename S>
     __requires(DynamicSequence(S))
 struct base_type;
 
-#define BaseType(T) typename base_type<T>::type
+template<typename T>
+using BaseType = typename base_type<T>::type;
 
 
 // concept BooleanType(T) means T represents a boolean value within the type system
@@ -332,30 +342,32 @@ template<typename T>
     __requires(Regular(T))
 struct needs_construction_type
 {
-    typedef true_type type; // default
+    using type = true_type; // default
 };
 
-#define NeedsConstruction(T) typename needs_construction_type<T>::type
+template<typename T>
+using NeedsConstruction = typename needs_construction_type<T>::type;
 
 template<typename T>
     __requires(Regular(T))
 struct needs_destruction_type
 {
-    typedef true_type type; // default
+    using type = true_type; // default
 };
 
-#define NeedsDestruction(T) typename needs_destruction_type<T>::type
+template<typename T>
+using NeedsDestruction = typename needs_destruction_type<T>::type;
 
 template<>
 struct needs_construction_type<int>
 {
-    typedef false_type type;
+    using type = false_type;
 };
 
 template<>
 struct needs_destruction_type<int>
 {
-    typedef false_type type;
+    using type = false_type;
 };
 
 // NeedsConstruction and NeedsDestruction should be similarly overloaded
@@ -368,7 +380,8 @@ template<typename T>
     __requires(Container(T))
 struct coordinate_type;
 
-#define CoordinateType(T) typename coordinate_type<T>::type
+template<typename T>
+using CoordinateType = typename coordinate_type<T>::type;
 
 
 // UnderlyingType : Regular -> Regular
@@ -376,10 +389,11 @@ struct coordinate_type;
 template<typename T> __requires(Regular(T))
 struct underlying_type
 {
-    typedef T type; // default
+    using type = T; // default
 };
 
-#define UnderlyingType(T) typename underlying_type<T>::type
+template<typename T>
+using UnderlyingType = typename underlying_type<T>::type;
 
 
 template<class F>

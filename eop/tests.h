@@ -80,7 +80,7 @@ void concept_Regular(T& x)
     Assert(!lt(x, x));
 
     // Underlying type
-    UnderlyingType(T) u;
+    UnderlyingType<T> u;
 
     // Destructor
 }
@@ -109,7 +109,7 @@ void type_pair(const T0& x00, const T0& x01, const T1& x10, const T1& x11)
     // Precondition: x00 < x01 || (x00 == x01 && x10 < x11)
     Assert(x00 < x01 || (x00 == x01 && x10 < x11));
 
-    typedef pair<T0, T1> P01;
+    using P01 = pair<T0, T1>;
 
     // Pair constructor
     P01 p0(x00, x10);
@@ -131,7 +131,7 @@ void type_triple(const T0& x00, const T0& x01,
 {
     Assert(x00 < x01 || (x00 == x01 && (x10 < x11 || (x10 == x11 && x20 < x21))));
 
-    typedef triple<T0, T1, T2> T;
+    using T = triple<T0, T1, T2>;
 
     // Triple constructor
     T t0(x00, x10, x20);  // triple constructor
@@ -149,7 +149,7 @@ void type_triple(const T0& x00, const T0& x01,
 
 void test_tuples()
 {
-    typedef pair<int, char> P;
+    using P = pair<int, char>;
 
     print("    pair\n");
     type_pair<int, char>(0, 99, 'a', 'a');
@@ -161,13 +161,13 @@ void test_tuples()
     array<int> a0;
     array<int> a1(3, 3, 0);
     iota(3, begin(a1));
-    type_pair< array<int>, char >(a0, a1, 'a', 'z');
+    type_pair<array<int>, char>(a0, a1, 'a', 'z');
 
     slist<int> l0;
     slist<int> l1(a0);
-    type_pair< slist<int>, char >(l0, l1, 'a', 'z');
+    type_pair<slist<int>, char>(l0, l1, 'a', 'z');
 
-    type_pair< array<int>, slist<int> >(a0, a1, l0, l1);
+    type_pair<array<int>, slist<int>>(a0, a1, l0, l1);
 
     print("    triple\n");
     type_triple<int, char, double>(0, 99, 'a', 'z', 1.0, 2.0);
@@ -182,7 +182,7 @@ struct times
 
 template<typename T>
     __requires(MultiplicativeSemigroup(T))
-struct input_type<times<T>, 0> { typedef T type; };
+struct input_type<times<T>, 0> { using type = T; };
 
 void test_ch_1()
 {
@@ -214,24 +214,24 @@ void test_ch_1()
 
 template<typename F>
     __requires(Transformation(F))
-void concept_Transformation(F f, Domain(F) x)
+void concept_Transformation(F f, Domain<F> x)
 {
-    typedef Domain(F) X;
-    typedef Codomain(F) Y;
+    using X = Domain<F>;
+    using Y = Codomain<F>;
     // X == Y
     Y y;
     y = x;
     Assert(x == y);
     y = f(x);
-    typedef DistanceType(F) N;
+    using N = DistanceType<F>;
     N n(1);
 }
 
 template<typename P>
     __requires(UnaryPredicate(P))
-void concept_UnaryPredicate(P p, Domain(P) x)
+void concept_UnaryPredicate(P p, Domain<P> x)
 {
-    typedef Domain(P) X;
+    using X = Domain<P>;
     X x0;
     X x1;
     if (p(x)) x0 = x;
@@ -249,27 +249,27 @@ struct sq {
 
 template<typename T>
     __requires(MultiplicativeSemigroup(T))
-struct input_type< sq<T>, 0 >
+struct input_type<sq<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
     __requires(MultiplicativeSemigroup(T))
-struct codomain_type< sq<T> >
+struct codomain_type<sq<T>>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
     __requires(MultiplicativeSemigroup(T))
-struct distance_type< sq<T> >
+struct distance_type<sq<T>>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename I, typename N>
-    __requires(Integer(I) && Integer(N) && DistanceType(I) = N)
+    __requires(Integer(I) && Integer(N) && DistanceType<I> = N)
 struct gen_orbit_predicate // definition space predicate
 {
     I x_0;
@@ -287,14 +287,14 @@ struct gen_orbit_predicate // definition space predicate
 };
 
 template<typename I, typename N>
-    __requires(Integer(I) && Integer(N) && DistanceType(I) = N)
+    __requires(Integer(I) && Integer(N) && DistanceType<I> = N)
 struct input_type<gen_orbit_predicate<I, N>, 0>
 {
-    typedef I type;
+    using type = I;
 };
 
 template<typename I, typename N>
-    __requires(Integer(I) && Integer(N) && DistanceType(I) = N)
+    __requires(Integer(I) && Integer(N) && DistanceType<I> = N)
 struct gen_orbit // transformation
 {
     gen_orbit_predicate<I, N> p;
@@ -313,32 +313,32 @@ struct gen_orbit // transformation
 };
 
 template<typename I, typename N>
-    __requires(Integer(I) && Integer(N) && DistanceType(I) = N)
+    __requires(Integer(I) && Integer(N) && DistanceType<I> = N)
 struct input_type<gen_orbit<I, N>, 0>
 {
-    typedef I type;
+    using type = I;
 };
 
 template<typename I, typename N>
-    __requires(Integer(I) && Integer(N) && DistanceType(I) = N)
-struct codomain_type< gen_orbit<I, N> >
+    __requires(Integer(I) && Integer(N) && DistanceType<I> = N)
+struct codomain_type<gen_orbit<I, N>>
 {
-    typedef I type;
+    using type = I;
 };
 
 template<typename I, typename N>
-    __requires(Integer(I) && Integer(N) && DistanceType(I) = N)
-struct distance_type< gen_orbit<I, N> >
+    __requires(Integer(I) && Integer(N) && DistanceType<I> = N)
+struct distance_type<gen_orbit<I, N>>
 {
-    typedef N type;
+    using type = N;
 };
 
 template<typename F>
     __requires(Transformation(F))
-void algorithms_orbit(Domain(F) x, DistanceType(F) h, DistanceType(F) c)
+void algorithms_orbit(Domain<F> x, DistanceType<F> h, DistanceType<F> c)
 {
-    typedef Domain(F) T;
-    typedef DistanceType(F) N;
+    using T = Domain<F>;
+    using N = DistanceType<F>;
     F f(x, h, c);
     Assert(zero(c) == terminating(x, f, f.p));
     if (zero(h) && !zero(c)) {
@@ -393,23 +393,23 @@ struct hf {
 
 template<typename N>
     __requires(Integer(N))
-struct input_type< hf<N>, 0 >
+struct input_type<hf<N>, 0>
 {
-    typedef N type;
+    using type = N;
 };
 
 template<typename N>
     __requires(Integer(N))
-struct codomain_type< hf<N> >
+struct codomain_type<hf<N>>
 {
-    typedef N type;
+    using type = N;
 };
 
 template<typename N>
     __requires(Integer(N))
-struct distance_type< hf<N> >
+struct distance_type<hf<N>>
 {
-    typedef N type;
+    using type = N;
 };
 
 void test_ch_2()
@@ -438,15 +438,15 @@ void test_ch_2()
     Assert(distance(2, 65536, sq<int>()) == 4);
 
     // Cyclic
-    algorithms_orbit< gen_orbit<int, unsigned> >(0, 0u, 5u);
+    algorithms_orbit< gen_orbit<int, unsigned>>(0, 0u, 5u);
 
     // Rho-shaped
-    algorithms_orbit< gen_orbit<int, unsigned> >(0, 2u, 11u);
-    algorithms_orbit< gen_orbit<int, unsigned> >(7, 97u, 17u);
-    algorithms_orbit< gen_orbit<int, unsigned> >(0, 4u, 2u);
+    algorithms_orbit< gen_orbit<int, unsigned>>(0, 2u, 11u);
+    algorithms_orbit< gen_orbit<int, unsigned>>(7, 97u, 17u);
+    algorithms_orbit< gen_orbit<int, unsigned>>(0, 4u, 2u);
 
     // Terminating
-    algorithms_orbit< gen_orbit<int, unsigned> >(0, 101u, 0u);
+    algorithms_orbit< gen_orbit<int, unsigned>>(0, 101u, 0u);
 
     Assert(convergent_point_guarded(1024, 64, 1, hf<int>()) == 64);
     Assert(convergent_point_guarded(1025, 65, 1, hf<int>()) == 32);
@@ -461,10 +461,10 @@ void test_ch_2()
 
 template<typename Op>
     __requires(BinaryOperation(Op))
-void concept_BinaryOperation(Op op, Domain(Op) x)
+void concept_BinaryOperation(Op op, Domain<Op> x)
 {
-    typedef Domain(Op) X;
-    typedef Codomain(Op) Y;
+    using X = Domain<Op>;
+    using Y = Codomain<Op>;
     // X == Y
     Y y;
     y = x;
@@ -585,8 +585,8 @@ void test_ch_3()
     algorithm_power(power<int, int (*)(int, int)>);
     algorithm_power_with_identity(power<int, int (*)(int, int)>);
 
-    typedef long long N;
-    typedef pair<N, N> Fib;
+    using N = long long;
+    using Fib = pair<N, N>;
 
     concept_Integer(N(7));
     concept_BinaryOperation(fibonacci_matrix_multiply<N>, Fib(N(1), N(0)));
@@ -605,9 +605,9 @@ void test_ch_3()
 
 template<typename R>
     __requires(Relation(R))
-void concept_Relation(R r, Domain(R) x)
+void concept_Relation(R r, Domain<R> x)
 {
-    typedef Domain(R) X;
+    using X = Domain<R>;
     X y;
     X z;
     if (r(x, x)) y = x;
@@ -616,7 +616,7 @@ void concept_Relation(R r, Domain(R) x)
 
 template<typename R>
     __requires(Relation(R))
-void property_transitive(R r, Domain(R) x, Domain(R) y, Domain(R) z)
+void property_transitive(R r, Domain<R> x, Domain<R> y, Domain<R> z)
 {
     concept_Relation(r, x);
     Assert(!r(x, y) || !r(y, z) || r(x, z));
@@ -624,9 +624,9 @@ void property_transitive(R r, Domain(R) x, Domain(R) y, Domain(R) z)
 
 template<typename R>
     __requires(Relation(R))
-void property_total_ordering(R r, const Domain(R)& x0,
-                                  const Domain(R)& x1,
-                                  const Domain(R)& x2)
+void property_total_ordering(R r, const Domain<R>& x0,
+                                  const Domain<R>& x1,
+                                  const Domain<R>& x2)
 {
     // Precondition: total_ordering(r) /\ r(x0, x1) /\ r(x1, x2)
 
@@ -640,9 +640,9 @@ void property_total_ordering(R r, const Domain(R)& x0,
 
 template<typename R>
     __requires(Relation(R))
-void property_reflexive_total_ordering(R r, const Domain(R)& x0,
-                                            const Domain(R)& x1,
-                                            const Domain(R)& x2)
+void property_reflexive_total_ordering(R r, const Domain<R>& x0,
+                                            const Domain<R>& x1,
+                                            const Domain<R>& x2)
 {
     // Precondition: total_ordering(r) /\ r(x0, x1) /\ r(x1, x2)
 
@@ -668,9 +668,9 @@ struct first
 
 template<typename T, typename U>
     __requires(Regular(T) && Regular(U))
-struct input_type< first<T, U>, 0 >
+struct input_type<first<T, U>, 0>
 {
-    typedef pair<T, U> type;
+    using type = pair<T, U>;
 };
 
 template <typename T0, typename T1>
@@ -685,9 +685,9 @@ struct less_first
 
 template <typename T0, typename T1>
     __requires(TotallyOrdered(T0))
-struct input_type< less_first<T0, T1>, 0 >
+struct input_type<less_first<T0, T1>, 0>
 {
-    typedef pair<T0, T1> type;
+    using type = pair<T0, T1>;
 };
 
 template <typename T0, typename T1>
@@ -702,9 +702,9 @@ struct less_second
 
 template <typename T0, typename T1>
     __requires(TotallyOrdered(T0))
-struct input_type< less_second<T0, T1>, 0 >
+struct input_type<less_second<T0, T1>, 0>
 {
-    typedef pair<T0, T1> type;
+    using type = pair<T0, T1>;
 };
 
 template<typename T0, typename T1>
@@ -721,9 +721,9 @@ struct eq_first
 
 template <typename T0, typename T1>
     __requires(Regular(T0))
-struct input_type< eq_first<T0, T1>, 0 >
+struct input_type<eq_first<T0, T1>, 0>
 {
-    typedef pair<T0, T1> type;
+    using type = pair<T0, T1>;
 };
 
 template<typename I, typename R>
@@ -754,14 +754,14 @@ bool next_permutation(I f, I l, R r)
 
 template<typename F, typename R>
     __requires(UnaryFunction(F) && Relation(R) &&
-        Codomain(F) == Domain(R))
+        Codomain<F> == Domain<R>)
 struct key_ordering
 {
     F f;
     R r;
     key_ordering(F f, R r) : f(f), r(r) { }
-    bool operator()(const Domain(F)& x,
-                    const Domain(F)& y)
+    bool operator()(const Domain<F>& x,
+                    const Domain<F>& y)
     {
         return r(f(x), f(y));
     }
@@ -770,16 +770,16 @@ struct key_ordering
 template<typename F, typename R>
     requires Arity(F) == 1
     __requires(Function(F) &&
-        Relation(R) && Codomain(F) == Domain(R))
-struct input_type< key_ordering<F, R>, 0 >
+        Relation(R) && Codomain<F> == Domain<R>)
+struct input_type<key_ordering<F, R>, 0>
 {
-    typedef Domain(F) type;
+    using type = Domain<F>;
 };
 
 void algorithm_select_1_4()
 {
     print("    select_1_4\n");
-    typedef pair<int, int> T;
+    using T = pair<int, int>;
     T t[] = {T(1, 1), T(2, 2), T(2, 3), T(3, 4)};
     pointer(T) l = t + sizeof(t) / sizeof(T);
     do {
@@ -787,7 +787,7 @@ void algorithm_select_1_4()
             print("      2nd of ("); print_range(t, l); print(") is ");
         }
         T r = select_1_4(t[0], t[1], t[2], t[3],
-                         key_ordering< first<int, int>, less<int> >(first<int, int>(), less<int>()));
+                         key_ordering<first<int, int>, less<int>>(first<int, int>(), less<int>()));
         pointer(T) f = find_if(t, l, eq_first<int, int>(2));
         Assert(f != l && source(f) == r);
         if (verbose) {
@@ -800,7 +800,7 @@ void algorithm_select_1_4()
 void algorithm_select_1_4_stability_indices()
 {
     print("    select_1_4 with stability indices\n");
-    typedef pair<int, int> T;
+    using T = pair<int, int>;
     T t[] = {T(1, 1), T(2, 2), T(2, 3), T(3, 4)};
     pointer(T) l = t + sizeof(t) / sizeof(T);
     do {
@@ -808,7 +808,7 @@ void algorithm_select_1_4_stability_indices()
             print("      2nd of ("); print_range(t, l); print(") is ");
         }
         T r = select_1_4<0,1,2,3>(t[0], t[1], t[2], t[3],
-                                  key_ordering< first<int, int>, less<int> >(first<int, int>(), less<int>()));
+                                  key_ordering<first<int, int>, less<int>>(first<int, int>(), less<int>()));
         pointer(T) f = find_if(t, l, eq_first<int, int>(2));
         Assert(f != l && source(f) == r);
         if (verbose) {
@@ -821,8 +821,8 @@ void algorithm_select_1_4_stability_indices()
 void algorithm_select_2_5_stability_indices()
 {
     print("    select_2_5 with stability indices\n");
-    typedef pair<char, int> P;
-    typedef less_first<char, int> R;
+    using P = pair<char, int>;
+    using R = less_first<char, int>;
     P p0('x', 0);
     P p1('x', 1);
     P p2('x', 2);
@@ -959,11 +959,11 @@ void algorithm_median_5()
     int i4 = 4;
     int i5 = 5;
     // ...
-    Assert(&select_2_5_ab_cd<0, 1, 2, 3, 4, less<int> >(
+    Assert(&select_2_5_ab_cd<0, 1, 2, 3, 4, less<int>>(
         i4, i5, i2, i3, i1, less<int>()) == &i3);
-    Assert(&select_2_5_ab<0, 1, 2, 3, 4, less<int> >(
+    Assert(&select_2_5_ab<0, 1, 2, 3, 4, less<int>>(
         i4, i5, i2, i3, i1, less<int>()) == &i3);
-    Assert(&select_2_5<0, 1, 2, 3, 4, less<int> >(
+    Assert(&select_2_5<0, 1, 2, 3, 4, less<int>>(
         i4, i5, i2, i3, i1, less<int>()) == &i3);
     //
     int p[5] = {1, 2, 3, 4, 5};
@@ -973,14 +973,14 @@ void algorithm_median_5()
             print(" "); print(p[2]); print(" "); print(p[3]);
             print(" "); print(p[4]); print(") is ");
         }
-        int m = select_2_5<0, 1, 2, 3, 4,less<int> >(
+        int m = select_2_5<0, 1, 2, 3, 4,less<int>>(
             p[0], p[1], p[2], p[3], p[4], less<int>());
         Assert(m == 3);
         if (verbose) { print(m); print_eol(); }
     } while (next_permutation(p, p + sizeof(p) / sizeof(int), less<int>()));
 }
 
-typedef pair<int, int> int_pair;
+using int_pair = pair<int, int>;
 
 void test_ch_4()
 {
@@ -988,11 +988,11 @@ void test_ch_4()
 
     // Test derived relations
     less<int> lt;
-    complement< less< int > > ge(lt);
-    converse< less< int > > gt(lt);
-    complement_of_converse< less< int > > le(lt);
-    symmetric_complement< less< int> > eq(lt);
-    complement< symmetric_complement< less< int> > > ne(eq);
+    complement<less<int>> ge(lt);
+    converse<less<int>> gt(lt);
+    complement_of_converse<less<int>> le(lt);
+    symmetric_complement<less<int>> eq(lt);
+    complement<symmetric_complement<less<int>>> ne(eq);
 
     property_total_ordering(lt, 0, 1, 2);
     property_reflexive_total_ordering(ge, 2, 1, 0);
@@ -1008,10 +1008,10 @@ void test_ch_4()
     Assert(ne(3, 4));
 
     // Test key_ordering
-    typedef first<int, double> F;
+    using F = first<int, double>;
     F fst;
-    typedef pair<int, double> PID;
-    key_ordering< F, less<int> > ko(fst, less<int>());
+    using PID = pair<int, double>;
+    key_ordering<F, less<int>> ko(fst, less<int>());
     Assert(ko(PID(1, 2.0), PID(2, 1.0)));
     Assert(!ko(PID(1, 2.0), PID(1, 1.0)));
     Assert(!ko(PID(1, 1.0), PID(1, 2.0)));
@@ -1039,7 +1039,7 @@ void test_ch_4()
 
     int_pair p1(1, 1);
     int_pair p2(1, 2);
-    typedef less_first<int, int> R;
+    using R = less_first<int, int>;
     Assert(select_0_2<1, 2, R>(p1, p2, R()) == p1);
     Assert(select_0_2<1, 2, R>(p2, p1, R()) == p2);
     Assert(select_1_2<1, 2, R>(p1, p2, R()) == p2);
@@ -1092,7 +1092,7 @@ void test_ch_4()
     }
 
     {
-        typedef pair<char, int> P;
+        using P = pair<char, int>;
         Assert(min<P>(P('a', 3), P('a', 4)) == P('a', 3));
         Assert(min<P>(P('a', 4), P('a', 3)) == P('a', 3));
         Assert(max<P>(P('a', 3), P('a', 4)) == P('a', 4));
@@ -1169,18 +1169,18 @@ void concept_CancellableMonoid(T& x, T& y, T& z)
 
 template<typename T>
     __requires(ArchimedeanMonoid(T))
-void concept_ArchimedeanMonoid(T& x, T& y, T& z, QuotientType(T) n)
+void concept_ArchimedeanMonoid(T& x, T& y, T& z, QuotientType<T> n)
 {
     // Precondition: x < y
     concept_CancellableMonoid(x, y, z);
-    typedef QuotientType(T) N;
+    using N = QuotientType<T>;
     concept_Integer<N>(n);
     // slow_remainder terminates for all positive arguments
 }
 
 template<typename T>
     __requires(ArchimedeanGroup(T))
-void concept_ArchimedeanGroup(T& x, T& y, T& z, QuotientType(T) n)
+void concept_ArchimedeanGroup(T& x, T& y, T& z, QuotientType<T> n)
 {
     // Precondition: x < y
     concept_ArchimedeanMonoid(x, y, z, n);
@@ -1193,9 +1193,9 @@ template<typename T>
     __requires(ArchimedeanMonoid(T)) // + numerals, successor
 void algorithms_slow_q_and_r()
 {
-    typedef long Z;
+    using Z = long;
     plus<T> plus_T;
-    typedef QuotientType(T) N;
+    using N = QuotientType<T>;
     T max(1000);
     T a(0);
     while (a < max) {
@@ -1214,9 +1214,9 @@ template<typename T>
     __requires(ArchimedeanMonoid(T)) // + numerals, successor
 void algorithms_q_and_r_nonnegative()
 {
-    typedef long Z;
+    using Z = long;
     plus<T> plus_T;
-    typedef QuotientType(T) N;
+    using N = QuotientType<T>;
     T max(1000);
     T a(0);
     while (a < max) {
@@ -1236,9 +1236,9 @@ template<typename T>
     __requires(ArchimedeanMonoid(T)) // + numerals, successor
 void algorithms_q_and_r_nonnegative_fibonacci()
 {
-    typedef long Z;
+    using Z = long;
     plus<T> plus_T;
-    typedef QuotientType(T) N;
+    using N = QuotientType<T>;
     T max(1000);
     T a(0);
     while (a < max) {
@@ -1260,9 +1260,9 @@ template<typename T>
     __requires(ArchimedeanMonoid(T)) // + numerals, successor
 void algorithms_q_and_r_nonnegative_iterative()
 {
-    typedef long Z;
+    using Z = long;
     plus<T> plus_T;
-    typedef QuotientType(T) N;
+    using N = QuotientType<T>;
     T max(1000);
     T a(0);
     while (a < max) {
@@ -1295,7 +1295,7 @@ template<typename T>
     __requires(ArchimedeanMonoid(T)) // + numerals, successor
 void algorithm_largest_doubling()
 {
-    typedef long Z;
+    using Z = long;
     T max(1000);
     T a(1);
     while (a < max) {
@@ -1336,7 +1336,7 @@ template<typename N>
     __requires(IntegralDomain(N))
 struct rational
 {
-    typedef rational T;
+    using T = rational;
     N p; // numerator
     N q; // denominator
     rational() { }
@@ -1349,9 +1349,9 @@ struct rational
 
 template<typename N>
     __requires(IntegralDomain(N))
-struct quotient_type< rational<N> >
+struct quotient_type<rational<N>>
 {
-    typedef N type;
+    using type = N;
 };
 
 template<typename N>
@@ -1443,7 +1443,7 @@ template<typename T>
     __requires(ArchimedeanGroup(T))
 struct ag_quotient_remainder
 {
-    pair<QuotientType(T), T> operator()(T a, T b)
+    pair<QuotientType<T>, T> operator()(T a, T b)
     {
         Assert(a >= T(0) && b > T(0));
         return quotient_remainder_nonnegative(a, b);
@@ -1452,17 +1452,17 @@ struct ag_quotient_remainder
 
 template<typename T>
     __requires(ArchimedeanGroup(T))
-struct input_type< ag_quotient_remainder<T>, 0 >
+struct input_type<ag_quotient_remainder<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
     __requires(ArchimedeanGroup(T)) // + numerals, successor
 void algorithms_signed_q_and_r()
 {
-    typedef long Z;
-    typedef QuotientType(T) N;
+    using Z = long;
+    using N = QuotientType<T>;
     T min(-10);
     T max(10);
     T a(min);
@@ -1482,7 +1482,7 @@ void algorithms_signed_q_and_r()
     }
 }
 
-typedef rational<int> Q;
+using Q = rational<int>;
 
 bool operator<(const Q& x, const Q& y)
 {
@@ -1492,7 +1492,7 @@ bool operator<(const Q& x, const Q& y)
 template<>
 struct quotient_type<double>
 {
-    typedef long type; // ***** what should this be ?????
+    using type = long; // ***** what should this be ?????
 };
 
 
@@ -1503,14 +1503,14 @@ struct quotient_type<double>
 //     ValueType : Polynomial -> CommutativeSemiring
 //     IndexType : Polynomial -> Integer
 //  /\ degree : T -> IndexType(T)
-//  /\ coefficient : T x IndexType(T) -> ValueType(T)
-//  /\ lc : T –> ValueType(T)
+//  /\ coefficient : T x IndexType(T) -> ValueType<T>
+//  /\ lc : T –> ValueType<T>
 //            a \mapsto coefficient(a, degree(a))
-//  /\ tc : T –> ValueType(T)
+//  /\ tc : T –> ValueType<T>
 //            a \mapsto coefficient(a, 0)
 //  /\ indeterminate : -> T
-//  /\ evaluate : T x ValueType(T) -> ValueType(T)
-//  /\ · : ValueType(T) x T -> T
+//  /\ evaluate : T x ValueType<T> -> ValueType<T>
+//  /\ · : ValueType<T> x T -> T
 //  /\ + : T x T -> T
 //  /\ · : T x T -> T
 //  /\ shift_left : T x Integer -> T
@@ -1522,7 +1522,7 @@ template<typename T>
     __requires(Ring(T))
 struct polynomial
 {
-    typedef int IndexType;
+    using IndexType = int;
     array<T> coeff;
     // Invariant: degree(f) = size(f.coeff) - 1 /\
     //            coefficient(f, i) = f.coeff[degree(f) - i]
@@ -1532,22 +1532,22 @@ struct polynomial
 
 template<typename T>
     __requires(Ring(T))
-struct value_type< polynomial<T> >
+struct value_type<polynomial<T>>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
     __requires(Ring(T))
 struct index_type;
 
-#define IndexType(T) typename index_type< T >::type
+#define IndexType(T) typename index_type<T>::type
 
 template<typename T>
     __requires(Ring(T))
-struct index_type< polynomial<T> >
+struct index_type<polynomial<T>>
 {
-    typedef typename polynomial<T>::IndexType type;
+    using type = typename polynomial<T>::IndexType;
 };
 
 template<typename T>
@@ -1577,7 +1577,7 @@ template<typename T>
     __requires(Ring(T))
 void shift_add_in_place(polynomial<T>& f, const T& x_0)
 {
-    insert(back< array<T> >(f.coeff), x_0);
+    insert(back<array<T>>(f.coeff), x_0);
     // Postcondition: f'(x) = x * f(x) + x_0
 }
 
@@ -1635,7 +1635,7 @@ template<typename T>
     __requires(Ring(T))
 polynomial<T> evaluate(const polynomial<T>& f, const T& x_0)
 {
-    typedef IndexType(polynomial<T>) I;
+    using I = IndexType(polynomial<T>);
     I n(degree(f));
     // Horner's scheme
     T r = coefficient(f, n);
@@ -1653,7 +1653,7 @@ polynomial<T> add(const polynomial<T>& f, const polynomial<T>& g,
                   IndexType(polynomial<T>) d, IndexType(polynomial<T>) n_g)
 {
     // Precondition: $0 < d = degree(f) - degree(g) \wedge n_g = degree(g)$
-    typedef IndexType(polynomial<T>) I;
+    using I = IndexType(polynomial<T>);
     polynomial<T> h(lc(f));
     I i(1);
     while (i != d) {
@@ -1674,7 +1674,7 @@ template<typename T>
     __requires(Ring(T))
 polynomial<T> operator+(const polynomial<T>& f, const polynomial<T>& g)
 {
-    typedef IndexType(polynomial<T>) I;
+    using I = IndexType(polynomial<T>);
     I n_f = degree(f);
     I n_g = degree(g);
     if (n_f > n_g) return add(f, g, n_f - n_g, n_g);
@@ -1697,10 +1697,10 @@ polynomial<T> operator+(const polynomial<T>& f, const polynomial<T>& g)
 
 template<typename T, typename F>
     __requires(Ring(T) && Transformation(F) &&
-        T == Domain(F))
+        T == Domain<F>)
 void transform_coefficients_in_place(polynomial<T>& f, F trans)
 {
-    typedef IndexType(polynomial<T>) I;
+    using I = IndexType(polynomial<T>);
     I i(0);
     I n = degree(f);
     while (i <= n) {
@@ -1731,7 +1731,7 @@ template<typename T>
 polynomial<T> product(const polynomial<T>& f, const polynomial<T>& g)
 {
     // Precondition: degree(f) <= degree(g)
-    typedef IndexType(polynomial<T>) I;
+    using I = IndexType(polynomial<T>);
     I n_f = degree(f);
     I n = n_f + degree(g);
     polynomial<T> h(lc(f) * lc(g));
@@ -1766,7 +1766,7 @@ polynomial<T> operator*(T x_0, const polynomial<T>& f)
 {
     polynomial<T> h(f);
     transform_coefficients_in_place(
-        h, multiplies_transformation< multiplies<T> >(x_0, multiplies<T>()));
+        h, multiplies_transformation<multiplies<T>>(x_0, multiplies<T>()));
     return h;
     // Postcondition: h(x) = x_0 * f(x)
 }
@@ -1783,7 +1783,7 @@ polynomial<T> shift_left(const polynomial<T>& f, IndexType(polynomial<T>) n)
 
 template<typename T>
     __requires(Ring(T))
-pair< polynomial<T>, polynomial<T> >
+pair<polynomial<T>, polynomial<T>>
 quotient_remainder(const polynomial<T>& f, const polynomial<T>&g) {
     // Precondition: unit(lc(g))
     T u = multiplicative_inverse(lc(g));
@@ -1795,7 +1795,7 @@ quotient_remainder(const polynomial<T>& f, const polynomial<T>&g) {
         q = q + q_i;
         r = r - q_i * g;
     }
-    return pair< polynomial<T>, polynomial<T> >(q, r);
+    return pair<polynomial<T>, polynomial<T>>(q, r);
     // Postcondition: f = q * g + r /\ degree(r) < degree(g)
 }
 
@@ -1826,7 +1826,7 @@ template<typename T>
     __requires(Ring(T))
 void print(const polynomial<T>& f)
 {
-    typedef IndexType(polynomial<T>) I;
+    using I = IndexType(polynomial<T>);
     print("polynomial(");
         I i = degree(f);
         T c = coefficient(f, i);
@@ -1852,11 +1852,11 @@ void test_ch_5()
     algorithm_abs<long long>(1l);
     algorithm_abs<double>(1.0);
     algorithm_abs<long double>(1.0l);
-    algorithm_abs< rational<int> >(rational<int>(1, 2));
+    algorithm_abs<rational<int>>(rational<int>(1, 2));
 
     // type_functions.h defines QuotientType for several built-in integral types
     {
-        typedef int T;
+        using T = int;
         T x(0);
         T y(1);
         T z(2);
@@ -1864,7 +1864,7 @@ void test_ch_5()
         concept_ArchimedeanGroup<T>(x, y, z, n);
     }
     {
-        typedef long int T;
+        using T = long int;
         T x(0);
         T y(1);
         T z(2);
@@ -1872,7 +1872,7 @@ void test_ch_5()
         concept_ArchimedeanGroup<T>(x, y, z, n);
     }
     {
-        typedef Q T;
+        using T = Q;
         T x(0);
         T y(1);
         T z(2);
@@ -1880,7 +1880,7 @@ void test_ch_5()
         concept_ArchimedeanGroup<T>(x, y, z, n);
     }
     {
-        typedef double T;
+        using T = double;
         T x(0.0);
         T y(1.0);
         T z(2.0);
@@ -1948,7 +1948,7 @@ void test_ch_5()
     Assert(gcd<unsigned>(1000u, 0u) == 1000u);
     Assert(gcd<unsigned>(0u, 990u) == 990u);
     {
-        typedef polynomial< rational<int> > Q_X;
+        using Q_X = polynomial<rational<int>>;
         Q_X a = shift_left(Q_X(1), 2) - Q_X(1); // x^2 - 1
         Q_X b = shift_left(Q_X(1), 1) + Q_X(1); // x   + 1
         if (verbose) {
@@ -1999,9 +1999,9 @@ struct square_of_i {
 
 template<typename T>
     __requires(Semiring(T))
-struct value_type< square_of_i<T> >
+struct value_type<square_of_i<T>>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename T>
@@ -2029,7 +2029,7 @@ template<typename Op>
     __requires(BinaryOperation(Op))
 struct accumulate
 {
-    typedef Domain(Op) T;
+    using T = Domain<Op>;
     Op op;
     T sum;
     accumulate() { }
@@ -2039,9 +2039,9 @@ struct accumulate
 
 template<typename Op>
     __requires(BinaryOperation)
-struct input_type< accumulate<Op>, 0 >
+struct input_type<accumulate<Op>, 0>
 {
-    typedef Domain(Op) type;
+    using type = Domain<Op>;
 };
 
 template<typename T>
@@ -2055,7 +2055,7 @@ template<typename T>
     __requires(Regular(T))
 struct input_type<identity<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 void test_ch_6()
@@ -2073,18 +2073,18 @@ void test_ch_6()
     }
 
     {
-        typedef int Z; // Integer(Z)
+        using Z = int; // Integer(Z)
         Z a[] = {0, 1, 2, 3, 4, 5};
         slist<Z> l(counted_range<Z*>(a, sizeof(a)/sizeof(Z)));
-        typedef iterator_type< slist<Z> >::type I;
-        typedef distance_type< I >::type N; // Integer(N)
+        using I = iterator_type<slist<Z>>::type;
+        using N = distance_type<I>::type; // Integer(N)
         slist_iterator<Z> f = begin(l) + N(3);
         Assert(source(f) == Z(3));
         Assert(f - begin(l) == N(3));
         Assert(begin(l) - begin(l) == N(0));
 
         Assert(for_each(begin(l), end(l),
-                        accumulate< plus<Z> >(plus<Z>(), Z(0))).sum == 15);
+                        accumulate<plus<Z>>(plus<Z>(), Z(0))).sum == 15);
 
         Assert(find(begin(l), end(l), Z(-1)) == end(l));
         Assert(find(begin(l), end(l), Z(5)) == begin(l) + N(5));
@@ -2096,7 +2096,7 @@ void test_ch_6()
 
         Assert(find_if(begin(l), end(l), negative<Z>) == end(l));
         Assert(find_if(begin(l), end(l),
-                       lower_bound_predicate< less<Z> >(3, less<Z>())) == begin(l) + N(3));
+                       lower_bound_predicate<less<Z>>(3, less<Z>())) == begin(l) + N(3));
 
         Assert(find_if_not(begin(lb), end(lb), positive<Z>) == end(lb));
         Assert(find_if_not(begin(l), end(l), positive<Z>) == begin(l));
@@ -2146,14 +2146,13 @@ void test_ch_6()
         Assert(reduce(begin(lc), end(lc)) == Z(15));
 
         {
-            pair<accumulate< plus<Z> >, iterator_type< slist<Z> >::type> p =
-                for_each_n(begin(l), size(l),
-                           accumulate< plus<Z> >(plus<Z>(), Z(0)));
+            pair<accumulate<plus<Z>>, iterator_type<slist<Z>>::type> p =
+                for_each_n(begin(l), size(l), accumulate<plus<Z>>(plus<Z>(), Z(0)));
             Assert(p.m0.sum == 15 && p.m1 == end(l));
         }
 
         {
-            pair<iterator_type< slist<Z> >::type, N> p =
+            pair<iterator_type<slist<Z>>::type, N> p =
                 find_n(begin(l), size(l), Z(-1));
             Assert(p.m0 == end(l) && p.m1 == 0);
             p = find_n(begin(l), size(l), Z(5));
@@ -2162,9 +2161,9 @@ void test_ch_6()
 
 
         Assert(find_if(
-            begin(l), end(l), lower_bound_predicate< less<Z> >(3, less<Z>())) != end(l));
+            begin(l), end(l), lower_bound_predicate<less<Z>>(3, less<Z>())) != end(l));
         Assert(find_if_unguarded(
-            begin(l), lower_bound_predicate< less<Z> >(3, less<Z>())) == begin(l) + N(3));
+            begin(l), lower_bound_predicate<less<Z>>(3, less<Z>())) == begin(l) + N(3));
 
         Assert(find_if_not(begin(l), end(l), positive<Z>) != end(l));
         Assert(find_if_not_unguarded(begin(l), positive<Z>) == begin(l));
@@ -2204,10 +2203,10 @@ void test_ch_6()
         Assert(!strictly_increasing_range(begin(lc), end(lc), less<Z>()));
 
         Assert(relation_preserving(
-            begin(l), end(l), complement_of_converse< less<Z> >(less<Z>())));
+            begin(l), end(l), complement_of_converse<less<Z>>(less<Z>())));
         {
             less<Z> lt;
-            complement_of_converse< less<Z> > leq(lt);
+            complement_of_converse<less<Z>> leq(lt);
             Assert(leq(Z(0), Z(0)));
             Assert(leq(Z(0), Z(1)));
             Assert(!leq(Z(1), Z(0)));
@@ -2230,9 +2229,9 @@ void test_ch_6()
         Assert(partitioned(begin(lb), end(lb), even<Z>));
         Assert(partitioned(begin(lb), end(lb), odd<Z>));
         Assert(partitioned(
-            begin(l), end(l), lower_bound_predicate< less<Z> >(3, less<Z>())));
+            begin(l), end(l), lower_bound_predicate<less<Z>>(3, less<Z>())));
         Assert(partitioned(
-            begin(l), end(l), upper_bound_predicate< less<Z> >(3, less<Z>())));
+            begin(l), end(l), upper_bound_predicate<less<Z>>(3, less<Z>())));
         {
             Z g[] = {0, 2, 4, 1, 3, 5};
             slist<Z> lg(counted_range<Z*>(g, sizeof(g)/sizeof(Z)));
@@ -2243,13 +2242,13 @@ void test_ch_6()
         Assert(partition_point_n(begin(lb), size(lb), zero<Z>) == end(lb));
         Assert(partition_point_n(begin(lb), size(lb), odd<Z>) == begin(lb));
         Assert(partition_point_n(
-            begin(l), size(l), lower_bound_predicate< less<Z> >(3, less<Z>())) ==
+            begin(l), size(l), lower_bound_predicate<less<Z>>(3, less<Z>())) ==
             begin(l) + N(3));
 
         Assert(partition_point(begin(lb), end(lb), zero<Z>) == end(lb));
         Assert(partition_point(begin(lb), end(lb), odd<Z>) == begin(lb));
         Assert(partition_point(
-            begin(l), end(l), lower_bound_predicate< less<Z> >(3, less<Z>())) ==
+            begin(l), end(l), lower_bound_predicate<less<Z>>(3, less<Z>())) ==
             begin(l) + N(3));
 
         { // bidirectional iterators
@@ -2338,7 +2337,7 @@ void algorithms_lexicographical()
     verify_conservation<int> v(slist_node_count);
 
     Z a[] = {0, 1, 2, 3, 4, 5};
-    typedef pointer(Z) I;
+    using I = pointer(Z);
     I f_a = a;
     I l_a = f_a + (sizeof(a) / sizeof(Z));
     slist<Z> la(counted_range<Z*>(a, sizeof(a) / sizeof(Z)));
@@ -2350,9 +2349,9 @@ void algorithms_lexicographical()
     Assert(!lexicographical_equal(f_b, l_b, begin(la), end(la)));
 
     Assert(size(la) == 6 &&
-        lexicographical_equal_k<6, I, IteratorType(slist<Z>)>()(f_a, begin(la)));
+        lexicographical_equal_k<6, I, IteratorType<slist<Z>>>()(f_a, begin(la)));
 
-    typedef DistanceType(I) NP;
+    using NP = DistanceType<I>;
     Assert( lexicographical_compare(f_a, f_a, f_a, l_a, less<Z>()));
     Assert( lexicographical_compare(f_a, f_a + NP(4), f_a, l_a, less<Z>()));
     Assert( lexicographical_compare(f_a, f_a + NP(5), f_a, l_a, less<Z>()));
@@ -2360,7 +2359,7 @@ void algorithms_lexicographical()
     Assert(!lexicographical_compare(f_a, l_a, f_a, f_a + NP(4), less<Z>()));
 
     less<Z> lt;
-    comparator_3_way< less<Z> > comp(lt);
+    comparator_3_way<less<Z>> comp(lt);
     Assert(lexicographical_compare_3way(f_a, l_a, f_b, l_b, comp) == -1);
     Assert(lexicographical_compare_3way(f_a, l_a, f_a, l_a, comp) ==  0);
     Assert(lexicographical_compare_3way(f_b, l_b, f_a, l_a, comp) ==  1);
@@ -2382,9 +2381,9 @@ void algorithms_bifurcate_coordinates()
 {
     print("    bifurcate coordinates\n");
 
-    typedef CoordinateType(T) C;
-    typedef WeightType(T) N;
-    typedef CoordinateType(T_X) C_X;
+    using C = CoordinateType<T>;
+    using N = WeightType<T>;
+    using C_X = CoordinateType<T_X>;
 
     T t0;
     T t4(4);
@@ -2447,9 +2446,9 @@ void algorithms_bifurcate_coordinates()
     }
     Assert(t == u);
     Assert(bifurcate_equivalent_nonempty(
-        begin(t), begin(u), equal<ValueType(T)>()));
+        begin(t), begin(u), equal<ValueType<T>>()));
     Assert(!bifurcate_equivalent_nonempty(
-        begin(t), begin(t2_345_678), equal<ValueType(T)>()));
+        begin(t), begin(t2_345_678), equal<ValueType<T>>()));
 
     // These exercise bifurcate_compare_nonempty
     Assert(!(t < u) && !(u < t));
@@ -2468,15 +2467,15 @@ void algorithms_bifurcate_coordinates()
 }
 
 template <typename T, typename T_X>
-    __requires(Tree(T) && Tree(T_X) && Integer(ValueType(T)) && Character(ValueType(T_X)))
+    __requires(Tree(T) && Tree(T_X) && Integer(ValueType<T>) && Character(ValueType<T_X>))
 void algorithms_bidirectional_bifurcate_coordinates()
 {
     print("    bidirectional bifurcate coordinates\n");
 
-    typedef ValueType(T) Z;
-    typedef CoordinateType(T) C;
-    typedef WeightType(T) N;
-    typedef CoordinateType(T_X) C_X;
+    using Z = ValueType<T>;
+    using C = CoordinateType<T>;
+    using N = WeightType<T>;
+    using C_X = CoordinateType<T_X>;
 
     T t0;
     T t4(4);
@@ -2588,7 +2587,7 @@ void algorithms_bidirectional_bifurcate_coordinates()
     Assert(!bifurcate_equivalent(begin(t), begin(t2_345_678), equal<Z>()));
 
     // Test equivalence for two coordinate types
-    typedef stree<Z> U;
+    using U = stree<Z>;
     U u0;
     U u4(4);
     U u3_45(3, u4, U(5));
@@ -2633,9 +2632,9 @@ void test_ch_7()
     verify_conservation<int> vs(stree_node_count);
     verify_conservation<int> v(tree_node_count);
 
-    algorithms_bifurcate_coordinates< stree<Z>, stree<X> >();
-    algorithms_bifurcate_coordinates< tree<Z>, tree<X> >();
-    algorithms_bidirectional_bifurcate_coordinates< tree<Z>, tree<X> >();
+    algorithms_bifurcate_coordinates<stree<Z>, stree<X>>();
+    algorithms_bifurcate_coordinates<tree<Z>, tree<X>>();
+    algorithms_bidirectional_bifurcate_coordinates<tree<Z>, tree<X>>();
 }
 
 
@@ -2646,12 +2645,12 @@ template<typename L>
     __requires(List(L))
 void algorithms_linked()
 {
-    typedef ValueType(L) Z;
-    typedef IteratorType(L) I;
-    typedef DistanceType(I) N;
+    using Z = ValueType<L>;
+    using I = IteratorType<L>;
+    using N = DistanceType<I>;
     const int n = 500;
     array<Z> a(n, n, Z(0));
-    typedef IteratorType(array<Z>) Ia;
+    using Ia = IteratorType<array<Z>>;
 
     Ia f = begin(a);
     iota(n, f);
@@ -2705,25 +2704,25 @@ void algorithms_linked_iterators()
     verify_conservation<int> vs(slist_node_count);
     verify_conservation<int> v(list_node_count);
 
-    algorithms_linked< slist<Z> >();
-    algorithms_linked< list<Z> >();
+    algorithms_linked<slist<Z>>();
+    algorithms_linked<list<Z>>();
 }
 
 template<typename C>
-    __requires(Readable(C) && AdditiveMonoid(ValueType(C)))
+    __requires(Readable(C) && AdditiveMonoid(ValueType<C>))
 struct sum_source
 {
-    typedef ValueType(C) T;
+    using T = ValueType<C>;
     T sum;
     sum_source() : sum(T(0)) { }
     void operator()(C c) { sum = sum + source(c); }
 };
 
 template<typename C>
-    __requires(Readable(C) && AdditiveMonoid(ValueType(C)))
-struct input_type< sum_source<C>, 0 >
+    __requires(Readable(C) && AdditiveMonoid(ValueType<C>))
+struct input_type<sum_source<C>, 0>
 {
-    typedef C type;
+    using type = C;
 };
 
 template<typename Z>
@@ -2734,9 +2733,9 @@ void algorithms_linked_bifurcate_coordinates()
 
     verify_conservation<int> v(stree_node_count);
 
-    typedef stree<Z> T;
-    typedef CoordinateType(T) C;
-    typedef WeightType(C) N;
+    using T = stree<Z>;
+    using C = CoordinateType<T>;
+    using N = WeightType<C>;
 
     // ***** to do: test tree_rotate on single-node tree
 
@@ -2793,9 +2792,9 @@ template <typename Z>
 void test_bifurcate_copy_Andrej()
 {
 
-    typedef stree<Z> T;
-    typedef CoordinateType(T) C;
-    typedef WeightType(C) N;
+    using T = stree<Z>;
+    using C = CoordinateType<T>;
+    using N = WeightType<C>;
 
     T tt4(4, T(5), T());
     T tt2(2, T(3), tt4);
@@ -2828,18 +2827,18 @@ void test_ch_8()
 
 template<typename S>
     __requires(DynamicSequence(S))
-void extend_sequence_n(S& s, DistanceType(IteratorType(S)) n, const ValueType(S)& x)
+void extend_sequence_n(S& s, DistanceType<IteratorType<S>> n, const ValueType<S>& x)
 {
-    typedef after<S> AP;
+    using AP = after<S>;
     while (count_down(n)) AP ap = insert(AP(s, begin(s)), x);
 }
 
 template<typename I>
     __requires(Readable(I) && Iterator(I) &&
-        Integer(ValueType(I)))
+        Integer(ValueType<I>))
 bool equal_iota_reverse(I f, I l)
 {
-    ValueType(I) n(l - f);
+    ValueType<I> n(l - f);
     while (f != l) {
         n = predecessor(n);
         if (source(f) != n) return false;
@@ -2859,22 +2858,22 @@ struct equal_to_x
 
 template<typename T>
     __requires(Regular(T))
-struct input_type< equal_to_x<T>, 0 >
+struct input_type<equal_to_x<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
 template<typename I0, typename I1>
     __requires(Mutable(I0) && ForwardIterator(I0) &&
         Mutable(I1) && ForwardIterator(I1) &&
-        ValueType(I0) == ValueType(I1) &&
-        Integer(ValueType(I0)))
+        ValueType<I0> == ValueType<I1> &&
+        Integer(ValueType<I0>))
 void algorithms_copy_forward(I0 f0, I0 l0, I1 f1, I1 l1)
 {
     // Precondition: $l0 - f0 <= l1 - f1$
-    typedef ValueType(I0) T;
-    typedef DistanceType(I0) N0;
-    typedef DistanceType(I1) N1;
+    using T = ValueType<I0>;
+    using N0 = DistanceType<I0>;
+    using N1 = DistanceType<I1>;
     N0 n = l0 - f0;
     N0 n_over_2(half_nonnegative(n));
     Assert(n <= N0(l1 - f1));
@@ -3000,7 +2999,7 @@ void algorithms_copy_forward(I0 f0, I0 l0, I1 f1, I1 l1)
     // test copy_select
     {
         iota(n, f0);
-        predicate_source< I0, bool (*)(const T&) > es(even<T>);
+        predicate_source<I0, bool (*)(const T&)> es(even<T>);
         I1 m1 = copy_select(f0, l0, f1, es);
         Assert(m1 - f1 == count_if(f0, l0, even<T>));
         Assert(all(f1, m1, even<T>));
@@ -3019,7 +3018,7 @@ void algorithms_copy_forward(I0 f0, I0 l0, I1 f1, I1 l1)
         iota(n, f0);
         I0 f_f = f0;
         I1 f_t = f1;
-        predicate_source< I0, bool (*)(const T&) > es(even<T>);
+        predicate_source<I0, bool (*)(const T&)> es(even<T>);
         N0 n_f = count_if(f0, l0, odd<T>);
         N1 n_t = count_if(f0, l0, even<T>);
         pair<I0, I1> pft = split_copy(f0, l0, f_f, f_t, es);
@@ -3034,7 +3033,7 @@ void algorithms_copy_forward(I0 f0, I0 l0, I1 f1, I1 l1)
         iota(n, f0);
         I0 f_f = f0;
         I1 f_t = f1;
-        predicate_source< I0, bool (*)(const T&) > es(even<T>);
+        predicate_source<I0, bool (*)(const T&)> es(even<T>);
         N0 n_f = count_if(f0, l0, odd<T>);
         N1 n_t = count_if(f0, l0, even<T>);
         pair<I0, I1> pft = split_copy_n(f0, n, f_f, f_t, es);
@@ -3076,8 +3075,8 @@ void algorithms_copy_forward(I0 f0, I0 l0, I1 f1, I1 l1)
     {
         I0 m0 = iota(n_over_2, f0);
         iota(n - n_over_2, m0);
-        less<ValueType(I0)> lt;
-        relation_source< I0, I0, less<ValueType(I0)> > lts(lt);
+        less<ValueType<I0>> lt;
+        relation_source<I0, I0, less<ValueType<I0>>> lts(lt);
         I1 m1 = combine_copy(f0, m0, m0, l0, f1, lts);
         Assert(m1 - f1 == n);
         Assert(increasing_range(f1, m1, less<T>()));
@@ -3087,8 +3086,8 @@ void algorithms_copy_forward(I0 f0, I0 l0, I1 f1, I1 l1)
     {
         I0 m0 = iota(n_over_2, f0);
         iota(n - n_over_2, m0);
-        less<ValueType(I0)> lt;
-        relation_source< I0, I0, less<ValueType(I0)> > lts(lt);
+        less<ValueType<I0>> lt;
+        relation_source<I0, I0, less<ValueType<I0>>> lts(lt);
         triple<I0, I0, I1> t = combine_copy_n(f0, m0 - f0, m0, l0 - m0, f1, lts);
         Assert(t.m0 == m0 && t.m1 == l0 && t.m2 - f1 == n);
         Assert(increasing_range(f1, t.m2, less<T>()));
@@ -3098,7 +3097,7 @@ void algorithms_copy_forward(I0 f0, I0 l0, I1 f1, I1 l1)
     {
         I0 m0 = iota(n_over_2, f0);
         iota(n - n_over_2, m0);
-        less<ValueType(I0)> lt;
+        less<ValueType<I0>> lt;
         I1 m1 = merge_copy(f0, m0, m0, l0, f1, lt);
         Assert(m1 - f1 == n);
         Assert(increasing_range(f1, m1, less<T>()));
@@ -3158,13 +3157,13 @@ void algorithms_copy_forward(I0 f0, I0 l0, I1 f1, I1 l1)
 template<typename I0, typename I1>
     __requires(Readable(I0) && BidirectionalIterator(I0) &&
         Writable(I1) && BidirectionalIterator(I1) &&
-        ValueType(I0) == ValueType(I1))
+        ValueType<I0> == ValueType<I1>)
 void algorithms_copy_backward(I0 f0, I0 l0, I1 f1, I1 l1)
 {
     // Precondition: $l0 - f0 <= l1 - f1$
-    typedef ValueType(I0) T;
-    typedef DistanceType(I0) N0;
-    typedef DistanceType(I1) N1;
+    using T = ValueType<I0>;
+    using N0 = DistanceType<I0>;
+    using N1 = DistanceType<I1>;
     N0 n = l0 - f0;
     N0 n_over_2(half_nonnegative(n));
     Assert(n <= N0(l1 - f1));
@@ -3206,8 +3205,8 @@ void algorithms_copy_backward(I0 f0, I0 l0, I1 f1, I1 l1)
     {
         I0 m0 = iota(n_over_2, f0);
         iota(n - n_over_2, m0);
-        less<ValueType(I0)> lt;
-        relation_source< I0, I0, less<ValueType(I0)> > lts(lt);
+        less<ValueType<I0>> lt;
+        relation_source<I0, I0, less<ValueType<I0>>> lts(lt);
         I1 m1 = combine_copy_backward(f0, m0, m0, l0, l1, lts);
         Assert(l1 - m1 == n);
         Assert(increasing_range(m1, l1, less<T>()));
@@ -3217,8 +3216,8 @@ void algorithms_copy_backward(I0 f0, I0 l0, I1 f1, I1 l1)
     {
         I0 m0 = iota(n_over_2, f0);
         iota(n - n_over_2, m0);
-        less<ValueType(I0)> lt;
-        relation_source< I0, I0, less<ValueType(I0)> > lts(lt);
+        less<ValueType<I0>> lt;
+        relation_source<I0, I0, less<ValueType<I0>>> lts(lt);
         triple<I0, I0, I1> t = combine_copy_backward_n(m0, m0 - f0, l0, l0 - m0, l1, lts);
         Assert(t.m0 == f0 && t.m1 == m0 && l1 - t.m2 == n);
         Assert(increasing_range(t.m2, l1, less<T>()));
@@ -3228,7 +3227,7 @@ void algorithms_copy_backward(I0 f0, I0 l0, I1 f1, I1 l1)
     {
         I0 m0 = iota(n_over_2, f0);
         iota(n - n_over_2, m0);
-        less<ValueType(I0)> lt;
+        less<ValueType<I0>> lt;
         I1 m1 = merge_copy_backward(f0, m0, m0, l0, l1, lt);
         Assert(l1 - m1 == n);
         Assert(increasing_range(m1, l1, less<T>()));
@@ -3238,7 +3237,7 @@ void algorithms_copy_backward(I0 f0, I0 l0, I1 f1, I1 l1)
     {
         I0 m0 = iota(n_over_2, f0);
         iota(n - n_over_2, m0);
-        less<ValueType(I0)> lt;
+        less<ValueType<I0>> lt;
         triple<I0, I0, I1> t = merge_copy_backward_n(m0, m0 - f0, l0, l0 - m0, l1, lt);
         Assert(t.m0 == f0 && t.m1 == m0 && l1 - t.m2 == n);
         Assert(increasing_range(t.m2, l1, less<T>()));
@@ -3248,13 +3247,13 @@ void algorithms_copy_backward(I0 f0, I0 l0, I1 f1, I1 l1)
 template<typename I0, typename I1>
     __requires(Mutable(I0) && BidirectionalIterator(I0) &&
         Mutable(I1) && BidirectionalIterator(I1) &&
-        ValueType(I0) == ValueType(I1))
+        ValueType<I0> == ValueType<I1>)
 void algorithms_copy_reverse(I0 f0, I0 l0, I1 f1, I1 l1)
 {
     // Precondition: $l0 - f0 == l1 - f1$
-    typedef ValueType(I0) T;
-    typedef DistanceType(I0) N0;
-    typedef DistanceType(I1) N1;
+    using T = ValueType<I0>;
+    using N0 = DistanceType<I0>;
+    using N1 = DistanceType<I1>;
     N0 n = l0 - f0;
     N0 n_over_2(half_nonnegative(n));
     Assert(n == N0(l1 - f1));
@@ -3429,10 +3428,10 @@ struct successor_cyclic
 
 void algorithm_cycle_to()
 {
-    typedef int N;
+    using N = int;
     const int k = 17;
     array_k<k, N> a;
-    typedef iterator_type< array_k<k, N> >::type I;
+    using I = iterator_type<array_k<k, N>>::type;
     I f = begin(a);
     I l = end(a);
     iota(k, f);
@@ -3447,7 +3446,7 @@ void type_temporary_buffer(N n)
 {
     {
         temporary_buffer<T> b(n);
-        DistanceType(pointer(T)) m = size(b);
+        DistanceType<pointer(T)> m = size(b);
         Assert(0 < m && m <= n);
         if (verbose) {
             print("size(temporary_buffer<T>(");
@@ -3463,11 +3462,11 @@ void type_temporary_buffer(N n)
 
 void algorithms_reverse()
 {
-    typedef int T;
+    using T = int;
     const int k = 50;
     array_k<k, int> ca;
-//    typedef DistanceType(IteratorType(array<T>)) N;
-    typedef ptrdiff_t N;
+//    usint N = DistanceType<IteratorType<array<T>>>;
+    using N = ptrdiff_t;
     array<int> da = array<int>(N(k), N(k), T(0));
     slist<int> l;
     extend_sequence_n(l, k, T(-1));
@@ -3511,7 +3510,7 @@ void algorithms_reverse()
     equal_iota_reverse(begin(l), end(l));
 }
 
-typedef pointer(int) int_pointer;
+using int_pointer = pointer(int);
 
 template<typename C>
     __requires(IteratorConcept(C))
@@ -3563,7 +3562,7 @@ void algorithm_rotate_forward_annotated(int_pointer a, int n)
 
 template<typename I, typename B>
     __requires(ForwardIterator(I) && ForwardIterator(B))
-void algorithms_rotate_Concept_with_buffer(I f, DistanceType(I) n, B f_b,
+void algorithms_rotate_Concept_with_buffer(I f, DistanceType<I> n, B f_b,
                                            I (*algo)(I, I, I, B))
 {
     Assert(n != 0);
@@ -3596,7 +3595,7 @@ void algorithm_rotate_partial(N n)
 {
     Assert(n > N(1));
     array<N> a(twice(n), twice(n), N(-1));
-    typedef IteratorType(array<N>) I;
+    using I = IteratorType<array<N>>;
     I f = begin(a) + n / N(4);
     I l = f + n;
     I m = f + 1;
@@ -3606,7 +3605,7 @@ void algorithm_rotate_partial(N n)
         Assert(source(predecessor(f)) == N(-1) && source(l) == N(-1));
         Assert(m_prime + (m - f) == l);
         Assert(equal_iota(f, m_prime, m - f));
-        DistanceType(I) k = (l - f) % (m - f);
+        DistanceType<I> k = (l - f) % (m - f);
         rotate(m_prime, l - k, l);
         Assert(equal_iota(m_prime, l));
         m = successor(m);
@@ -3630,7 +3629,7 @@ void algorithms_rotate()
     //   rotate_forward_nontrivial
     //   rotate_with_buffer_nontrivial
     //   rotate_with_buffer_backward_nontrivial
-    typedef pointer(int) I;
+    using I = pointer(int);
     int a[8];
     int b[8];
     for (int n = 6; n < 8; ++n) {
@@ -3655,10 +3654,10 @@ void test_ch_10()
 {
     print("  Chapter 10\n");
     algorithm_cycle_to();
-    type_temporary_buffer< char >(1000);
-    type_temporary_buffer< char >(100000);
-    type_temporary_buffer< array_k<10,char> >(1000);
-    type_temporary_buffer< array_k<10,char> >(100000);
+    type_temporary_buffer<char>(1000);
+    type_temporary_buffer<char>(100000);
+    type_temporary_buffer<array_k<10,char>>(1000);
+    type_temporary_buffer<array_k<10,char>>(100000);
     algorithms_reverse();
     algorithms_rotate();
 }
@@ -3670,7 +3669,7 @@ void test_ch_10()
 void algorithms_reduce_balanced()
 {
     // tests counter_machine, add_to_counter, transpose_operation, reduce_nonzeroes
-    typedef int Z; // Integer(Z)
+    using Z = int; // Integer(Z)
     Z a[] = {0, 1, 2, 3, 4, 5};
     slist<Z> l(counted_range<Z*>(a, sizeof(a)/sizeof(Z)));
 
@@ -3689,8 +3688,8 @@ typedef bool (*int_pred_type)(int);
 
 struct partition_algorithm_tester
 {
-    typedef pointer(int) I;
-    typedef distance_type<I>::type N;
+    using I = pointer(int);
+    using N = distance_type<I>::type;
     const pointer(char) name;
     array_k<6, int> a;
     I f;
@@ -3795,14 +3794,14 @@ void algorithms_partition()
     { // book
         // uses partition_stable_singleton, partition_stable_combine
         partition_algorithm_tester t("stable_n_nonempty");
-        typedef partition_algorithm_tester::I I;
+        using I = partition_algorithm_tester::I;
         pair<I, I> p = partition_stable_n_nonempty(t.f, t.l - t.f, t.p);
         Assert(p.m1 == t.l);
         t.validate(p.m0);
     }
     { // book
         partition_algorithm_tester t("stable_n");
-        typedef partition_algorithm_tester::I I;
+        using I = partition_algorithm_tester::I;
         pair<I, I> p;
         p = partition_stable_n(t.f, 0, t.p);
         Assert(p.m0 == t.f && p.m1 == t.f);
@@ -3812,7 +3811,7 @@ void algorithms_partition()
     }
     { // additional
         partition_algorithm_tester t("advanced stable_n");
-        typedef partition_algorithm_tester::I I;
+        using I = partition_algorithm_tester::I;
         pair<I, I> p;
         p = advanced_partition_stable_n(t.f, 0, t.p);
         Assert(p.m0 == t.f && p.m1 == t.f);
@@ -3847,7 +3846,7 @@ struct less_ignoring_case
 template<>
 struct input_type<less_ignoring_case, 0>
 {
-    typedef char type;
+    using type = char;
 };
 
 struct equal_ignoring_case
@@ -3861,7 +3860,7 @@ struct equal_ignoring_case
 template<>
 struct input_type<equal_ignoring_case, 0>
 {
-    typedef char type;
+    using type = char;
 };
 
 int size_unguarded(const pointer(char) a)
@@ -3880,8 +3879,8 @@ const pointer(char) end(const pointer(char) a) { return begin(a) + size_unguarde
 
 template<typename M, typename R, typename E>
     __requires(WrappedMerger(M) &&
-        Relation(R) && Domain(R) == char &&
-        Relation(E) && Domain(E) == char)
+        Relation(R) && Domain<R> == char &&
+        Relation(E) && Domain<E> == char)
 struct merge_case
 {
     M merger;
@@ -3932,7 +3931,7 @@ void merge_cases(M m)
 {
     merge_case<M, less_ignoring_case, equal_ignoring_case>
         c(m, less_ignoring_case(), equal_ignoring_case(), true);
-    merge_case<M, less_ignoring_case, equal<char> >
+    merge_case<M, less_ignoring_case, equal<char>>
         n(m, less_ignoring_case(), equal<char>(), false);
 
     n("", "", "");
@@ -3959,40 +3958,40 @@ void merge_cases(M m)
 }
 template<typename I, typename R>
     __requires(Mutable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType(I) == Domain(R))
-I wrapped_merge_n_with_buffer(I f0, DistanceType(I) n0,
-                              I f1, DistanceType(I) n1, R r)
+        Relation(R) && ValueType<I> == Domain<R>)
+I wrapped_merge_n_with_buffer(I f0, DistanceType<I> n0,
+                              I f1, DistanceType<I> n1, R r)
 {
-    array<ValueType(I)> b(n0, n0, ValueType(I)());
+    array<ValueType<I>> b(n0, n0, ValueType<I>());
     return merge_n_with_buffer(f0, n0, f1, n1, begin(b), r);
 }
 
 template<typename I, typename R>
     __requires(Mutable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType(I) == Domain(R))
-I wrapped_merge_n_adaptive(I f0, DistanceType(I) n0,
-                           I f1, DistanceType(I) n1, R r)
+        Relation(R) && ValueType<I> == Domain<R>)
+I wrapped_merge_n_adaptive(I f0, DistanceType<I> n0,
+                           I f1, DistanceType<I> n1, R r)
 {
-    const DistanceType(I) n = half_nonnegative(n0);
-    array<ValueType(I)>  b(n, n, ValueType(I)());
+    const DistanceType<I> n = half_nonnegative(n0);
+    array<ValueType<I>>  b(n, n, ValueType<I>());
     return merge_n_adaptive(f0, n0, f1, n1, begin(b), size(b), r);
 }
 
 void algorithms_merge()
 {
-    typedef pointer(char) I;
+    using I = pointer(char);
 
     merge_cases(wrapped_merge_n_with_buffer<I, less_ignoring_case>);
     merge_cases(wrapped_merge_n_adaptive<I, less_ignoring_case>);
 }
 
 template <typename S>
-    __requires(Sequence(S) && Integer(ValueType(S)))
+    __requires(Sequence(S) && Integer(ValueType<S>))
 void algorithms_sort(S& s)
 {
-    typedef IteratorType(S) I;
-    typedef DistanceType(I) N;
-    typedef ValueType(I) T;
+    using I = IteratorType<S>;
+    using N = DistanceType<I>;
+    using T = ValueType<I>;
 
     I f = begin(s);
     I l = end(s);
@@ -4001,7 +4000,7 @@ void algorithms_sort(S& s)
     I m;
 
     less<int> ls;
-    converse< less<int> > greater(ls);
+    converse<less<int>> greater(ls);
     {
         iota(n, f);
             int n_b = half_nonnegative(n);
@@ -4043,7 +4042,7 @@ void test_ch_11()
     algorithms_merge();
 
     const int n = 500;
-    typedef int T;
+    using T = int;
     array_k<n, T> ca;
     array<T> a(n, n, T());
     slist<T> sl(a);
@@ -4074,9 +4073,9 @@ void concept_Linearizable(W& w)
     concept_Regular(w);
 
     // Type functions
-    typedef IteratorType(W) I;
-    typedef ValueType(W) T;
-    typedef SizeType(W) N;
+    using I = IteratorType<W>;
+    using T = ValueType<W>;
+    using N = SizeType<W>;
 
     // Procedures and operators
     I f = begin(w);
@@ -4097,7 +4096,7 @@ void concept_Linearizable(W& w)
 
 template<typename S>
     __requires(Sequence(S))
-void concept_Sequence(S& s0, S& s1, ValueType(S)& x)
+void concept_Sequence(S& s0, S& s1, ValueType<S>& x)
 {
     // Precondition: s0 < s1 /\ !empty(s1) /\ x != s1[0]
     Assert(begin(s1) != end(s1));
@@ -4117,8 +4116,8 @@ void concept_Sequence(S& s0, S& s1, ValueType(S)& x)
 
 template<typename T0, typename T1>
     __requires(ConstantSizeSequence(T0) && ConstantSizeSequence(T1) &&
-        ValueType(T0) == ValueType(T1))
-void concept_ConstantSizeSequence(T0& a0, T1& a1, ValueType(T1)& x)
+        ValueType<T0> == ValueType<T1>)
+void concept_ConstantSizeSequence(T0& a0, T1& a1, ValueType<T1>& x)
 {
     // Precondition: a0 < a1 /\ x != a1[0]
 
@@ -4157,7 +4156,7 @@ void type_array_k()
         concept_ConstantSizeSequence(a0, a1, x);
     }
     {
-        typedef pair<int, char> P;
+        using P = pair<int, char>;
         array_k<3, P> a0;
         array_k<3, P> a1;
         a0[0] = P(0, 'a'); a1[0] = P(1, 'Z'); // establish a0 < a1
@@ -4165,11 +4164,11 @@ void type_array_k()
         concept_ConstantSizeSequence(a0, a1, x);
     }
     {
-        typedef array<int> DA;
+        using DA = array<int>;
         DA da0;
         DA da1(3, 3, 0);
         iota(3, begin(da1));
-        typedef array_k< 4, DA > A_DA;
+        using A_DA = array_k<4, DA>;
         A_DA a0;
         A_DA a1;
         if (verbose) {
@@ -4185,24 +4184,24 @@ void type_array_k()
         concept_ConstantSizeSequence(a0, a1, da0);
 
         {
-            typedef slist<int> SL;
+            using SL = slist<int>;
             SL sl0;
             SL sl1;
             extend_sequence_n(sl0, 3, 3);
             extend_sequence_n(sl1, 4, 4);
-            typedef array_k< 5, SL > A_SL;
+            using A_SL = array_k<5, SL>;
             A_SL a0;
             A_SL a1;
             a0[0] = sl0; a1[0] = sl1; // establish a0 < a1
             concept_ConstantSizeSequence(a0, a1, sl0);
         }
 
-        typedef slist< DA > SL;
+        using SL = slist<DA>;
         SL sl0;
         SL sl1;
         extend_sequence_n(sl0, 3, da0);
         extend_sequence_n(sl1, 4, da1);
-        typedef array_k< 3, SL > A_SL;
+        using A_SL = array_k<3, SL>;
         A_SL a_sl0;
         A_SL a_sl1;
         a_sl0[0] = sl0; a_sl1[0] = sl1; // establish a0 < a1
@@ -4214,28 +4213,28 @@ template<typename I>
     __requires(Readable(I) && Iterator(I))
 void type_bounded_range(I f, I l)
 {
-    typedef bounded_range<I> T;
+    using T = bounded_range<I>;
     T r(f, l);
     concept_Linearizable(r); // but not totally ordered
 }
 
 template<typename I>
     __requires(Readable(I) && Iterator(I))
-void type_counted_range(I f, DistanceType(I) n)
+void type_counted_range(I f, DistanceType<I> n)
 {
-    typedef counted_range<I> T;
+    using T = counted_range<I>;
     T r(f, n);
     concept_Linearizable(r); // but not totally ordered
 }
 
 template<typename P>
     __requires(Position(P))
-void concept_Position(P p, BaseType(P)& s, IteratorType(P) i)
+void concept_Position(P p, BaseType<P>& s, IteratorType<P> i)
 {
-    typedef BaseType(P) B;
-    typedef IteratorType(P) I;
-    typedef ValueType(P) T;
-    typedef SizeType(P) N;
+    using B = BaseType<P>;
+    using I = IteratorType<P>;
+    using T = ValueType<P>;
+    using N = SizeType<P>;
 
     // Not regular: lacks default constructor, copy constructor, assignment
     B& b = base(p);
@@ -4249,7 +4248,7 @@ void concept_Position(P p, BaseType(P)& s, IteratorType(P) i)
 
 template<typename S>
     __requires(DynamicSequence(S))
-void test_Position(S& s, IteratorType(S) i)
+void test_Position(S& s, IteratorType<S> i)
 {
     before<S> bef(s, i);
     concept_Position(bef, s, i);
@@ -4274,10 +4273,10 @@ void test_Position(S& s, IteratorType(S) i)
 
 template<typename S>
     __requires(DynamicSequence(S))
-void concept_DynamicSequence(S& s0, S& s1, ValueType(S)& x)
+void concept_DynamicSequence(S& s0, S& s1, ValueType<S>& x)
 {
     // Precondition: s0 < s1 /\ x != s1[0]
-    typedef IteratorType(S) I;
+    using I = IteratorType<S>;
 
     concept_Sequence(s0, s1, x);
 
@@ -4293,12 +4292,12 @@ void concept_DynamicSequence(S& s0, S& s1, ValueType(S)& x)
 }
 
 template<typename L>
-    __requires(List(L) && ValueType(L) == int)
+    __requires(List(L) && ValueType<L> == int)
 void type_list()
 {
-    const SizeType(L) k0 = 10;
+    const SizeType<L> k0 = 10;
     {
-        const SizeType(L) k1 = 15;
+        const SizeType<L> k1 = 15;
         L l0;
         L l1;
         extend_sequence_n(l0, k0, 0);
@@ -4344,7 +4343,7 @@ void type_list()
 
 template<typename S>
     __requires(SingleExtentArray(S))
-void type_single_extent_array(S& s0, S& s1, ValueType(S)& x)
+void type_single_extent_array(S& s0, S& s1, ValueType<S>& x)
 {
     // Precondition: s0 < s1 /\ x != s1[0]
     concept_DynamicSequence(s0, s1, x);
@@ -4358,7 +4357,7 @@ void type_single_extent_array(S& s0, S& s1, ValueType(S)& x)
     // full
     // reserve_basic/reserve
     array<int> a;
-    typedef SizeType(array<int>) N;
+    using N = SizeType<array<int>>;
     Assert(empty(a));
     Assert(full(a));
     Assert(capacity(a) == N(0));
@@ -4368,11 +4367,11 @@ void type_single_extent_array(S& s0, S& s1, ValueType(S)& x)
     Assert(!full(a));
     Assert(capacity(a) == N(1));
     Assert(end(a) + N(1) == end_of_storage(a));
-    insert(back< array<int> >(a), 1);
+    insert(back<array<int>>(a), 1);
     Assert(size(a) == N(1));
     Assert(end(a) == end_of_storage(a));
     Assert(full(a));
-    erase(back< array<int> >(a));
+    erase(back<array<int>>(a));
     Assert(empty(a));
     Assert(full(a));
 }
@@ -4386,7 +4385,7 @@ void type_array()
         type_single_extent_array(a0, a1, x);
     }
     {
-        typedef pair<int, char> P;
+        using P = pair<int, char>;
         array<P> a0(3, 3, P());
         array<P> a1(3, 3, P());
         a0[0] = P(0, 'a'); a1[0] = P(1, 'Z'); // establish a0 < a1
@@ -4394,12 +4393,12 @@ void type_array()
         type_single_extent_array(a0, a1, x);
     }
     {
-        typedef array_k<4, int> CA;
+        using CA = array_k<4, int>;
         CA ca0;
         CA ca1;
         fill_n(begin(ca0), size(ca0), 0);
         iota(4, begin(ca1)); // establish ca0 < ca1
-        typedef array<CA> A_CA;
+        using A_CA = array<CA>;
         A_CA a0(3, 3, ca0);
         A_CA a1(3, 3, ca1); // establish a0 < a1
         if (verbose) {
@@ -4414,23 +4413,23 @@ void type_array()
         type_single_extent_array(a0, a1, ca0);
 
         {
-            typedef slist<int> SL;
+            using SL = slist<int>;
             SL sl0;
             SL sl1;
             extend_sequence_n(sl0, 3, 3);
             extend_sequence_n(sl1, 4, 4);
-            typedef array< SL > A_SL;
+            using A_SL = array<SL>;
             A_SL a0(2, 2, sl0);
             A_SL a1(2, 2, sl1); // establish a0 < a1
             type_single_extent_array(a0, a1, sl0);
         }
 
-        typedef slist< CA > SL;
+        using SL = slist<CA>;
         SL sl0;
         SL sl1;
         extend_sequence_n(sl0, 3, ca0);
         extend_sequence_n(sl1, 4, ca1);
-        typedef array< SL > A_SL;
+        using A_SL = array<SL>;
         A_SL a_sl0(4, 4, sl0);
         A_SL a_sl1(4, 4, sl1); // establish a0 < a1
         type_single_extent_array(a_sl0, a_sl1, sl0);
@@ -4441,7 +4440,7 @@ template<typename T, typename T0>
     __requires(T == array<T0>)
 void algorithm_underlying_ref_array(T0& x)
 {
-    typedef UnderlyingType(T) U;
+    using U = UnderlyingType<T>;
     T t(2, 2, x);
     U u = underlying_ref(t);
     Assert(u.p == t.p);
@@ -4451,8 +4450,8 @@ template<typename T, typename T0>
     __requires(T == array<T0>)
 void type_underlying_iterator_array(T0& x)
 {
-    typedef IteratorType(T) I;
-    typedef underlying_iterator<I> UI;
+    using I = IteratorType<T>;
+    using UI = underlying_iterator<I>;
     T t(2, 2, x);
     I f(begin(t));
     I l(end(t));
@@ -4479,7 +4478,7 @@ template<typename T, typename T0>
     __requires(T == array<T0>)
 void algorithm_original_ref_array(T0& x)
 {
-    typedef UnderlyingType(T) U;
+    using U = UnderlyingType<T>;
     T t0(2, 2, x);
     T t1(3, 3, x);
     Assert(t0 < t1);
@@ -4489,7 +4488,7 @@ void algorithm_original_ref_array(T0& x)
 }
 
 template<typename T, typename P>
-    __requires(Predicate(P) && T == Domain(P))
+    __requires(Predicate(P) && T == Domain<P>)
 void algorithm_underlying_predicate(T& x0, T& x1, P p)
 {
     // Precondition: !p(x0) && p(x1)
@@ -4500,11 +4499,11 @@ void algorithm_underlying_predicate(T& x0, T& x1, P p)
 }
 
 template<typename T, typename R>
-    __requires(Relation(R) && T == Domain(R))
+    __requires(Relation(R) && T == Domain<R>)
 void algorithm_underlying_relation(T& x0, T& x1, R r)
 {
     // Precondition: r(x0, x1) && !r(x1, x0)
-    typedef UnderlyingType(T) U;
+    using U = UnderlyingType<T>;
     Assert(r(x0, x1) && !r(x1, x0));
 
     underlying_relation<R> ur(r);
@@ -4530,9 +4529,9 @@ void test_ch_12()
     print("    bounded_range\n");
     array_k<3, int> ca;
     type_bounded_range(begin(ca), end(ca));
-    array< array_k<3, int> > da(5, 5, ca);
+    array<array_k<3, int>> da(5, 5, ca);
     type_bounded_range(begin(da), end(da));
-    slist< array< array_k<3, int> > > sl;
+    slist<array<array_k<3, int>>> sl;
     extend_sequence_n(sl, 7, da);
     type_bounded_range(begin(sl), end(sl));
 
@@ -4554,10 +4553,10 @@ void test_ch_12()
     }
 
     print("    slist\n");
-    type_list< slist<int> >();
+    type_list<slist<int>>();
 
     print("    list\n");
-    type_list< list<int> >();
+    type_list<list<int>>();
 
     print("    ***** to do: stree, tree\n");
 
@@ -4585,19 +4584,19 @@ void test_ch_12()
     }
 
     int i(0);
-    algorithm_underlying_ref_array< array<int>, int >(i);
+    algorithm_underlying_ref_array<array<int>, int>(i);
     array<int> ai(1, 1, 1);
-    algorithm_underlying_ref_array< array< array<int> > , array<int> >(ai);
+    algorithm_underlying_ref_array<array<array<int>>, array<int>>(ai);
 
-    type_underlying_iterator_array< array< array<int> > >(ai);
+    type_underlying_iterator_array<array<array<int>>>(ai);
 
-    algorithm_original_ref_array< array< array<int> > , array<int> >(ai);
+    algorithm_original_ref_array<array<array<int>>, array<int>>(ai);
 
-    array< array<int> > a_empty;
-    array< array<int> > a_nonempty(1, 1, ai);
-    algorithm_underlying_predicate(a_empty, a_nonempty, nonempty< array< array<int> > >);
+    array<array<int>> a_empty;
+    array<array<int>> a_nonempty(1, 1, ai);
+    algorithm_underlying_predicate(a_empty, a_nonempty, nonempty<array<array<int>>>);
 
-    less< array< array<int> > > lt;
+    less<array<array<int>>> lt;
     algorithm_underlying_relation(a_empty, a_nonempty, lt);
 
     /*
