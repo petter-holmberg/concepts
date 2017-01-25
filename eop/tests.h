@@ -1502,8 +1502,8 @@ struct quotient_type<double>
 // PolynomialRing(T) equals by definition
 //     ValueType : Polynomial -> CommutativeSemiring
 //     IndexType : Polynomial -> Integer
-//  /\ degree : T -> IndexType(T)
-//  /\ coefficient : T x IndexType(T) -> ValueType<T>
+//  /\ degree : T -> IndexType<T>
+//  /\ coefficient : T x IndexType<T> -> ValueType<T>
 //  /\ lc : T –> ValueType<T>
 //            a \mapsto coefficient(a, degree(a))
 //  /\ tc : T –> ValueType<T>
@@ -1541,7 +1541,8 @@ template<typename T>
     __requires(Ring(T))
 struct index_type;
 
-#define IndexType(T) typename index_type<T>::type
+template<typename T>
+using IndexType = typename index_type<T>::type;
 
 template<typename T>
     __requires(Ring(T))
@@ -1552,14 +1553,14 @@ struct index_type<polynomial<T>>
 
 template<typename T>
     __requires(Ring(T))
-IndexType(polynomial<T>) operator==(const polynomial<T>& f, const polynomial<T>& g)
+IndexType<polynomial<T>> operator==(const polynomial<T>& f, const polynomial<T>& g)
 {
     return f.coeff == g.coeff;
 }
 
 template<typename T>
     __requires(Ring(T))
-IndexType(polynomial<T>) operator<(const polynomial<T>& f, const polynomial<T>& g)
+IndexType<polynomial<T>> operator<(const polynomial<T>& f, const polynomial<T>& g)
 {
     return degree(f) < degree(g) ||
           degree(g) == degree(f) && f.coeff < g.coeff;
@@ -1567,7 +1568,7 @@ IndexType(polynomial<T>) operator<(const polynomial<T>& f, const polynomial<T>& 
 
 template<typename T>
     __requires(Ring(T))
-IndexType(polynomial<T>) degree(const polynomial<T>& f)
+IndexType<polynomial<T>> degree(const polynomial<T>& f)
 {
     // ***** Should degree(polynomial<T>(0)) = -infinity ?????
     return predecessor(size(f.coeff));
@@ -1583,7 +1584,7 @@ void shift_add_in_place(polynomial<T>& f, const T& x_0)
 
 template<typename T>
     __requires(Ring(T))
-void shift_left_in_place(polynomial<T>& f, IndexType(polynomial<T>) n)
+void shift_left_in_place(polynomial<T>& f, IndexType<polynomial<T>> n)
 {
     // Precondition: n >= 0
     while (count_down(n)) shift_add_in_place(f, T(0));
@@ -1592,7 +1593,7 @@ void shift_left_in_place(polynomial<T>& f, IndexType(polynomial<T>) n)
 
 template<typename T>
     __requires(Ring(T))
-T coefficient(const polynomial<T>& f, IndexType(polynomial<T>) i)
+T coefficient(const polynomial<T>& f, IndexType<polynomial<T>> i)
 {
     // Precondition: $0 \leq i \leq \func{degree}(f)$
     return f.coeff[degree(f) - i]; // not a reference, to guarantee the invariant holds
@@ -1635,7 +1636,7 @@ template<typename T>
     __requires(Ring(T))
 polynomial<T> evaluate(const polynomial<T>& f, const T& x_0)
 {
-    using I = IndexType(polynomial<T>);
+    using I = IndexType<polynomial<T>>;
     I n(degree(f));
     // Horner's scheme
     T r = coefficient(f, n);
@@ -1650,10 +1651,10 @@ polynomial<T> evaluate(const polynomial<T>& f, const T& x_0)
 template<typename T>
     __requires(Ring(T))
 polynomial<T> add(const polynomial<T>& f, const polynomial<T>& g,
-                  IndexType(polynomial<T>) d, IndexType(polynomial<T>) n_g)
+                  IndexType<polynomial<T>> d, IndexType<polynomial<T>> n_g)
 {
     // Precondition: $0 < d = degree(f) - degree(g) \wedge n_g = degree(g)$
-    using I = IndexType(polynomial<T>);
+    using I = IndexType<polynomial<T>>;
     polynomial<T> h(lc(f));
     I i(1);
     while (i != d) {
@@ -1674,7 +1675,7 @@ template<typename T>
     __requires(Ring(T))
 polynomial<T> operator+(const polynomial<T>& f, const polynomial<T>& g)
 {
-    using I = IndexType(polynomial<T>);
+    using I = IndexType<polynomial<T>>;
     I n_f = degree(f);
     I n_g = degree(g);
     if (n_f > n_g) return add(f, g, n_f - n_g, n_g);
@@ -1700,7 +1701,7 @@ template<typename T, typename F>
         T == Domain<F>)
 void transform_coefficients_in_place(polynomial<T>& f, F trans)
 {
-    using I = IndexType(polynomial<T>);
+    using I = IndexType<polynomial<T>>;
     I i(0);
     I n = degree(f);
     while (i <= n) {
@@ -1731,7 +1732,7 @@ template<typename T>
 polynomial<T> product(const polynomial<T>& f, const polynomial<T>& g)
 {
     // Precondition: degree(f) <= degree(g)
-    using I = IndexType(polynomial<T>);
+    using I = IndexType<polynomial<T>>;
     I n_f = degree(f);
     I n = n_f + degree(g);
     polynomial<T> h(lc(f) * lc(g));
@@ -1773,7 +1774,7 @@ polynomial<T> operator*(T x_0, const polynomial<T>& f)
 
 template<typename T>
     __requires(Ring(T))
-polynomial<T> shift_left(const polynomial<T>& f, IndexType(polynomial<T>) n)
+polynomial<T> shift_left(const polynomial<T>& f, IndexType<polynomial<T>> n)
 {
     polynomial<T> h(f);
     shift_left_in_place(h, n);
@@ -1808,7 +1809,7 @@ polynomial<T> remainder(const polynomial<T>& f, const polynomial<T>&g) {
 
 template<typename T>
     __requires(Ring(T))
-void print_coefficient(T c, IndexType(polynomial<T>) i)
+void print_coefficient(T c, IndexType<polynomial<T>> i)
 {
     if (!one(c) || zero(i)) {
         print(c);
@@ -1816,7 +1817,7 @@ void print_coefficient(T c, IndexType(polynomial<T>) i)
     }
     if (positive(i)) {
         print("x");
-        if (i > IndexType(polynomial<T>)(1)) {
+        if (i > IndexType<polynomial<T>>(1)) {
             print("^"); print(i);
         }
     }
@@ -1826,7 +1827,7 @@ template<typename T>
     __requires(Ring(T))
 void print(const polynomial<T>& f)
 {
-    using I = IndexType(polynomial<T>);
+    using I = IndexType<polynomial<T>>;
     print("polynomial(");
         I i = degree(f);
         T c = coefficient(f, i);

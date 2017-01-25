@@ -37,12 +37,12 @@
 //
 
 
-int plus_0(int a, int b)
+auto plus_0(int a, int b) -> int
 {
     return a + b;
 }
 
-int plus_1(const int& a, const int& b)
+auto plus_1(const int& a, const int& b) -> int
 {
     return a + b;
 }
@@ -52,10 +52,13 @@ void plus_2(int* a, int* b, int* c)
     *c = *a + *b;
 }
 
-int square(int n) { return n * n; }
+auto square(int n) -> int
+{
+    return n * n;
+}
 
 template<BinaryOperation Op>
-Domain<Op> square(const Domain<Op>& x, Op op)
+auto square(const Domain<Op>& x, Op op) -> Domain<Op>
 {
     return op(x, x);
 }
@@ -88,7 +91,7 @@ struct pair
     T0 m0;
     T1 m1;
     pair() {} // default constructor
-    pair(const T0& m0, const T1& m1) : m0(m0), m1(m1) { }
+    pair(const T0& m0, const T1& m1) : m0(m0), m1(m1) {}
 };
 
 template<Regular T0, Regular T1>
@@ -119,8 +122,8 @@ struct triple
     T0 m0;
     T1 m1;
     T2 m2;
-    triple() { }
-    triple(T0 m0, T1 m1, T2 m2) : m0(m0), m1(m1), m2(m2) { }
+    triple() {}
+    triple(T0 m0, T1 m1, T2 m2) : m0(m0), m1(m1), m2(m2) {}
 };
 
 template<Regular T0, Regular T1, Regular T2>
@@ -139,8 +142,8 @@ template<Regular T0, Regular T1, Regular T2>
 bool operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
 {
     return x.m0 < y.m0 ||
-           (!(y.m0 < x.m0) && x.m1 < y.m1) ||
-           (!(y.m1 < x.m1) && x.m2 < y.m2);
+        (!(y.m0 < x.m0) && x.m1 < y.m1) ||
+        (!(y.m1 < x.m1) && x.m2 < y.m2);
 }
 
 
@@ -153,57 +156,59 @@ bool operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
 //    if (x < 0) return -x; else return x;
 //} // unary operation
 
-double euclidean_norm(double x, double y) {
+auto euclidean_norm(double x, double y) -> double
+{
     return sqrt(x * x + y * y);
 } // binary operation
 
-double euclidean_norm(double x, double y, double z) {
+auto euclidean_norm(double x, double y, double z) -> double
+{
     return sqrt(x * x + y * y + z * z);
 } // ternary operation
 
 template<Transformation F, Integer N>
-Domain<F> power_unary(Domain<F> x, N n, F f)
+auto power_unary(Domain<F> x, N n, F f) -> Domain<F>
 {
     // Precondition:
     // $n \geq 0 \wedge (\forall i \in N)\,0 < i \leq n \Rightarrow f^i(x)$ is defined
-    while (n != N(0)) {
-        n = n - N(1);
+    while (n != N{0}) {
+        n = n - N{1};
         x = f(x);
     }
     return x;
 }
 
 template<Transformation F>
-DistanceType<F> distance(Domain<F> x, Domain<F> y, F f)
+auto distance(Domain<F> x, Domain<F> y, F f) -> DistanceType<F>
 {
     // Precondition: $y$ is reachable from $x$ under $f$
     using N = DistanceType<F>;
-    N n(0);
+    N n{0};
     while (x != y) {
         x = f(x);
-        n = n + N(1);
+        n = n + N{1};
     }
     return n;
 }
 
 template<Transformation F, UnaryPredicate P>
     __requires(Domain<F> == Domain<P>)
-Domain<F> collision_point(const Domain<F>& x, F f, P p)
+auto collision_point(const Domain<F>& x, F f, P p) -> Domain<F>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     if (!p(x)) return x;
-    Domain<F> slow = x;        // $slow = f^0(x)$
-    Domain<F> fast = f(x);     // $fast = f^1(x)$
-                               // $n \gets 0$ (completed iterations)
-    while (fast != slow) {     // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
-        slow = f(slow);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 1}(x)$
+    auto slow = x;                 // $slow = f^0(x)$
+    auto fast = f(x);              // $fast = f^1(x)$
+                                   // $n \gets 0$ (completed iterations)
+    while (fast != slow) {         // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
+        slow = f(slow);            // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 1}(x)$
         if (!p(fast)) return fast;
-        fast = f(fast);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 2}(x)$
+        fast = f(fast);            // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 2}(x)$
         if (!p(fast)) return fast;
-        fast = f(fast);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 3}(x)$
-                               // $n \gets n + 1$
+        fast = f(fast);            // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 3}(x)$
+                                   // $n \gets n + 1$
     }
-    return fast;               // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
+    return fast;                   // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
     // Postcondition: return value is terminal point or collision point
 }
 
@@ -216,10 +221,10 @@ bool terminating(const Domain<F>& x, F f, P p)
 }
 
 template<Transformation F>
-Domain<F> collision_point_nonterminating_orbit(const Domain<F>& x, F f)
+auto collision_point_nonterminating_orbit(const Domain<F>& x, F f) -> Domain<F>
 {
-    Domain<F> slow = x;        // $slow = f^0(x)$
-    Domain<F> fast = f(x);     // $fast = f^1(x)$
+    auto slow = x;             // $slow = f^0(x)$
+    auto fast = f(x);          // $fast = f^1(x)$
                                // $n \gets 0$ (completed iterations)
     while (fast != slow) {     // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
         slow = f(slow);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 1}(x)$
@@ -247,7 +252,7 @@ bool circular(const Domain<F>& x, F f, P p)
 }
 
 template<Transformation F>
-Domain<F> convergent_point(Domain<F> x0, Domain<F> x1, F f)
+auto convergent_point(Domain<F> x0, Domain<F> x1, F f) -> Domain<F>
 {
     // Precondition: $(\exists n \in \func{DistanceType}(F))\,n \geq 0 \wedge f^n(x0) = f^n(x1)$
     while (x0 != x1) {
@@ -258,20 +263,19 @@ Domain<F> convergent_point(Domain<F> x0, Domain<F> x1, F f)
 }
 
 template<Transformation F>
-Domain<F> connection_point_nonterminating_orbit(const Domain<F>& x, F f)
+auto connection_point_nonterminating_orbit(const Domain<F>& x, F f) -> Domain<F>
 {
     return convergent_point(
-        x,
-        f(collision_point_nonterminating_orbit(x, f)),
-        f);
+        x, f(collision_point_nonterminating_orbit(x, f)), f
+    );
 }
 
 template<Transformation F, UnaryPredicate P>
     __requires(Domain<F> == Domain<P>)
-Domain<F> connection_point(const Domain<F>& x, F f, P p)
+auto connection_point(const Domain<F>& x, F f, P p) -> Domain<F>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
-    Domain<F> y = collision_point(x, f, p);
+    auto y = collision_point(x, f, p);
     if (!p(y)) return y;
     return convergent_point(x, f(y), f);
 }
@@ -279,36 +283,42 @@ Domain<F> connection_point(const Domain<F>& x, F f, P p)
 // Exercise 2.3:
 
 template<Transformation F>
-Domain<F> convergent_point_guarded(Domain<F> x0, Domain<F> x1, Domain<F> y, F f)
+auto convergent_point_guarded(
+    Domain<F> x0, Domain<F> x1, Domain<F> y, F f
+) -> Domain<F>
 {
     // Precondition: $\func{reachable}(x0, y, f) \wedge \func{reachable}(x1, y, f)$
     using N = DistanceType<F>;
     N d0 = distance(x0, y, f);
     N d1 = distance(x1, y, f);
-    if      (d0 < d1) x1 = power_unary(x1, d1 - d0, f);
-    else if (d1 < d0) x0 = power_unary(x0, d0 - d1, f);
+    if (d0 < d1)
+        x1 = power_unary(x1, d1 - d0, f);
+    else if (d1 < d0)
+        x0 = power_unary(x0, d0 - d1, f);
     return convergent_point(x0, x1, f);
 }
 
 template<Transformation F>
-triple<DistanceType<F>, DistanceType<F>, Domain<F>>
-orbit_structure_nonterminating_orbit(const Domain<F>& x, F f)
+auto orbit_structure_nonterminating_orbit(
+    const Domain<F>& x, F f
+) -> triple<DistanceType<F>, DistanceType<F>, Domain<F>>
 {
     using N = DistanceType<F>;
-    Domain<F> y = connection_point_nonterminating_orbit(x, f);
-    return triple<N, N, Domain<F>>(distance(x, y, f),
-                                   distance(f(y), y, f),
-                                   y);
+    auto y = connection_point_nonterminating_orbit(x, f);
+    return triple<N, N, Domain<F>>(
+        distance(x, y, f), distance(f(y), y, f), y
+    );
 }
 
 template<Transformation F, UnaryPredicate P>
     __requires(Domain<F> == Domain<P>)
-triple<DistanceType<F>, DistanceType<F>, Domain<F>>
-orbit_structure(const Domain<F>& x, F f, P p)
+auto orbit_structure(
+    const Domain<F>& x, F f, P p
+) -> triple<DistanceType<F>, DistanceType<F>, Domain<F>>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     using N = DistanceType<F>;
-    Domain<F> y = connection_point(x, f, p);
+    auto y = connection_point(x, f, p);
     N m = distance(x, y, f);
     N n(0);
     if (p(y)) n = distance(f(y), y, f);
@@ -324,143 +334,142 @@ orbit_structure(const Domain<F>& x, F f, P p)
 
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_left_associated(Domain<Op> a, I n, Op op)
+auto power_left_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $n > 0$
-    if (n == I(1)) return a;
-    return op(power_left_associated(a, n - I(1), op), a);
+    if (n == I{1}) return a;
+    return op(power_left_associated(a, n - I{1}, op), a);
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_right_associated(Domain<Op> a, I n, Op op)
+auto power_right_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $n > 0$
-    if (n == I(1)) return a;
-    return op(a, power_right_associated(a, n - I(1), op));
+    if (n == I{1}) return a;
+    return op(a, power_right_associated(a, n - I{1}, op));
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_0(Domain<Op> a, I n, Op op)
+auto power_0(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
-    if (n == I(1)) return a;
-    if (n % I(2) == I(0))
-        return power_0(op(a, a), n / I(2), op);
-    return op(power_0(op(a, a), n / I(2), op), a);
+    if (n == I{1}) return a;
+    if (n % I{2} == I{0}) return power_0(op(a, a), n / I{2}, op);
+    return op(power_0(op(a, a), n / I{2}, op), a);
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_1(Domain<Op> a, I n, Op op)
+auto power_1(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
-    if (n == I(1)) return a;
-    Domain<Op> r = power_1(op(a, a), n / I(2), op);
-    if (n % I(2) != I(0)) r = op(r, a);
+    if (n == I{1}) return a;
+    auto r = power_1(op(a, a), n / I{2}, op);
+    if (n % I{2} != I{0}) r = op(r, a);
     return r;
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op)
+auto power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n == I(0)) return r;
-    if (n % I(2) != I(0)) r = op(r, a);
-    return power_accumulate_0(r, op(a, a), n / I(2), op);
+    if (n == I{0}) return r;
+    if (n % I{2} != I{0}) r = op(r, a);
+    return power_accumulate_0(r, op(a, a), n / I{2}, op);
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op)
+auto power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n == I(0)) return r;
-    if (n == I(1)) return op(r, a);
-    if (n % I(2) != I(0)) r = op(r, a);
-    return power_accumulate_1(r, op(a, a), n / I(2), op);
+    if (n == I{0}) return r;
+    if (n == I{1}) return op(r, a);
+    if (n % I{2} != I{0}) r = op(r, a);
+    return power_accumulate_1(r, op(a, a), n / I{2}, op);
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op)
+auto power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n % I(2) != I(0)) {
+    if (n % I{2} != I{0}) {
         r = op(r, a);
-        if (n == I(1)) return r;
-    } else if (n == I(0)) return r;
-    return power_accumulate_2(r, op(a, a), n / I(2), op);
+        if (n == I{1}) return r;
+    } else if (n == I{0}) return r;
+    return power_accumulate_2(r, op(a, a), n / I{2}, op);
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op)
+auto power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n % I(2) != I(0)) {
+    if (n % I{2} != I{0}) {
         r = op(r, a);
-        if (n == I(1)) return r;
-    } else if (n == I(0)) return r;
+        if (n == I{1}) return r;
+    } else if (n == I{0}) return r;
     a = op(a, a);
-    n = n / I(2);
+    n = n / I{2};
     return power_accumulate_3(r, a, n, op);
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op)
+auto power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     while (true) {
-        if (n % I(2) != I(0)) {
+        if (n % I{2} != I{0}) {
             r = op(r, a);
-            if (n == I(1)) return r;
-        } else if (n == I(0)) return r;
+            if (n == I{1}) return r;
+        } else if (n == I{0}) return r;
         a = op(a, a);
-        n = n / I(2);
+        n = n / I{2};
     }
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op)
+auto power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     while (true) {
-        if (n % I(2) != I(0)) {
+        if (n % I{2} != I{0}) {
             r = op(r, a);
-            if (n == I(1)) return r;
+            if (n == I{1}) return r;
         }
         a = op(a, a);
-        n = n / I(2);
+        n = n / I{2};
     }
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_accumulate_5(Domain<Op> r, Domain<Op> a, I n, Op op)
+auto power_accumulate_5(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n == I(0)) return r;
+    if (n == I{0}) return r;
     return power_accumulate_positive_0(r, a, n, op);
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_2(Domain<Op> a, I n, Op op)
+auto power_2(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
-    return power_accumulate_5(a, a, n - I(1), op);
+    return power_accumulate_5(a, a, n - I{1}, op);
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_3(Domain<Op> a, I n, Op op)
+auto power_3(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
-    while (n % I(2) == I(0)) {
+    while (n % I{2} == I{0}) {
         a = op(a, a);
-        n = n / I(2);
+        n = n / I{2};
     }
-    n = n / I(2);
-    if (n == I(0)) return a;
+    n = n / I{2};
+    if (n == I{0}) return a;
     return power_accumulate_positive_0(a, op(a, a), n, op);
 }
 
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op)
+auto power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
     while (true) {
@@ -474,7 +483,7 @@ Domain<Op> power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op)
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op)
+auto power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
     if (zero(n)) return r;
@@ -482,7 +491,7 @@ Domain<Op> power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op)
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power(Domain<Op> a, I n, Op op)
+auto power(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
     while (even(n)) {
@@ -495,7 +504,7 @@ Domain<Op> power(Domain<Op> a, I n, Op op)
 }
 
 template<Integer I, BinaryOperation Op>
-Domain<Op> power(Domain<Op> a, I n, Op op, Domain<Op> id)
+auto power(Domain<Op> a, I n, Op op, Domain<Op> id) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
     if (zero(n)) return id;
@@ -503,24 +512,17 @@ Domain<Op> power(Domain<Op> a, I n, Op op, Domain<Op> id)
 }
 
 template<Integer I>
-pair<I, I> fibonacci_matrix_multiply(const pair<I, I>& x, const pair<I, I>& y)
+auto fibonacci_matrix_multiply(const pair<I, I>& x, const pair<I, I>& y) -> pair<I, I>
 {
-    return pair<I, I>(
-        x.m0 * (y.m1 + y.m0) + x.m1 * y.m0,
-        x.m0 * y.m0 + x.m1 * y.m1);
+    return {x.m0 * (y.m1 + y.m0) + x.m1 * y.m0, x.m0 * y.m0 + x.m1 * y.m1};
 }
 
 template<Integer I>
-I fibonacci(I n)
+auto fibonacci(I n) -> I
 {
     // Precondition: $n \geq 0$
-    if (n == I(0)) return I(0);
-    if (n == I(1)) return I(1);
-    pair<I, I> p = power(
-        pair<I, I>(I(1), I(0)),
-        n - 1,
-        fibonacci_matrix_multiply<I>);
-    return p.m0 + p.m1;
+    if (n == I{0}) return I{0};
+    return power({I(1), I(0)}, n, fibonacci_matrix_multiply<I>).m0;
 }
 
 
@@ -538,9 +540,8 @@ template<Relation R>
 struct complement
 {
     R r;
-    complement(R r) : r(r) { }
-    bool operator()(const Domain<R>& x, const Domain<R>& y)
-    {
+    complement(R r) : r(r) {}
+    bool operator()(const Domain<R>& x, const Domain<R>& y) {
         return !r(x, y);
     }
 };
@@ -555,7 +556,7 @@ template<Relation R>
 struct converse
 {
     R r;
-    converse(R r) : r(r) { }
+    converse(R r) : r(r) {}
     bool operator()(const Domain<R>& x, const Domain<R>& y)
     {
         return r(y, x);
@@ -573,7 +574,7 @@ struct complement_of_converse
 {
     using T = Domain<R>;
     R r;
-    complement_of_converse(const R& r) : r(r) { }
+    complement_of_converse(const R& r) : r(r) {}
     bool operator()(const T& a, const T& b)
     {
         return !r(b, a);
@@ -604,7 +605,7 @@ struct input_type<symmetric_complement<R>, 0>
 };
 
 template<Relation R>
-const Domain<R>& select_0_2(const Domain<R>& a, const Domain<R>& b, R r)
+auto select_0_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     // Precondition: $\func{weak\_ordering}(r)$
     if (r(b, a)) return b;
@@ -612,7 +613,7 @@ const Domain<R>& select_0_2(const Domain<R>& a, const Domain<R>& b, R r)
 }
 
 template<Relation R>
-const Domain<R>& select_1_2(const Domain<R>& a, const Domain<R>& b, R r)
+auto select_1_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     // Precondition: $\func{weak\_ordering}(r)$
     if (r(b, a)) return a;
@@ -620,67 +621,84 @@ const Domain<R>& select_1_2(const Domain<R>& a, const Domain<R>& b, R r)
 }
 
 template<Relation R>
-const Domain<R>& select_0_3(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c, R r)
+auto select_0_3(
+    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
+) -> const Domain<R>&
 {
     return select_0_2(select_0_2(a, b, r), c, r);
 }
 
 template<Relation R>
-const Domain<R>& select_2_3(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c, R r)
+auto select_2_3(
+    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
+) -> const Domain<R>&
 {
     return select_1_2(select_1_2(a, b, r), c, r);
 }
 
 template<Relation R>
-const Domain<R>& select_1_3_ab(const Domain<R>& a,
-                               const Domain<R>& b,
-                               const Domain<R>& c, R r)
+auto select_1_3_ab(
+    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
+) -> const Domain<R>&
 {
     if (!r(c, b)) return b;     // $a$, $b$, $c$ are sorted
     return select_1_2(a, c, r); // $b$ is not the median
 }
 
 template<Relation R>
-const Domain<R>& select_1_3(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c, R r)
+auto select_1_3(
+    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
+) -> const Domain<R>&
 {
-    if (r(b, a)) return select_1_3_ab(b, a, c, r);
-    return              select_1_3_ab(a, b, c, r);
+    if (r(b, a)) return
+        select_1_3_ab(b, a, c, r);
+    return
+        select_1_3_ab(a, b, c, r);
 }
 
 template<Relation R>
-const Domain<R>& select_1_4_ab_cd(const Domain<R>& a,
-                                  const Domain<R>& b,
-                                  const Domain<R>& c,
-                                  const Domain<R>& d, R r)
+auto select_1_4_ab_cd(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
 {
-    if (r(c, a)) return select_0_2(a, d, r);
-    return              select_0_2(b, c, r);
+    if (r(c, a)) return
+        select_0_2(a, d, r);
+    return
+        select_0_2(b, c, r);
 }
 
 template<Relation R>
-const Domain<R>& select_1_4_ab(const Domain<R>& a,
-                               const Domain<R>& b,
-                               const Domain<R>& c,
-                               const Domain<R>& d, R r)
+auto select_1_4_ab(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
 {
-    if (r(d, c)) return select_1_4_ab_cd(a, b, d, c, r);
-    return              select_1_4_ab_cd(a, b, c, d, r);
+    if (r(d, c)) return
+        select_1_4_ab_cd(a, b, d, c, r);
+    return
+        select_1_4_ab_cd(a, b, c, d, r);
 }
 
 template<Relation R>
-const Domain<R>& select_1_4(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c,
-                            const Domain<R>& d, R r)
+auto select_1_4(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
 {
-    if (r(b, a)) return select_1_4_ab(b, a, c, d, r);
-    return              select_1_4_ab(a, b, c, d, r);
+    if (r(b, a)) return
+        select_1_4_ab(b, a, c, d, r);
+    return
+        select_1_4_ab(a, b, c, d, r);
 }
 
 // Exercise 4.4: select_2_4
@@ -710,7 +728,7 @@ struct compare_strict_or_reflexive<false, R> // reflexive
 };
 
 template<int ia, int ib, Relation R>
-const Domain<R>& select_0_2(const Domain<R>& a, const Domain<R>& b, R r)
+auto select_0_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return b;
@@ -718,7 +736,7 @@ const Domain<R>& select_0_2(const Domain<R>& a, const Domain<R>& b, R r)
 }
 
 template<int ia, int ib, Relation R>
-const Domain<R>& select_1_2(const Domain<R>& a, const Domain<R>& b, R r)
+auto select_1_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return a;
@@ -726,10 +744,13 @@ const Domain<R>& select_1_2(const Domain<R>& a, const Domain<R>& b, R r)
 }
 
 template<int ia, int ib, int ic, int id, Relation R>
-const Domain<R>& select_1_4_ab_cd(const Domain<R>& a,
-                                  const Domain<R>& b,
-                                  const Domain<R>& c,
-                                  const Domain<R>& d, R r)
+auto select_1_4_ab_cd(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ic), R> cmp;
     if (cmp(c, a, r)) return
@@ -739,10 +760,13 @@ const Domain<R>& select_1_4_ab_cd(const Domain<R>& a,
 }
 
 template<int ia, int ib, int ic, int id, Relation R>
-const Domain<R>& select_1_4_ab(const Domain<R>& a,
-                               const Domain<R>& b,
-                               const Domain<R>& c,
-                               const Domain<R>& d, R r)
+auto select_1_4_ab(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ic < id), R> cmp;
     if (cmp(d, c, r)) return
@@ -752,10 +776,13 @@ const Domain<R>& select_1_4_ab(const Domain<R>& a,
 }
 
 template<int ia, int ib, int ic, int id, Relation R>
-const Domain<R>& select_1_4(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c,
-                            const Domain<R>& d, R r)
+auto select_1_4(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return
@@ -765,11 +792,14 @@ const Domain<R>& select_1_4(const Domain<R>& a,
 }
 
 template<int ia, int ib, int ic, int id, int ie, Relation R>
-const Domain<R>& select_2_5_ab_cd(const Domain<R>& a,
-                                  const Domain<R>& b,
-                                  const Domain<R>& c,
-                                  const Domain<R>& d,
-                                  const Domain<R>& e, R r)
+auto select_2_5_ab_cd(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    const Domain<R>& e,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ic), R> cmp;
     if (cmp(c, a, r)) return
@@ -779,11 +809,14 @@ const Domain<R>& select_2_5_ab_cd(const Domain<R>& a,
 }
 
 template<int ia, int ib, int ic, int id, int ie, Relation R>
-const Domain<R>& select_2_5_ab(const Domain<R>& a,
-                               const Domain<R>& b,
-                               const Domain<R>& c,
-                               const Domain<R>& d,
-                               const Domain<R>& e, R r)
+auto select_2_5_ab(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    const Domain<R>& e,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ic < id), R> cmp;
     if (cmp(d, c, r)) return
@@ -793,11 +826,14 @@ const Domain<R>& select_2_5_ab(const Domain<R>& a,
 }
 
 template<int ia, int ib, int ic, int id, int ie, Relation R>
-const Domain<R>& select_2_5(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c,
-                            const Domain<R>& d,
-                            const Domain<R>& e, R r)
+auto select_2_5(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    const Domain<R>& e,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return
@@ -811,11 +847,14 @@ const Domain<R>& select_2_5(const Domain<R>& a,
 
 
 template<Relation R>
-const Domain<R>& median_5(const Domain<R>& a,
-                          const Domain<R>& b,
-                          const Domain<R>& c,
-                          const Domain<R>& d,
-                          const Domain<R>& e, R r)
+auto median_5(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    const Domain<R>& e,
+    R r
+) -> const Domain<R>&
 {
     return select_2_5<0,1,2,3,4>(a, b, c, d, e, r);
 }
@@ -938,7 +977,7 @@ template<typename Op>
    __requires(SemigroupOperation(Op))
 struct input_type<multiplies_transformation<Op>, 0>
 {
-    typedef Domain<Op> type;
+    using type = Domain<Op>;
 };
 
 template<AdditiveGroup T>
@@ -1167,7 +1206,7 @@ template<HalvableMonoid T>
 pair<QuotientType<T>, T> quotient_remainder_nonnegative_iterative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
-    typedef QuotientType<T> N;
+    using N = QuotientType<T>;
     if (a < b) return pair<N, T>(N(0), a);
     T c = largest_doubling(a, b);
     a = a - c;
@@ -1552,7 +1591,7 @@ template<typename I>
 ValueType<I> reduce(I f, I l)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
-    typedef ValueType<I> T;
+    using T = ValueType<I>;
     return reduce(f, l, plus<T>(), T(0));
 }
 
@@ -4335,7 +4374,7 @@ bool empty(const array_k<k, T>&) // unused parameter name dropped to avoid warni
 //     __requires(Linearizable(W))
 // struct value_type
 // {
-//     typedef ValueType<IteratorType<W>> type;
+//     using type = ValueType<IteratorType<W>>;
 // };
 
 // Instead, each type W that models Linearizable must provide
