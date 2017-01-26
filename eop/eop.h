@@ -37,12 +37,12 @@
 //
 
 
-auto plus_0(int a, int b) -> int
+auto plus_0(int a, int b)
 {
     return a + b;
 }
 
-auto plus_1(const int& a, const int& b) -> int
+auto plus_1(const int& a, const int& b)
 {
     return a + b;
 }
@@ -52,13 +52,13 @@ void plus_2(int* a, int* b, int* c)
     *c = *a + *b;
 }
 
-auto square(int n) -> int
+auto square(int n)
 {
     return n * n;
 }
 
 template<BinaryOperation Op>
-auto square(const Domain<Op>& x, Op op) -> Domain<Op>
+auto square(const Domain<Op>& x, Op op)
 {
     return op(x, x);
 }
@@ -141,7 +141,8 @@ bool operator==(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
 template<Regular T0, Regular T1, Regular T2>
 bool operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
 {
-    return x.m0 < y.m0 ||
+    return
+        x.m0 < y.m0 ||
         (!(y.m0 < x.m0) && x.m1 < y.m1) ||
         (!(y.m1 < x.m1) && x.m2 < y.m2);
 }
@@ -156,18 +157,18 @@ bool operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
 //    if (x < 0) return -x; else return x;
 //} // unary operation
 
-auto euclidean_norm(double x, double y) -> double
+auto euclidean_norm(double x, double y)
 {
     return sqrt(x * x + y * y);
 } // binary operation
 
-auto euclidean_norm(double x, double y, double z) -> double
+auto euclidean_norm(double x, double y, double z)
 {
     return sqrt(x * x + y * y + z * z);
 } // ternary operation
 
 template<Transformation F, Integer N>
-auto power_unary(Domain<F> x, N n, F f) -> Domain<F>
+auto power_unary(Domain<F> x, N n, F f)
 {
     // Precondition:
     // $n \geq 0 \wedge (\forall i \in N)\,0 < i \leq n \Rightarrow f^i(x)$ is defined
@@ -179,7 +180,7 @@ auto power_unary(Domain<F> x, N n, F f) -> Domain<F>
 }
 
 template<Transformation F>
-auto distance(Domain<F> x, Domain<F> y, F f) -> DistanceType<F>
+auto distance(Domain<F> x, Domain<F> y, F f)
 {
     // Precondition: $y$ is reachable from $x$ under $f$
     using N = DistanceType<F>;
@@ -193,12 +194,12 @@ auto distance(Domain<F> x, Domain<F> y, F f) -> DistanceType<F>
 
 template<Transformation F, UnaryPredicate P>
     __requires(Domain<F> == Domain<P>)
-auto collision_point(const Domain<F>& x, F f, P p) -> Domain<F>
+auto collision_point(const Domain<F>& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     if (!p(x)) return x;
-    auto slow = x;                 // $slow = f^0(x)$
-    auto fast = f(x);              // $fast = f^1(x)$
+    Domain<F> slow = x;            // $slow = f^0(x)$
+    Domain<F> fast = f(x);         // $fast = f^1(x)$
                                    // $n \gets 0$ (completed iterations)
     while (fast != slow) {         // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
         slow = f(slow);            // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 1}(x)$
@@ -221,10 +222,10 @@ bool terminating(const Domain<F>& x, F f, P p)
 }
 
 template<Transformation F>
-auto collision_point_nonterminating_orbit(const Domain<F>& x, F f) -> Domain<F>
+auto collision_point_nonterminating_orbit(const Domain<F>& x, F f)
 {
-    auto slow = x;             // $slow = f^0(x)$
-    auto fast = f(x);          // $fast = f^1(x)$
+    Domain<F> slow = x;        // $slow = f^0(x)$
+    Domain<F> fast = f(x);     // $fast = f^1(x)$
                                // $n \gets 0$ (completed iterations)
     while (fast != slow) {     // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
         slow = f(slow);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 1}(x)$
@@ -252,7 +253,7 @@ bool circular(const Domain<F>& x, F f, P p)
 }
 
 template<Transformation F>
-auto convergent_point(Domain<F> x0, Domain<F> x1, F f) -> Domain<F>
+auto convergent_point(Domain<F> x0, Domain<F> x1, F f)
 {
     // Precondition: $(\exists n \in \func{DistanceType}(F))\,n \geq 0 \wedge f^n(x0) = f^n(x1)$
     while (x0 != x1) {
@@ -263,7 +264,7 @@ auto convergent_point(Domain<F> x0, Domain<F> x1, F f) -> Domain<F>
 }
 
 template<Transformation F>
-auto connection_point_nonterminating_orbit(const Domain<F>& x, F f) -> Domain<F>
+auto connection_point_nonterminating_orbit(const Domain<F>& x, F f)
 {
     return convergent_point(
         x, f(collision_point_nonterminating_orbit(x, f)), f
@@ -272,7 +273,7 @@ auto connection_point_nonterminating_orbit(const Domain<F>& x, F f) -> Domain<F>
 
 template<Transformation F, UnaryPredicate P>
     __requires(Domain<F> == Domain<P>)
-auto connection_point(const Domain<F>& x, F f, P p) -> Domain<F>
+auto connection_point(const Domain<F>& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     auto y = collision_point(x, f, p);
@@ -283,9 +284,7 @@ auto connection_point(const Domain<F>& x, F f, P p) -> Domain<F>
 // Exercise 2.3:
 
 template<Transformation F>
-auto convergent_point_guarded(
-    Domain<F> x0, Domain<F> x1, Domain<F> y, F f
-) -> Domain<F>
+auto convergent_point_guarded(Domain<F> x0, Domain<F> x1, Domain<F> y, F f)
 {
     // Precondition: $\func{reachable}(x0, y, f) \wedge \func{reachable}(x1, y, f)$
     using N = DistanceType<F>;
@@ -299,32 +298,27 @@ auto convergent_point_guarded(
 }
 
 template<Transformation F>
-auto orbit_structure_nonterminating_orbit(
-    const Domain<F>& x, F f
-) -> triple<DistanceType<F>, DistanceType<F>, Domain<F>>
+auto orbit_structure_nonterminating_orbit(const Domain<F>& x, F f)
 {
-    using N = DistanceType<F>;
     auto y = connection_point_nonterminating_orbit(x, f);
-    return triple<N, N, Domain<F>>(
+    return triple<DistanceType<F>, DistanceType<F>, Domain<F>>{
         distance(x, y, f), distance(f(y), y, f), y
-    );
+    };
 }
 
 template<Transformation F, UnaryPredicate P>
     __requires(Domain<F> == Domain<P>)
-auto orbit_structure(
-    const Domain<F>& x, F f, P p
-) -> triple<DistanceType<F>, DistanceType<F>, Domain<F>>
+auto orbit_structure(const Domain<F>& x, F f, P p)
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     using N = DistanceType<F>;
     auto y = connection_point(x, f, p);
     N m = distance(x, y, f);
-    N n(0);
+    N n{0};
     if (p(y)) n = distance(f(y), y, f);
     // Terminating: $m = h - 1 \wedge n = 0$
     // Otherwise:   $m = h \wedge n = c - 1$
-    return triple<N, N, Domain<F>>(m, n, y);
+    return triple<N, N, Domain<F>>{m, n, y};
 }
 
 
@@ -334,7 +328,7 @@ auto orbit_structure(
 
 
 template<Integer I, BinaryOperation Op>
-auto power_left_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_left_associated(Domain<Op> a, I n, Op op)
 {
     // Precondition: $n > 0$
     if (n == I{1}) return a;
@@ -342,7 +336,7 @@ auto power_left_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_right_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_right_associated(Domain<Op> a, I n, Op op)
 {
     // Precondition: $n > 0$
     if (n == I{1}) return a;
@@ -350,7 +344,7 @@ auto power_right_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_0(Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_0(Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     if (n == I{1}) return a;
@@ -359,7 +353,7 @@ auto power_0(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_1(Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_1(Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     if (n == I{1}) return a;
@@ -369,7 +363,7 @@ auto power_1(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n == I{0}) return r;
@@ -378,7 +372,7 @@ auto power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n == I{0}) return r;
@@ -388,7 +382,7 @@ auto power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n % I{2} != I{0}) {
@@ -399,7 +393,7 @@ auto power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n % I{2} != I{0}) {
@@ -412,7 +406,7 @@ auto power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     while (true) {
@@ -426,7 +420,7 @@ auto power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     while (true) {
@@ -440,7 +434,7 @@ auto power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Doma
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_accumulate_5(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_accumulate_5(Domain<Op> r, Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n == I{0}) return r;
@@ -448,14 +442,14 @@ auto power_accumulate_5(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_2(Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_2(Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     return power_accumulate_5(a, a, n - I{1}, op);
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_3(Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_3(Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     while (n % I{2} == I{0}) {
@@ -469,7 +463,7 @@ auto power_3(Domain<Op> a, I n, Op op) -> Domain<Op>
 
 
 template<Integer I, BinaryOperation Op>
-auto power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
     while (true) {
@@ -483,7 +477,7 @@ auto power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain
 }
 
 template<Integer I, BinaryOperation Op>
-auto power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
     if (zero(n)) return r;
@@ -491,7 +485,7 @@ auto power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power(Domain<Op> a, I n, Op op) -> Domain<Op>
+auto power(Domain<Op> a, I n, Op op)
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
     while (even(n)) {
@@ -504,7 +498,7 @@ auto power(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template<Integer I, BinaryOperation Op>
-auto power(Domain<Op> a, I n, Op op, Domain<Op> id) -> Domain<Op>
+auto power(Domain<Op> a, I n, Op op, Domain<Op> id)
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
     if (zero(n)) return id;
@@ -518,11 +512,11 @@ auto fibonacci_matrix_multiply(const pair<I, I>& x, const pair<I, I>& y) -> pair
 }
 
 template<Integer I>
-auto fibonacci(I n) -> I
+auto fibonacci(I n)
 {
     // Precondition: $n \geq 0$
     if (n == I{0}) return I{0};
-    return power({I(1), I(0)}, n, fibonacci_matrix_multiply<I>).m0;
+    return power({I{1}, I{0}}, n, fibonacci_matrix_multiply<I>).m0;
 }
 
 
@@ -591,7 +585,7 @@ template<Relation R>
 struct symmetric_complement
 {
     R r;
-    symmetric_complement(R r) : r(r) { }
+    symmetric_complement(R r) : r(r) {}
     bool operator()(const Domain<R>& a, const Domain<R>& b)
     {
         return !r(a, b) && !r(b, a);
@@ -883,13 +877,13 @@ struct input_type<less<T>, 0>
 };
 
 template<TotallyOrdered T>
-const T& min(const T& a, const T& b)
+auto min(const T& a, const T& b)
 {
     return select_0_2(a, b, less<T>());
 }
 
 template<TotallyOrdered T>
-const T& max(const T& a, const T& b)
+auto max(const T& a, const T& b)
 {
     return select_1_2(a, b, less<T>());
 }
@@ -933,7 +927,7 @@ bool operator>=(const T& x, const T& y)
 template<AdditiveSemigroup T>
 struct plus
 {
-    T operator()(const T& x, const T& y)
+    auto operator()(const T& x, const T& y)
     {
         return x + y;
     }
@@ -948,7 +942,7 @@ struct input_type<plus<T>, 0>
 template<MultiplicativeSemigroup T>
 struct multiplies
 {
-    T operator()(const T& x, const T& y)
+    auto operator()(const T& x, const T& y)
     {
         return x * y;
     }
@@ -966,8 +960,8 @@ struct multiplies_transformation
 {
     Domain<Op> x;
     Op op;
-    multiplies_transformation(Domain<Op> x, Op op) : x(x), op(op) { }
-    Domain<Op> operator()(const Domain<Op>& y)
+    multiplies_transformation(Domain<Op> x, Op op) : x(x), op(op) {}
+    auto operator()(const Domain<Op>& y)
     {
         return op(x, y);
     }
@@ -983,7 +977,7 @@ struct input_type<multiplies_transformation<Op>, 0>
 template<AdditiveGroup T>
 struct negate
 {
-    T operator()(const T& x)
+    auto operator()(const T& x)
     {
         return -x;
     }
@@ -996,14 +990,14 @@ struct input_type<negate<T>, 0>
 };
 
 template<OrderedAdditiveGroup T>
-T abs(const T& a)
+auto abs(const T& a)
 {
-    if (a < T(0)) return -a;
-    else          return  a;
+    if (a < T{0}) return -a;
+    else return a;
 }
 
 template<CancellableMonoid T>
-T slow_remainder(T a, T b)
+auto slow_remainder(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     while (b <= a) a = a - b;
@@ -1011,10 +1005,10 @@ T slow_remainder(T a, T b)
 }
 
 template<ArchimedeanMonoid T>
-QuotientType<T> slow_quotient(T a, T b)
+auto slow_quotient(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
-    QuotientType<T> n(0);
+    QuotientType<T> n{0};
     while (b <= a) {
         a = a - b;
         n = successor(n);
@@ -1023,7 +1017,7 @@ QuotientType<T> slow_quotient(T a, T b)
 }
 
 template<ArchimedeanMonoid T>
-T remainder_recursive(T a, T b)
+auto remainder_recursive(T a, T b) -> T
 {
     // Precondition: $a \geq b > 0$
     if (a - b >= b) {
@@ -1034,7 +1028,7 @@ T remainder_recursive(T a, T b)
 }
 
 template<ArchimedeanMonoid T>
-T remainder_nonnegative(T a, T b)
+auto remainder_nonnegative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     if (a < b) return a;
@@ -1049,7 +1043,7 @@ T remainder_nonnegative(T a, T b)
 */
 
 template<ArchimedeanMonoid T>
-T remainder_nonnegative_fibonacci(T a, T b)
+auto remainder_nonnegative_fibonacci(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     if (a < b) return a;
@@ -1069,7 +1063,7 @@ T remainder_nonnegative_fibonacci(T a, T b)
 }
 
 template<ArchimedeanMonoid T>
-T largest_doubling(T a, T b)
+auto largest_doubling(T a, T b)
 {
     // Precondition: $a \geq b > 0$
     while (b <= a - b) b = b + b;
@@ -1077,7 +1071,7 @@ T largest_doubling(T a, T b)
 }
 
 template<HalvableMonoid T>
-T remainder_nonnegative_iterative(T a, T b)
+auto remainder_nonnegative_iterative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     if (a < b) return a;
@@ -1093,7 +1087,7 @@ T remainder_nonnegative_iterative(T a, T b)
 // Jon Brandt suggested this algorithm (it is not mentioned in chapter 5):
 
 template<ArchimedeanMonoid T>
-T remainder_nonnegative_with_largest_doubling(T a, T b)
+auto remainder_nonnegative_with_largest_doubling(T a, T b)
 {
     // Precondition: $a \geq T(0) \wedge b > T(0)$
     while (b <= a)
@@ -1102,61 +1096,64 @@ T remainder_nonnegative_with_largest_doubling(T a, T b)
 }
 
 template<ArchimedeanMonoid T>
-T subtractive_gcd_nonzero(T a, T b)
+auto subtractive_gcd_nonzero(T a, T b)
 {
     // Precondition: $a > 0 \wedge b > 0$
     while (true) {
-        if (b < a)      a = a - b;
-        else if (a < b) b = b - a;
-        else            return a;
+        if (b < a)
+            a = a - b;
+        else if (a < b)
+            b = b - a;
+        else
+            return a;
     }
 }
 
 template<EuclideanMonoid T>
-T subtractive_gcd(T a, T b)
+auto subtractive_gcd(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
     while (true) {
-        if (b == T(0)) return a;
+        if (b == T{0}) return a;
         while (b <= a) a = a - b;
-        if (a == T(0)) return b;
+        if (a == T{0}) return b;
         while (a <= b) b = b - a;
     }
 }
 
 template<EuclideanMonoid T>
-T fast_subtractive_gcd(T a, T b)
+auto fast_subtractive_gcd(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
     while (true) {
-        if (b == T(0)) return a;
+        if (b == T{0}) return a;
         a = remainder_nonnegative(a, b);
-        if (a == T(0)) return b;
+        if (a == T{0}) return b;
         b = remainder_nonnegative(b, a);
     }
 }
 
 template<EuclideanSemiring T>
-T gcd(T a, T b)
+auto gcd(T a, T b)
 {
     // Precondition: $\neg(a = 0 \wedge b = 0)$
     while (true) {
-        if (b == T(0)) return a;
+        if (b == T{0}) return a;
         a = remainder(a, b);
-        if (a == T(0)) return b;
+        if (a == T{0}) return b;
         b = remainder(b, a);
     }
 }
 
 template<typename T, typename S>
     requires EuclideanSemimodule<T, S>()
-T gcd(T a, T b)
+auto gcd(T a, T b)
 {
     // Precondition: $\neg(a = 0 \wedge b = 0)$
     while (true) {
-        if (b == T(0)) return a;
+        if (b == T{0}) return a;
         a = remainder(a, b);
-        if (a == T(0)) return b;
+        if (a == T{0}) return b;
         b = remainder(b, a);
     }
 }
@@ -1165,7 +1162,7 @@ T gcd(T a, T b)
 // Exercise 5.3:
 
 template<Integer T>
-T stein_gcd_nonnegative(T a, T b)
+auto stein_gcd_nonnegative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
     if (zero(a)) return b;
@@ -1189,28 +1186,32 @@ T stein_gcd_nonnegative(T a, T b)
 }
 
 template<ArchimedeanMonoid T>
-pair<QuotientType<T>, T> quotient_remainder_nonnegative(T a, T b)
+auto quotient_remainder_nonnegative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     using N = QuotientType<T>;
-    if (a < b) return pair<N, T>(N(0), a);
-    if (a - b < b) return pair<N, T>(N(1), a - b);
-    pair<N, T> q = quotient_remainder_nonnegative(a, b + b);
-    N m = twice(q.m0);
+    using NT = pair<N, T>;
+    if (a < b) return NT{N{0}, a};
+    if (a - b < b) return NT{N{1}, a - b};
+    auto q = quotient_remainder_nonnegative(a, b + b);
+    auto m = twice(q.m0);
     a = q.m1;
-    if (a < b) return pair<N, T>(m, a);
-    else       return pair<N, T>(successor(m), a - b);
+    if (a < b)
+        return NT{m, a};
+    else
+        return NT{successor(m), a - b};
 }
 
 template<HalvableMonoid T>
-pair<QuotientType<T>, T> quotient_remainder_nonnegative_iterative(T a, T b)
+auto quotient_remainder_nonnegative_iterative(T a, T b)
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     using N = QuotientType<T>;
-    if (a < b) return pair<N, T>(N(0), a);
-    T c = largest_doubling(a, b);
+    using NT = pair<N, T>;
+    if (a < b) return NT{N{0}, a};
+    auto c = largest_doubling(a, b);
     a = a - c;
-    N n(1);
+    N n{1};
     while (c != b) {
         n = twice(n);
         c = half(c);
@@ -1219,25 +1220,25 @@ pair<QuotientType<T>, T> quotient_remainder_nonnegative_iterative(T a, T b)
             n = successor(n);
         }
     }
-    return pair<N, T>(n, a);
+    return NT{n, a};
 }
 
 template<typename Op>
     requires BinaryOperation<Op>() && ArchimedeanGroup<Domain<Op>>()
-Domain<Op> remainder(Domain<Op> a, Domain<Op> b, Op rem)
+auto remainder(Domain<Op> a, Domain<Op> b, Op rem)
 {
     // Precondition: $b \neq 0$
     using T = Domain<Op>;
     T r;
-    if (a < T(0))
-        if (b < T(0)) {
+    if (a < T{0})
+        if (b < T{0}) {
             r = -rem(-a, -b);
         } else {
-            r =  rem(-a,  b); if (r != T(0)) r = b - r;
+            r =  rem(-a,  b); if (r != T{0}) r = b - r;
         }
     else
-        if (b < T(0)) {
-            r =  rem(a, -b);  if (r != T(0)) r = b + r;
+        if (b < T{0}) {
+            r =  rem(a, -b);  if (r != T{0}) r = b + r;
         } else {
             r =  rem(a,  b);
         }
@@ -1247,31 +1248,31 @@ Domain<Op> remainder(Domain<Op> a, Domain<Op> b, Op rem)
 template<HomogeneousFunction F>
     requires ArchimedeanGroup<Domain<F>>() && Arity(F) == 2
     __requires(Codomain<F> == pair<QuotientType<Domain<F>>, Domain<F>>)
-pair<QuotientType<Domain<F>>, Domain<F>> quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem)
+auto quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem)
 {
     // Precondition: $b \neq 0$
     using T = Domain<F>;
     pair<QuotientType<T>, T> q_r;
-    if (a < T(0)) {
-        if (b < T(0)) {
+    if (a < T{0}) {
+        if (b < T{0}) {
             q_r = quo_rem(-a, -b); q_r.m1 = -q_r.m1;
         } else {
-            q_r = quo_rem(-a,  b);
-            if (q_r.m1 != T(0)) {
+            q_r = quo_rem(-a, b);
+            if (q_r.m1 != T{0}) {
                 q_r.m1 = b - q_r.m1; q_r.m0 = successor(q_r.m0);
             }
             q_r.m0 = -q_r.m0;
         }
     } else {
-        if (b < T(0)) {
-            q_r = quo_rem( a, -b);
-            if (q_r.m1 != T(0)) {
+        if (b < T{0}) {
+            q_r = quo_rem(a, -b);
+            if (q_r.m1 != T{0}) {
                 q_r.m1 = b + q_r.m1; q_r.m0 = successor(q_r.m0);
             }
             q_r.m0 = -q_r.m0;
         }
         else
-            q_r = quo_rem( a,  b);
+            q_r = quo_rem(a, b);
     }
     return q_r;
 }
@@ -1291,7 +1292,7 @@ void increment(I& x)
 
 
 template<Iterator I>
-I operator+(I f, DistanceType<I> n)
+auto operator+(I f, DistanceType<I> n)
 {
     // Precondition: $n \geq 0 \wedge \property{weak\_range}(f, n)$
     while (!zero(n)) {
@@ -1303,10 +1304,10 @@ I operator+(I f, DistanceType<I> n)
 
 
 template<Iterator I>
-DistanceType<I> operator-(I l, I f)
+auto operator-(I l, I f)
 {
     // Precondition: $\property{bounded\_range}(f, l)$
-    DistanceType<I> n(0);
+    DistanceType<I> n{0};
     while (f != l) {
         n = successor(n);
         f = successor(f);
@@ -1318,7 +1319,7 @@ template<typename I, typename Proc>
     requires Readable<I>() && Iterator<I>() && Arity(Proc) == 1
     __requires(Procedure(Proc) &&
         ValueType<I> == InputType<Proc, 0>)
-Proc for_each(I f, I l, Proc proc)
+auto for_each(I f, I l, Proc proc)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1330,7 +1331,7 @@ Proc for_each(I f, I l, Proc proc)
 
 template<typename I>
     requires Readable<I>() && Iterator<I>()
-I find(I f, I l, const ValueType<I>& x)
+auto find(I f, I l, const ValueType<I>& x)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && source(f) != x) f = successor(f);
@@ -1339,7 +1340,7 @@ I find(I f, I l, const ValueType<I>& x)
 
 template<typename I>
     requires Readable<I>() && Iterator<I>()
-I find_not(I f, I l, const ValueType<I>& x)
+auto find_not(I f, I l, const ValueType<I>& x)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && source(f) == x) f = successor(f);
@@ -1349,7 +1350,7 @@ I find_not(I f, I l, const ValueType<I>& x)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && Iterator<I>()
     __requires(ValueType<I> == Domain<P>)
-I find_if(I f, I l, P p)
+auto find_if(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && !p(source(f))) f = successor(f);
@@ -1359,11 +1360,10 @@ I find_if(I f, I l, P p)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && Iterator<I>()
     __requires(ValueType<I> == Domain<P>)
-I find_if_not(I f, I l, P p)
+auto find_if_not(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l && p(source(f)))
-        f = successor(f);
+    while (f != l && p(source(f))) f = successor(f);
     return f;
 }
 
@@ -1408,7 +1408,7 @@ bool some(I f, I l, P p)
 template<typename I, UnaryPredicate P, Iterator J>
     requires Readable<I>() && Iterator<I>()
     __requires(ValueType<I> == Domain<P>)
-J count_if(I f, I l, P p, J j)
+auto count_if(I f, I l, P p, J j)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1425,14 +1425,14 @@ J count_if(I f, I l, P p, J j)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && Iterator<I>()
     __requires(ValueType<I> == Domain<P>)
-DistanceType<I> count_if(I f, I l, P p) {
+auto count_if(I f, I l, P p) {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count_if(f, l, p, DistanceType<I>(0));
+    return count_if(f, l, p, DistanceType<I>{0});
 }
 
 template<typename I, Iterator J>
     requires Readable<I>() && Iterator<I>()
-J count(I f, I l, const ValueType<I>& x, J j)
+auto count(I f, I l, const ValueType<I>& x, J j)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1444,15 +1444,15 @@ J count(I f, I l, const ValueType<I>& x, J j)
 
 template<typename I>
     requires Readable<I>() && Iterator<I>()
-DistanceType<I> count(I f, I l, const ValueType<I>& x)
+auto count(I f, I l, const ValueType<I>& x)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count(f, l, x, DistanceType<I>(0));
+    return count(f, l, x, DistanceType<I>{0});
 }
 
 template<typename I, Iterator J>
     requires Readable<I>() && Iterator<I>()
-J count_not(I f, I l, const ValueType<I>& x, J j)
+auto count_not(I f, I l, const ValueType<I>& x, J j)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1464,16 +1464,16 @@ J count_not(I f, I l, const ValueType<I>& x, J j)
 
 template<typename I>
     requires Readable<I>() && Iterator<I>()
-DistanceType<I> count_not(I f, I l, const ValueType<I>& x)
+auto count_not(I f, I l, const ValueType<I>& x)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count_not(f, l, x, DistanceType<I>(0));
+    return count_not(f, l, x, DistanceType<I>{0});
 }
 
 template<typename I, UnaryPredicate P, Iterator J>
     requires Readable<I>() && Iterator<I>()
     __requires(Domain<P> == ValueType<I>)
-J count_if_not(I f, I l, P p, J j)
+auto count_if_not(I f, I l, P p, J j)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1485,16 +1485,16 @@ J count_if_not(I f, I l, P p, J j)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && Iterator<I>()
     __requires(Domain<P> == ValueType<I>)
-DistanceType<I> count_if_not(I f, I l, P p)
+auto count_if_not(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count_if_not(f, l, p, DistanceType<I>(0));
+    return count_if_not(f, l, p, DistanceType<I>{0});
 }
 
 template<typename I, typename Op, UnaryFunction F>
     requires Iterator<I>() && BinaryOperation<Op>()
     __requires(I == Domain<F> && Codomain<F> == Domain<Op>)
-Domain<Op> reduce_nonempty(I f, I l, Op op, F fun)
+auto reduce_nonempty(I f, I l, Op op, F fun)
 {
     // Precondition: $\property{bounded\_range}(f, l) \wedge f \neq l$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1511,7 +1511,7 @@ Domain<Op> reduce_nonempty(I f, I l, Op op, F fun)
 template<typename I, BinaryOperation Op>
     requires Readable<I>() && Iterator<I>()
     __requires(ValueType<I> == Domain<Op>)
-Domain<Op> reduce_nonempty(I f, I l, Op op)
+auto reduce_nonempty(I f, I l, Op op)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge f \neq l$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1526,7 +1526,7 @@ Domain<Op> reduce_nonempty(I f, I l, Op op)
 
 template<Iterator I, BinaryOperation Op, UnaryFunction F>
     __requires(I == Domain<F> && Codomain<F> == Domain<Op>)
-Domain<Op> reduce(I f, I l, Op op, F fun, const Domain<Op>& z)
+auto reduce(I f, I l, Op op, F fun, const Domain<Op>& z)
 {
     // Precondition: $\property{bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1537,7 +1537,7 @@ Domain<Op> reduce(I f, I l, Op op, F fun, const Domain<Op>& z)
 
 template<Iterator I, BinaryOperation Op>
     __requires(ValueType<I> == Domain<Op>)
-Domain<Op> reduce(I f, I l, Op op, const Domain<Op>& z)
+auto reduce(I f, I l, Op op, const Domain<Op>& z)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1547,7 +1547,7 @@ Domain<Op> reduce(I f, I l, Op op, const Domain<Op>& z)
 
 template<Iterator I, BinaryOperation Op, UnaryFunction F>
     __requires(I == Domain<F> && Codomain<F> == Domain<Op>)
-Domain<Op> reduce_nonzeroes(I f, I l, Op op, F fun, const Domain<Op>& z)
+auto reduce_nonzeroes(I f, I l, Op op, F fun, const Domain<Op>& z)
 {
     // Precondition: $\property{bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1568,7 +1568,7 @@ Domain<Op> reduce_nonzeroes(I f, I l, Op op, F fun, const Domain<Op>& z)
 
 template<Iterator I, BinaryOperation Op>
     __requires(ValueType<I> == Domain<Op>)
-Domain<Op> reduce_nonzeroes(I f, I l, Op op, const Domain<Op>& z)
+auto reduce_nonzeroes(I f, I l, Op op, const Domain<Op>& z)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1588,17 +1588,17 @@ Domain<Op> reduce_nonzeroes(I f, I l, Op op, const Domain<Op>& z)
 
 template<typename I>
     requires Readable<I>() && Iterator<I>() && AdditiveMonoid<ValueType<I>>()
-ValueType<I> reduce(I f, I l)
+auto reduce(I f, I l)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     using T = ValueType<I>;
-    return reduce(f, l, plus<T>(), T(0));
+    return reduce(f, l, plus<T>(), T{0});
 }
 
 template<typename I, typename Proc>
     requires Readable<I>() && Iterator<I>() && Arity(Proc) == 1
     __requires(Procedure(Proc) && ValueType<I> == InputType<Proc, 0>)
-pair<Proc, I> for_each_n(I f, DistanceType<I> n, Proc proc)
+auto for_each_n(I f, DistanceType<I> n, Proc proc)
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
     while (!zero(n)) {
@@ -1611,7 +1611,7 @@ pair<Proc, I> for_each_n(I f, DistanceType<I> n, Proc proc)
 
 template<typename I>
     requires Readable<I>() && Iterator<I>()
-pair<I, DistanceType<I>> find_n(I f, DistanceType<I> n, const ValueType<I>& x)
+auto find_n(I f, DistanceType<I> n, const ValueType<I>& x)
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
     while (!zero(n) && source(f) != x) {
@@ -1629,7 +1629,7 @@ pair<I, DistanceType<I>> find_n(I f, DistanceType<I> n, const ValueType<I>& x)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && Iterator<I>()
     __requires(ValueType<I> == Domain<P>)
-I find_if_unguarded(I f, P p) {
+auto find_if_unguarded(I f, P p) {
     // Precondition:
     // $(\exists l)\,\func{readable\_bounded\_range}(f, l) \wedge \func{some}(f, l, p)$
     while (!p(source(f))) f = successor(f);
@@ -1640,7 +1640,7 @@ I find_if_unguarded(I f, P p) {
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && Iterator<I>()
     __requires(Domain<P> == ValueType<I>)
-I find_if_not_unguarded(I f, P p) {
+auto find_if_not_unguarded(I f, P p) {
     // Let $l$ be the end of the implied range starting with $f$
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{not\_all}(f, l, p)$
@@ -1651,7 +1651,7 @@ I find_if_not_unguarded(I f, P p) {
 template<typename I0, typename I1, Relation R>
     requires Readable<I0>() && Iterator<I0>() && Readable<I1>() && Iterator<I1>()
     __requires(ValueType<I0> == ValueType<I1> && ValueType<I0> == Domain<R>)
-pair<I0, I1> find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r)
+auto find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r)
 {
     // Precondition: $\func{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\func{readable\_bounded\_range}(f1, l1)$
@@ -1665,7 +1665,7 @@ pair<I0, I1> find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r)
 template<typename I, Relation R>
     requires Readable<I>() && Iterator<I>()
     __requires(ValueType<I> == Domain<R>)
-I find_adjacent_mismatch(I f, I l, R r)
+auto find_adjacent_mismatch(I f, I l, R r)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     if (f == l) return l;
@@ -1723,7 +1723,7 @@ bool partitioned(I f, I l, P p)
 template<typename I, Relation R>
     requires Readable<I>() && ForwardIterator<I>()
     __requires(ValueType<I> == Domain<R>)
-I find_adjacent_mismatch_forward(I f, I l, R r)
+auto find_adjacent_mismatch_forward(I f, I l, R r)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     if (f == l) return l;
@@ -1738,13 +1738,13 @@ I find_adjacent_mismatch_forward(I f, I l, R r)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && ForwardIterator<I>()
     __requires(ValueType<I> == Domain<P>)
-I partition_point_n(I f, DistanceType<I> n, P p)
+auto partition_point_n(I f, DistanceType<I> n, P p)
 {
     // Precondition:
     // $\func{readable\_counted\_range}(f, n) \wedge \func{partitioned\_n}(f, n, p)$
     while (!zero(n)) {
-        DistanceType<I> h = half_nonnegative(n);
-        I m = f + h;
+        auto h = half_nonnegative(n);
+        auto m = f + h;
         if (p(source(m))) {
             n = h;
         } else {
@@ -1757,7 +1757,7 @@ I partition_point_n(I f, DistanceType<I> n, P p)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && ForwardIterator<I>()
     __requires(ValueType<I> == Domain<P>)
-I partition_point(I f, I l, P p)
+auto partition_point(I f, I l, P p)
 {
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{partitioned}(f, l, p)$
@@ -1770,14 +1770,14 @@ struct lower_bound_predicate
     using T = Domain<R>;
     const T& a;
     R r;
-    lower_bound_predicate(const T& a, R r) : a(a), r(r) { }
+    lower_bound_predicate(const T& a, R r) : a(a), r(r) {}
     bool operator()(const T& x) { return !r(x, a); }
 };
 
 template<typename I, Relation R>
     requires Readable<I>() && ForwardIterator<I>()
     __requires(ValueType<I> == Domain<R>)
-I lower_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r)
+auto lower_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r)
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
@@ -1791,14 +1791,14 @@ struct upper_bound_predicate
     using T = Domain<R>;
     const T& a;
     R r;
-    upper_bound_predicate(const T& a, R r) : a(a), r(r) { }
+    upper_bound_predicate(const T& a, R r) : a(a), r(r) {}
     bool operator()(const T& x) { return r(a, x); }
 };
 
 template<typename I, Relation R>
     requires Readable<I>() && ForwardIterator<I>()
     __requires(ValueType<I> == Domain<R>)
-I upper_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r)
+auto upper_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r)
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
@@ -1811,7 +1811,7 @@ I upper_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r)
 
 
 template<BidirectionalIterator I>
-I operator-(I l, DistanceType<I> n)
+auto operator-(I l, DistanceType<I> n)
 {
     // Precondition: $n \geq 0 \wedge (\exists f \in I)\,(\func{weak\_range}(f, n) \wedge l = f+n)$
     while (!zero(n)) {
@@ -1824,7 +1824,7 @@ I operator-(I l, DistanceType<I> n)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && BidirectionalIterator<I>()
     __requires(ValueType<I> == Domain<P>)
-I find_backward_if(I f, I l, P p)
+auto find_backward_if(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (l != f && !p(source(predecessor(l))))
@@ -1835,7 +1835,7 @@ I find_backward_if(I f, I l, P p)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && BidirectionalIterator<I>()
     __requires(ValueType<I> == Domain<P>)
-I find_backward_if_not(I f, I l, P p) {
+auto find_backward_if_not(I f, I l, P p) {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (l != f && p(source(predecessor(l))))
         l = predecessor(l);
@@ -1852,7 +1852,7 @@ I find_backward_if_not(I f, I l, P p) {
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && BidirectionalIterator<I>()
     __requires(ValueType<I> == Domain<P>)
-I find_backward_if_unguarded(I l, P p)
+auto find_backward_if_unguarded(I l, P p)
 {
     // Precondition:
     // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{some}(f, l, p)$
@@ -1864,7 +1864,7 @@ I find_backward_if_unguarded(I l, P p)
 template<typename I, UnaryPredicate P>
     requires Readable<I>() && BidirectionalIterator<I>()
     __requires(ValueType<I> == Domain<P>)
-I find_backward_if_not_unguarded(I l, P p)
+auto find_backward_if_not_unguarded(I l, P p)
 {
     // Precondition:
     // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{not\_all}(f, l, p)$
