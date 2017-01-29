@@ -23,30 +23,29 @@
 #include <vector>
 #include "ch03.h"
 
-template <RandomAccessIterator I, Integer N>
-void print_sieve(I first, N n) {
-  N i {0};
-  std::cout << 2;
-  while (i < n) {
-    if (*first) {
-      std::cout << " " << 2 * i + 3;
+void print_sieve(RandomAccessIterator first, Integer n) {
+    decltype(n) i{0};
+    std::cout << 2;
+    while (i < n) {
+        if (*first) {
+            std::cout << " " << 2 * i + 3;
+        }
+        ++first;
+        ++i;
     }
-    ++first;
-    ++i;
-  }
-  std::cout << std::endl;
+    std::cout << std::endl;
 }
 
 int main() {
-  std::vector<int> v(500);
-  sift0(begin(v), 50);
-  std::cout << "sift0(begin(v), 50):\n";
-  print_sieve(begin(v), 50);
-  sift1(begin(v), 50);
-  std::cout << "sift1(begin(v), 50):\n";
-  print_sieve(begin(v), 50);
-  sift(begin(v), 500);
-  std::cout << "sift(begin(v), 500):\n";
-  print_sieve(begin(v), 500);
-  std::cout << "gcm(15, 9) = " << gcm(15, 9) << std::endl;
+    std::vector<int> v(500);
+    sift0(begin(v), 50);
+    std::cout << "sift0(begin(v), 50):\n";
+    print_sieve(begin(v), 50);
+    sift1(begin(v), 50);
+    std::cout << "sift1(begin(v), 50):\n";
+    print_sieve(begin(v), 50);
+    sift(begin(v), 500);
+    std::cout << "sift(begin(v), 500):\n";
+    print_sieve(begin(v), 500);
+    std::cout << "gcm(15, 9) = " << gcm(15, 9) << std::endl;
 }
