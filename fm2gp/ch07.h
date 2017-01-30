@@ -21,27 +21,144 @@
 
 #include <functional>
 
-#define NoncommutativeAdditiveMonoid typename
-#define NoncommutativeAdditiveGroup typename
-#define MultiplicativeSemigroup typename
-#define MultiplicativeMonoid typename
-#define Regular typename
+template <class T, class U>
+concept bool Same() {
+    return std::is_same<T, U>::value;
+}
+
+template <class T, class... Args>
+concept bool DefaultConstructible() {
+    return requires (Args&& ...args) {
+        T{std::forward<Args>(args)...}; // not required to be equality preserving
+        new T{std::forward<Args>(args)...}; // not required to be equality preserving
+    }
+    && requires (const size_t n) {
+        new T[n]{}; // Not required to be equality preserving.
+    };
+}
+
+template <class T>
+concept bool Destructible() {
+    return requires (T t, const T ct, T* p) {
+        { t.~T() } noexcept;
+        { &t } -> Same<T*>; // Not required to be equality preserving.
+        { &ct } -> Same<const T*>; // Not required to be equality preserving.
+        delete p;
+        delete[] p;
+    };
+}
+
+template <class T, class... Args>
+concept bool Regular() {
+    return DefaultConstructible<T>()
+        && Destructible<T>();
+}
+
+template <typename T>
+concept bool NoncommutativeAdditiveSemigroup() {
+    return Regular<T>()
+        && requires (const T& a, const T& b) {
+            { a + b } -> T
+        };
+        // associative(+)
+}
+
+template <typename T>
+concept bool AdditiveSemigroup() {
+    return NoncommutativeAdditiveSemigroup<T>();
+        // commutative(+)
+}
+
+template <typename T>
+concept bool MultiplicativeSemigroup() {
+    return Regular<T>()
+        && requires (const T& a, const T& b) {
+            { a * b } -> T
+        };
+        // associative(*)
+}
+
+template <typename T>
+concept bool NoncommutativeAdditiveMonoid() {
+    return AdditiveSemigroup<T>()
+        && requires (const T& a) {
+            T{0};
+            // identity_element(0, +)
+        };
+}
+
+template <typename T>
+concept bool AdditiveMonoid() {
+    return NoncommutativeAdditiveMonoid<T>();
+    // commutative(+)
+}
+
+template <typename T>
+concept bool MultiplicativeMonoid() {
+    return MultiplicativeSemigroup<T>()
+        && requires (const T& a) {
+            T{1};
+            // identity_element(1, *)
+        };
+}
+
+template <typename T>
+concept bool NoncommutativeAdditiveGroup() {
+    return AdditiveMonoid<T>()
+        && requires (const T& a, const T& b) {
+            { -a } -> T
+            // inverse_operation(unary -, 0, +)
+            { a - b } -> T
+                // (a, b) -> a + (-b)
+        };
+}
+
+template <typename T>
+concept bool AdditiveGroup() {
+    return NoncommutativeAdditiveGroup<T>();
+}
+
+template <typename T>
+concept bool MultiplicativeGroup() {
+    return MultiplicativeMonoid<T>()
+        && requires (const T& a, const T& b) {
+            // { multiplicative_inverse(a) } -> T
+            // inverse_operation(multiplicative_inverse, 1, *)
+            { a / b } -> T
+                // (a, b) -> a * multiplicative_inverse(b)
+        };
+}
+
+template <typename I>
+concept bool Integer() {
+    return std::is_integral<I>::value;
+}
+
+template<typename T, int i>
+    // requires(FunctionalProcedure(T))
+struct input_type;
+
+template<typename T, int i>
+using InputType = typename input_type<T, i>::type;
+
+template<typename T>
+using Domain = InputType<T, 0>;
+
 #define SemigroupOperation typename
 #define MonoidOperation typename
 #define GroupOperation typename
-#define AdditiveGroup typename
-#define MultiplicativeGroup typename
-#define Integer typename
+
+auto multiplicative_inverse(double a) {
+    return 1.0 / a;
+}
 
 // Section 7.1
 
-template <Integer N>
-bool odd(N n) { return bool(n & 0x1); }
+bool odd(Integer n) { return bool(n & 0x1); }
 
-template <Integer N>
-N half(N n) { return n >> 1; }
+auto half(Integer n) { return n >> 1; }
 
-int mult_acc4(int r, int n, int a) {
+auto mult_acc4(int r, int n, int a) {
     while (true) {
         if (odd(n)) {
             r = r + a;
@@ -53,7 +170,7 @@ int mult_acc4(int r, int n, int a) {
 }
 
 template <typename A, typename N>
-A multiply_accumulate0(A r, N n, A a) {
+auto multiply_accumulate0(A r, N n, A a) {
     while (true) {
         if (odd(n)) {
             r = r + a;
@@ -66,11 +183,8 @@ A multiply_accumulate0(A r, N n, A a) {
 
 // Section 7.3
 
-#define NoncommutativeAdditiveSemigroup typename
-
-
-template <NoncommutativeAdditiveSemigroup A, typename N>
-A multiply_accumulate(A r, N n, A a) {
+template <NoncommutativeAdditiveSemigroup A>
+auto multiply_accumulate(A r, auto n, A a) {
     while (true) {
         if (odd(n)) {
             r = r + a;
@@ -82,8 +196,8 @@ A multiply_accumulate(A r, N n, A a) {
 }
 
 
-template <NoncommutativeAdditiveSemigroup A, Integer N>
-A multiply_accumulate_semigroup(A r, N n, A a) {
+template <NoncommutativeAdditiveSemigroup A>
+auto multiply_accumulate_semigroup(A r, Integer n, A a) {
     // precondition(n >= 0);
     if (n == 0) return r;
     while (true) {
@@ -96,8 +210,7 @@ A multiply_accumulate_semigroup(A r, N n, A a) {
     }
 }
 
-template <NoncommutativeAdditiveSemigroup A, Integer N>
-A multiply_semigroup(N n, A a) {
+auto multiply_semigroup(Integer n, NoncommutativeAdditiveSemigroup a) {
     // precondition(n > 0);
     while (!odd(n)) {
         a = a + a;
@@ -110,15 +223,13 @@ A multiply_semigroup(N n, A a) {
 
 // Section 7.4
 
-template <NoncommutativeAdditiveMonoid A, Integer N>
-A multiply_monoid(N n, A a) {
+auto multiply_monoid(Integer n, NoncommutativeAdditiveMonoid a) {
     // precondition(n >= 0);
-    if (n == 0) return A(0);
+    if (n == 0) return decltype(a){0};
     return multiply_semigroup(n, a);
 }
 
-template <NoncommutativeAdditiveGroup A, Integer N>
-A multiply_group(N n, A a) {
+auto multiply_group(Integer n, NoncommutativeAdditiveGroup a) {
     if (n < 0) {
         n = -n;
         a = -a;
@@ -128,8 +239,8 @@ A multiply_group(N n, A a) {
 
 // Section 7.5
 
-template <MultiplicativeSemigroup A, Integer N>
-A power_accumulate_semigroup(A r, A a, N n) {
+template <MultiplicativeSemigroup A>
+auto power_accumulate_semigroup(A r, A a, Integer n) {
     // precondition(n >= 0);
     if (n == 0) return r;
     while (true) {
@@ -142,8 +253,7 @@ A power_accumulate_semigroup(A r, A a, N n) {
     }
 }
 
-template <MultiplicativeSemigroup A, Integer N>
-A power_semigroup(A a, N n) {
+auto power_semigroup(MultiplicativeSemigroup a, Integer n) {
     // precondition(n > 0);
     while (!odd(n)) {
         a = a * a;
@@ -153,20 +263,17 @@ A power_semigroup(A a, N n) {
     return power_accumulate_semigroup(a, a * a, half(n - 1));
 }
 
-template <MultiplicativeMonoid A, Integer N>
-A power_monoid(A a, N n) {
+auto power_monoid(MultiplicativeMonoid a, Integer n) {
     // precondition(n >= 0);
-    if (n == 0) return A(1);
+    if (n == 0) return decltype(a){1};
     return power_semigroup(a, n);
 }
 
-template <MultiplicativeGroup A>
-A multiplicative_inverse(A a) {
-    return A(1) / a;
+auto multiplicative_inverse(MultiplicativeGroup a) {
+    return decltype(a){1} / a;
 }
 
-template <MultiplicativeGroup A, Integer N>
-A power_group(A a, N n) {
+auto power_group(MultiplicativeGroup a, Integer n) {
     if (n < 0) {
         n = -n;
         a = multiplicative_inverse(a);
@@ -176,9 +283,10 @@ A power_group(A a, N n) {
 
 // Section 7.6
 
-template <Regular A, Integer N, SemigroupOperation Op>
-// requires (Domain<Op, A>)
-A power_accumulate_semigroup(A r, A a, N n, Op op) {
+template <SemigroupOperation Op>
+auto power_accumulate_semigroup(Regular r, Regular a, Integer n, Op op)
+    //requires Same<Domain<decltype(op)>, decltype(a)>()
+{
     // precondition(n >= 0);
     if (n == 0) return r;
     while (true) {
@@ -191,9 +299,10 @@ A power_accumulate_semigroup(A r, A a, N n, Op op) {
     }
 }
 
-template <Regular A, Integer N, SemigroupOperation Op>
-// requires (Domain<Op, A>)
-A power_semigroup(A a, N n, Op op) {
+template <SemigroupOperation Op>
+auto power_semigroup(Regular a, Integer n, Op op)
+    //requires Same<Domain<decltype(op)>, decltype(a)>()
+{
     // precondition(n > 0);
     while (!odd(n)) {
         a = op(a, a);
@@ -204,46 +313,48 @@ A power_semigroup(A a, N n, Op op) {
 }
 
 template <NoncommutativeAdditiveMonoid T>
-T identity_element(std::plus<T>) {
-    return T(0);
+auto identity_element(std::plus<T>) {
+    return T{0};
 }
 
 template <MultiplicativeMonoid T>
-T identity_element(std::multiplies<T>) {
-    return T(1);
+auto identity_element(std::multiplies<T>) {
+    return T{1};
 }
 
-template <Regular A, Integer N, MonoidOperation Op>
-// requires(Domain<Op, A>)
-A power_monoid(A a, N n, Op op) {
+template <MonoidOperation Op>
+auto power_monoid(Regular a, Integer n, Op op)
+    //requires Same<Domain<decltype(op)>, decltype(a)>()
+{
     // precondition(n >= 0);
     if (n == 0) return identity_element(op);
     return power_semigroup(a, n, op);
 }
 
 template <AdditiveGroup T>
-std::negate<T> inverse_operation(std::plus<T>) {
+auto inverse_operation(std::plus<T>) {
     return std::negate<T>();
 }
 
 template <MultiplicativeGroup T>
 struct reciprocal {
-    T operator()(const T& x) const {
-        return T(1) / x;
+    auto operator()(const T& x) const {
+        return T{1} / x;
     }
 };
 
 template <MultiplicativeGroup T>
-reciprocal<T> inverse_operation(std::multiplies<T>) {
+auto inverse_operation(std::multiplies<T>) {
     return reciprocal<T>();
 }
 
-template <Regular A, Integer N, GroupOperation Op>
-// requires(Domain<Op, A>)
-A power_group(A a, N n, Op op) {
+template <GroupOperation Op>
+auto power_group(Regular a, Integer n, Op op)
+    //requires(Domain<Op, A>)
+{
     if (n < 0) {
         n = -n;
-        a = inverse_operation(op)(a); 
+        a = inverse_operation(op)(a);
     }
     return power_monoid(a, n, op);
 }
@@ -251,16 +362,16 @@ A power_group(A a, N n, Op op) {
 
 // Section 7.7
 
-int fib0(int n) {
+auto fib0(int n) {
     if (n == 0) return 0;
     if (n == 1) return 1;
     return fib0(n - 1) + fib0(n - 2);
 }
 
-int fibonacci_iterative(int n) {
+auto fibonacci_iterative(int n) {
     if (n == 0) return 0;
-    std::pair<int, int> v = {0, 1};
-    for (int i = 1; i < n; ++i) {
+    auto v = std::make_pair(0, 1);
+    for (auto i = 1; i < n; ++i) {
         v = {v.second, v.first + v.second};
     }
     return v.second;

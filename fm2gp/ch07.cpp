@@ -23,23 +23,23 @@
 #include "ch07.h"
 
 int main() {
-  std::cout << "mult_acc4(0, 7, 8) = " << mult_acc4(0, 7, 8) << std::endl;
-  std::cout << "multiply_accumulate0(0, 7, 8) = " << multiply_accumulate0(0, 7, 8) << std::endl;
-  std::cout << "multiply_accumulate(0, 7, 8) = " << multiply_accumulate(0, 7, 8) << std::endl;
-  std::cout << "multiply_accumulate_semigroup(0, 7, 8) = " << multiply_accumulate_semigroup(0, 7, 8) << std::endl;
-  std::cout << "multiply_semigroup(7, 8) = " << multiply_semigroup(7, 8) << std::endl;
-  std::cout << "multiply_monoid(7, 8) = " << multiply_monoid(7, 8) << std::endl;
-  std::cout << "multiply_group(7, 8) = " << multiply_group(7, 8) << std::endl;
-  std::cout << "power_accumulate_semigroup(1, 2, 10) = " << power_accumulate_semigroup(1, 2, 10) << std::endl;
-  std::cout << "power_semigroup(2, 10) = " << power_semigroup(2, 10) << std::endl;
-  std::cout << "power_monoid(2, 10) = " << power_monoid(2, 10) << std::endl;
-  std::cout << "power_monoid(2, 0) = " << power_monoid(2, 0) << std::endl;
-  std::cout << "power_group(2., -10) = " << power_group(2., -10) << std::endl;
-  std::plus<int> plus_int;
-  std::cout << "power_accumulate_semigroup(0, 7, 8, plus_int) = " << power_accumulate_semigroup(0, 7, 8, plus_int) << std::endl;
-  std::cout << "power_semigroup(7, 8, plus_int) = " << power_semigroup(7, 8, plus_int) << std::endl;
-  std::cout << "power_monoid(0, 8, plus_int) = " << power_monoid(0, 8, plus_int) << std::endl;
-  std::cout << "power_group(7, -8, plus_int) = " << power_group(7, -8, plus_int) << std::endl;
-  std::cout << "fib0(5) = " << fib0(5) << std::endl;
-  std::cout << "fibonacci_iterative(5) = " << fibonacci_iterative(5) << std::endl;
+    std::cout << "mult_acc4(0, 7, 8) = " << mult_acc4(0, 7, 8) << std::endl;
+    std::cout << "multiply_accumulate0(0, 7, 8) = " << multiply_accumulate0(0, 7, 8) << std::endl;
+    std::cout << "multiply_accumulate(0, 7, 8) = " << multiply_accumulate(0, 7, 8) << std::endl;
+    std::cout << "multiply_accumulate_semigroup(0, 7, 8) = " << multiply_accumulate_semigroup(0, 7, 8) << std::endl;
+    std::cout << "multiply_semigroup(7, 8) = " << multiply_semigroup(7, 8) << std::endl;
+    std::cout << "multiply_monoid(7, 8) = " << multiply_monoid(7, 8) << std::endl;
+    std::cout << "multiply_group(7, 8) = " << multiply_group(7, 8) << std::endl;
+    std::cout << "power_accumulate_semigroup(1, 2, 10) = " << power_accumulate_semigroup(1, 2, 10) << std::endl;
+    std::cout << "power_semigroup(2, 10) = " << power_semigroup(2, 10) << std::endl;
+    std::cout << "power_monoid(2, 10) = " << power_monoid(2, 10) << std::endl;
+    std::cout << "power_monoid(2, 0) = " << power_monoid(2, 0) << std::endl;
+    std::cout << "power_group(2., -10) = " << power_group(2., -10) << std::endl;
+    std::plus<int> plus_int;
+    std::cout << "power_accumulate_semigroup(0, 7, 8, plus_int) = " << power_accumulate_semigroup(0, 7, 8, plus_int) << std::endl;
+    std::cout << "power_semigroup(7, 8, plus_int) = " << power_semigroup(7, 8, plus_int) << std::endl;
+    std::cout << "power_monoid(0, 8, plus_int) = " << power_monoid(0, 8, plus_int) << std::endl;
+    std::cout << "power_group(7, -8, plus_int) = " << power_group(7, -8, plus_int) << std::endl;
+    std::cout << "fib0(5) = " << fib0(5) << std::endl;
+    std::cout << "fibonacci_iterative(5) = " << fibonacci_iterative(5) << std::endl;
 }

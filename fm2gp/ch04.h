@@ -21,15 +21,15 @@
 
 #include <algorithm>
 
-typedef unsigned line_segment;
-typedef unsigned integer;
+using line_segment = unsigned;
+using integer = unsigned;
 
 // Section 4.2
 
 bool odd(unsigned n) { return n & 0x1; }
-int half(unsigned n) { return n >> 1; }
+auto half(unsigned n) { return n >> 1; }
 
-line_segment gcm0(line_segment a, line_segment b) {
+auto gcm0(line_segment a, line_segment b) {
     while (a != b) {
         if (b < a) a = a - b;
         else b = b - a;
@@ -37,20 +37,20 @@ line_segment gcm0(line_segment a, line_segment b) {
     return a;
 }
 
-line_segment gcm1(line_segment a,  line_segment b) {
+auto gcm1(line_segment a, line_segment b) {
     while (a != b) {
         while (b < a) a = a - b;
-    std::swap(a, b);
+        std::swap(a, b);
     }
     return a;
 }
 
-line_segment segment_remainder(line_segment a, line_segment b) {
+auto segment_remainder(line_segment a, line_segment b) {
     while (b < a) a = a - b;
     return a;
 }
 
-line_segment gcm(line_segment a, line_segment b) {
+auto gcm(line_segment a, line_segment b) {
     while (a != b) {
         a = segment_remainder(a, b);
         std::swap(a, b);
@@ -58,7 +58,7 @@ line_segment gcm(line_segment a, line_segment b) {
     return a;
 }
 
-line_segment fast_segment_remainder(line_segment a, line_segment b) {
+auto fast_segment_remainder(line_segment a, line_segment b) {
     if (a <= b) return a;
     if (a - b <= b) return a - b;
     a = fast_segment_remainder(a, b + b);
@@ -66,7 +66,7 @@ line_segment fast_segment_remainder(line_segment a, line_segment b) {
     return a - b;
 }
 
-line_segment fast_segment_gcm(line_segment a, line_segment b) {
+auto fast_segment_gcm(line_segment a, line_segment b) {
     while (a != b) {
         a = fast_segment_remainder(a, b);
         std::swap(a, b);
@@ -76,7 +76,7 @@ line_segment fast_segment_gcm(line_segment a, line_segment b) {
 
 // Section 4.5
 
-line_segment fast_segment_remainder1(line_segment a, line_segment b) {
+auto fast_segment_remainder1(line_segment a, line_segment b) {
     // precondition: b != 0
     if (a < b) return a;
     if (a - b < b) return a - b;
@@ -85,16 +85,16 @@ line_segment fast_segment_remainder1(line_segment a, line_segment b) {
     return a - b;
 }
 
-line_segment largest_doubling(line_segment a, line_segment b) {
+auto largest_doubling(line_segment a, line_segment b) {
     // precondition: b != 0
     while (a - b >= b) b = b + b;
     return b;
 }
 
-line_segment remainder(line_segment a, line_segment b) {
+auto remainder(line_segment a, line_segment b) {
     // precondition: b != 0
     if (a < b) return a;
-    line_segment c = largest_doubling(a, b);
+    auto c = largest_doubling(a, b);
     a = a - c;
     while (c != b) {
         c = half(c);
@@ -103,23 +103,22 @@ line_segment remainder(line_segment a, line_segment b) {
     return a;
 }
 
-integer quotient(line_segment a, line_segment b) {
+auto quotient(line_segment a, line_segment b) {
     // Precondition: b > 0
     if (a < b) return integer(0);
-    line_segment c = largest_doubling(a, b);
-    integer n(1);
+    auto c = largest_doubling(a, b);
+    integer n{1};
     a = a - c;
     while (c != b) {
         c = half(c); n = n + n;
-        if (c <= a) { a = a - c; n = n + 1; } 
+        if (c <= a) { a = a - c; n = n + 1; }
     }
     return n;
 }
 
-std::pair<integer, line_segment>
-quotient_remainder(line_segment a, line_segment b) {
+auto quotient_remainder(line_segment a, line_segment b) {
     // Precondition: b > 0
-    if (a < b) return {integer(0), a};
+    if (a < b) return std::make_pair(integer(0), a);
     line_segment c = largest_doubling(a, b);
     integer n(1);
     a = a - c;
@@ -127,24 +126,24 @@ quotient_remainder(line_segment a, line_segment b) {
         c = half(c); n = n + n;
         if (c <= a) { a = a - c; n = n + 1; }
     }
-    return {n, a};
+    return std::make_pair(n, a);
 }
 
-line_segment remainder_fibonacci(line_segment a, line_segment b) {
+auto remainder_fibonacci(line_segment a, line_segment b) {
     // Precondition: b > 0
     if (a < b) return a;
-    line_segment c = b;
+    auto c = b;
     do {
-        line_segment tmp = c; c = b + c; b = tmp;
+        auto tmp = c; c = b + c; b = tmp;
     } while (a >= c);
     do {
         if (a >= b) a = a - b;
-        line_segment tmp = c - b; c = b; b = tmp;
+        auto tmp = c - b; c = b; b = tmp;
     } while (b < c);
     return a;
 }
 
-line_segment gcm_remainder(line_segment a, line_segment b) {
+auto gcm_remainder(line_segment a, line_segment b) {
     while (b != line_segment(0)) {
         a = remainder(a, b);
         std::swap(a, b);
@@ -152,7 +151,7 @@ line_segment gcm_remainder(line_segment a, line_segment b) {
     return a;
 }
 
-integer gcd(integer a, integer b) {
+auto gcd(integer a, integer b) {
     while (b != integer(0)) {
         a = a % b;
         std::swap(a, b);
