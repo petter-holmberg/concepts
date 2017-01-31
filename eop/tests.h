@@ -768,7 +768,7 @@ struct key_ordering
 };
 
 template<typename F, typename R>
-    requires Arity(F) == 1
+    requires Arity<F> == 1
     __requires(Function(F) &&
         Relation(R) && Codomain<F> == Domain<R>)
 struct input_type<key_ordering<F, R>, 0>

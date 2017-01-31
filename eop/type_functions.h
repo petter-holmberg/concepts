@@ -462,7 +462,8 @@ template<class F>
 struct function_traits<F&&> : public function_traits<F>
 {};
 
-#define Arity(T) function_traits<T>::arity
+template<typename T>
+constexpr auto Arity = function_traits<T>::arity;
 
 
 #endif // TYPE_FUNCTIONS
