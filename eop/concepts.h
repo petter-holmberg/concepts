@@ -21,6 +21,7 @@
 #ifndef EOP_CONCEPTS
 #define EOP_CONCEPTS
 
+#include <functional>
 #include <type_traits>
 
 namespace experimental {
@@ -286,6 +287,19 @@ template <class T, class... Args>
 concept bool Regular() {
     return DefaultConstructible<T>()
         && Destructible<T>();
+}
+
+template <typename T>
+typename std::decay<T>::type decay_(T&&);
+
+template <typename F>
+inline decltype(auto) make_invokable(F&& fn) { return fn; }
+
+template <typename P, typename... Args>
+concept bool Procedure() {
+    return requires(P p, Args... args) {
+        make_invokable(decay_(p))(args...);
+    };
 }
 
 template <typename F, typename...Args>

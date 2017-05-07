@@ -30,7 +30,7 @@
 
 #include <cstdlib> // malloc, free
 #include <cmath> // sqrt
-
+#include <cstddef>
 
 //
 //  Chapter 1. Foundations
@@ -890,22 +890,26 @@ auto max(const T& a, const T& b)
 
 // Clusters of related procedures: equality and ordering
 
-bool operator!=(const Regular& x, const Regular& y)
+template <typename T>
+bool operator!=(const T& x, const T& y)
 {
-    return !(x==y);
+    return !(x == y);
 }
 
-bool operator>(const TotallyOrdered& x, const TotallyOrdered& y)
+template <typename T>
+bool operator>(const T& x, const T& y)
 {
     return y < x;
 }
 
-bool operator<=(const TotallyOrdered& x, const TotallyOrdered& y)
+template <typename T>
+bool operator<=(const T& x, const T& y)
 {
     return !(y < x);
 }
 
-bool operator>=(const TotallyOrdered& x, const TotallyOrdered& y)
+template <typename T>
+bool operator>=(const T& x, const T& y)
 {
     return !(x < y);
 }
@@ -1299,10 +1303,9 @@ auto operator-(Iterator l, Iterator f)
 template<typename I>
 concept bool ReadableIterator = requires { Readable<I>() && Iterator<I>(); };
 
-template<typename I, typename Proc>
+template<ReadableIterator I, typename Proc>
 auto for_each(I f, I l, Proc proc)
-    requires ReadableIterator<I> && Arity<Proc> == 1
-    __requires(Procedure(Proc) && ValueType<I> == InputType<Proc, 0>)
+    requires Procedure<Proc, ValueType<I>>()
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1558,8 +1561,7 @@ auto reduce(ReadableIterator f, ReadableIterator l)
 
 template<ReadableIterator I, typename Proc>
 auto for_each_n(I f, DistanceType<I> n, Proc proc)
-    requires Arity<Proc> == 1
-    __requires(Procedure(Proc) && ValueType<I> == InputType<Proc, 0>)
+    requires Procedure<Proc, ValueType<I>>()
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
     while (!zero(n)) {
@@ -1854,8 +1856,7 @@ enum visit { pre, in, post };
 
 template<typename Proc>
 auto traverse_nonempty(BifurcateCoordinate c, Proc proc) -> Proc
-    requires Arity<Proc> == 2
-    __requires(Procedure(Proc) && visit == InputType<Proc, 0> && decltype(C) == InputType<Proc, 1>)
+    requires Procedure<Proc, visit, decltype(c)>()
 {
     // Precondition: $\property{tree}(c) \wedge \neg \func{empty}(c)$
     proc(pre, c);
@@ -1948,8 +1949,7 @@ auto height(BidirectionalBifurcateCoordinate c)
 
 template<typename Proc>
 auto traverse(BidirectionalBifurcateCoordinate c, Proc proc) -> Proc
-    requires Arity<Proc> == 2
-    __requires(Procedure(Proc) && visit == InputType<Proc, 0> && decltype(c) == InputType<Proc, 1>)
+    requires Procedure<Proc, visit, decltype(c)>()
 {
     // Precondition: $\property{tree}(c)$
     if (empty(c)) return proc;
@@ -2522,8 +2522,7 @@ void tree_rotate(EmptyLinkedBifurcateCoordinate& curr, EmptyLinkedBifurcateCoord
 
 template<typename Proc>
 auto traverse_rotating(EmptyLinkedBifurcateCoordinate c, Proc proc)
-    requires Arity<Proc> == 1
-    __requires(Procedure(Proc) && decltype(c) == InputType<Proc, 0>)
+    requires Procedure<Proc, decltype(c)>()
 {
     // Precondition: $\property{tree}(c)$
     if (empty(c)) return proc;
@@ -2589,8 +2588,7 @@ struct phased_applicator
 
 template<typename Proc>
 Proc traverse_phased_rotating(EmptyLinkedBifurcateCoordinate c, int phase, Proc proc)
-    requires Arity<Proc> == 1 && Same<decltype(c), InputType<Proc, 0>>()
-    __requires(Procedure(Proc))
+    requires Procedure<Proc, decltype(c)>()
 {
     // Precondition: $\property{tree}(c) \wedge 0 \leq phase < 3$
     phased_applicator<int, Proc> applicator{3, phase, 0, proc};
@@ -5480,8 +5478,7 @@ bool operator<(const stree<T>& x, const stree<T>& y)
 
 template<Regular T, typename Proc>
 void traverse(stree<T>& x, Proc proc)
-    requires Arity<Proc> == 2
-    __requires(Procedure(Proc) && visit == InputType<Proc, 0> && CoordinateType<stree<T>> == InputType<Proc, 1>)
+    requires Procedure<Proc, visit, CoordinateType<stree<T>>>()
 {
     traverse_nonempty(begin(x), proc);
 }
@@ -5694,10 +5691,7 @@ bool operator<(const tree<Regular>& x, const tree<Regular>& y)
 
 template<Regular T, typename Proc>
 void traverse(tree<T>& x, Proc proc)
-    requires Arity<Proc> == 2
-    __requires(Procedure(Proc) &&
-        visit == InputType<Proc, 0> &&
-        CoordinateType<tree<T>> == InputType<Proc, 1>)
+    requires Procedure<Proc, visit, CoordinateType<tree<T>>>()
 {
     traverse(begin(x), proc);
 }
@@ -6006,8 +6000,8 @@ auto sink(underlying_iterator<I>& x) -> UnderlyingType<ValueType<I>>&
     return underlying_ref(sink(x.i));
 }
 
-Iterator{i}
-auto deref(underlying_iterator<i>& x) -> UnderlyingType<ValueType<i>>&
+Iterator{I}
+auto deref(underlying_iterator<I>& x) -> UnderlyingType<ValueType<I>>&
 {
     return underlying_ref(deref(x.i));
 }
