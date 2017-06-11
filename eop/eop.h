@@ -3846,15 +3846,15 @@ struct counter_machine
     Op op;
     T z;
     T f[64];
-    pointer(T) l;
-    counter_machine(Op op, const Domain<Op>& z) : op{op}, z{z}, l{f} {}
+    DistanceType<pointer(T)> n;
+    counter_machine(Op op, const Domain<Op>& z) : op{op}, z{z}, n{0} {}
     void operator()(const T& x)
     {
         // Precondition: must not be called more than $2^{64}-1$ times
-        auto tmp = add_to_counter(f, l, op, x, z);
+        auto tmp = add_to_counter(f, f + n, op, x, z);
         if (tmp != z) {
-            sink(l) = tmp;
-            l = successor(l);
+            sink(f + n) = tmp;
+            n = successor(n);
         }
     }
 };
@@ -3890,7 +3890,7 @@ Domain<Op> reduce_balanced(I f, I l, Op op, F fun, const Domain<Op>& z)
         f = successor(f);
     }
     transpose_operation<Op> t_op{op};
-    return reduce_nonzeroes(c.f, c.l, t_op, z);
+    return reduce_nonzeroes(c.f, c.f + c.n, t_op, z);
 }
 
 BinaryOperation{Op}
@@ -3905,7 +3905,7 @@ auto reduce_balanced(Iterator f, Iterator l, Op op, const Domain<Op>& z)
         f = successor(f);
     }
     transpose_operation<Op> t_op{op};
-    return reduce_nonzeroes(c.f, c.l, t_op, z);
+    return reduce_nonzeroes(c.f, c.f + c.n, t_op, z);
 }
 
 UnaryPredicate{P}
