@@ -34,8 +34,8 @@
 // Chapter 2 - Transformations and their orbits
 
 
-template<typename F, typename P>
-    requires Transformation<F>()
+template <typename F, typename P>
+    requires Transformation<F>
     __requires(T == Domain<F> &&
         UnaryPredicate(P) && Domain<F> == Domain<P>)
 void output_orbit_structure(Domain<F> x, F f, P p)
@@ -56,7 +56,8 @@ void output_orbit_structure(Domain<F> x, F f, P p)
     print_eol();
 }
 
-template<Integer I>
+template <typename I>
+    requires Integer<I>
 struct additive_congruential_transformation
 {
     I modulus;
@@ -66,7 +67,8 @@ struct additive_congruential_transformation
     I operator()(I x) { return remainder(x + index, modulus); }
 };
 
-template<Integer I>
+template <typename I>
+    requires Integer<I>
 struct input_type<additive_congruential_transformation<I>, 0>
 {
     using type = I;
@@ -75,13 +77,13 @@ struct input_type<additive_congruential_transformation<I>, 0>
 
 // Definition space predicate for total transformation
 
-template<typename T>
+template <typename T>
 bool always_defined(const T&)
 {
     return true;
 }
 
-template<>
+template <>
 struct distance_type<additive_congruential_transformation<int>>
 {
     using type = unsigned int;
@@ -103,10 +105,8 @@ void run_additive_congruential_transformation()
     }
 }
 
-template<typename I>
-    requires Readable<I>()
-        && IndexedIterator<I>()
-        && Same<ValueType<I>, DistanceType<I>>()
+template <typename I>
+    requires ReadableIndexedIterator<I> && Same<ValueType<I>, DistanceType<I>>
 struct table_transformation
 {
     using N = DistanceType<I>;
@@ -119,10 +119,8 @@ struct table_transformation
     }
 };
 
-template<typename I>
-    requires Readable<I>()
-        && IndexedIterator<I>()
-        && Same<ValueType<I>, DistanceType<I>>()
+template <typename I>
+    requires ReadableIndexedIterator<I> && Same<ValueType<I>, DistanceType<I>>
 struct table_transformation_definition_space_predicate
 {
     using T = table_transformation<I>;
@@ -135,19 +133,15 @@ struct table_transformation_definition_space_predicate
     }
 };
 
-template<typename I>
-    requires Readable<I>()
-        && IndexedIterator<I>()
-        && Same<ValueType<I>, DistanceType<I>>()
+template <typename I>
+    requires ReadableIndexedIterator<I> && Same<ValueType<I>, DistanceType<I>>
 struct input_type<table_transformation<I>, 0>
 {
     using type = ValueType<I>;
 };
 
-template<typename I>
-    requires Readable<I>()
-        && IndexedIterator<I>()
-        && Same<ValueType<I>, DistanceType<I>>()
+template <typename I>
+    requires ReadableIndexedIterator<I> && Same<ValueType<I>, DistanceType<I>>
 struct distance_type<table_transformation<I>>
 {
     using type = DistanceType<I>;
@@ -187,13 +181,13 @@ struct srand_transformation // Transformation(srand_transformation)
     }
 };
 
-template<>
+template <>
 struct input_type<srand_transformation, 0>
 {
     using type = int;
 };
 
-template<>
+template <>
 struct distance_type<srand_transformation>
 {
     using type = unsigned int;
@@ -210,7 +204,8 @@ void run_srand_transformation()
     }
 }
 
-template<Regular T>
+template <typename T>
+    requires Regular<T>
 void push(array<T>& x, const T& y) {
     insert(back<array<T>>(x), y);
 }
@@ -226,13 +221,13 @@ struct LCG // linear congruential generator
     T operator()(T x) { return (a * x + b) % m; }
 };
 
-template<>
+template <>
 struct input_type<LCG, 0>
 {
     using type = long long;
 };
 
-template<>
+template <>
 struct distance_type<LCG>
 {
     using type = unsigned long long;
@@ -314,7 +309,7 @@ void run_any_lcg_transformation()
 
 // Chapter 3 - Ordered algebraic structures
 
-template<typename T>
+template <typename T>
     __requires(DiscreteEuclideanSemiring(T))
 struct multiplies_modulo {
     T m;
@@ -322,7 +317,7 @@ struct multiplies_modulo {
     T operator()(const T& x, const T& y) const { return (x * y) % m; }
 };
 
-template<typename T>
+template <typename T>
     __requires(DiscreteEuclideanSemiring(T))
 struct input_type<multiplies_modulo<T>, 0>
 {
@@ -361,7 +356,8 @@ void run_fibonacci()
     }
 }
 
-template<AdditiveMonoid T>
+template <typename T>
+    requires AdditiveMonoid<T>
 struct annotated_plus
 {
     T operator()(const T& x, const T& y)
@@ -372,19 +368,22 @@ struct annotated_plus
     }
 };
 
-template<AdditiveMonoid T>
+template <typename T>
+    requires AdditiveMonoid<T>
 struct input_type<annotated_plus<T>, 0>
 {
     using type = T;
 };
 
-template<AdditiveMonoid T>
+template <typename T>
+    requires AdditiveMonoid<T>
 struct codomain_type<annotated_plus<T>>
 {
     using type = T;
 };
 
-template<AdditiveMonoid T>
+template <typename T>
+    requires AdditiveMonoid<T>
 struct annotated_negate
 {
     T operator()(const T& x)
@@ -395,7 +394,8 @@ struct annotated_negate
     }
 };
 
-template<AdditiveGroup T>
+template <typename T>
+    requires AdditiveGroup<T>
 annotated_negate<T> inverse_operation(annotated_plus<T>& plus)
 {
     return annotated_negate<T>(source(plus.o));
@@ -422,19 +422,22 @@ void run_egyptian_multiplication()
 
 // Chapter 5 - Combining concepts
 
-template<EuclideanSemiring T>
+template <typename T>
+    requires EuclideanSemiring<T>
 struct modulus
 {
     T operator()(const T& x, const T& y) const { return x % y; }
 };
 
-template<EuclideanSemiring T>
+template <typename T>
+    requires EuclideanSemiring<T>
 struct input_type<modulus<T>, 0>
 {
     using type = T;
 };
 
-template<EuclideanSemiring T>
+template <typename T>
+    requires EuclideanSemiring<T>
 struct quo_rem
 {
     using I = QuotientType<T>;
@@ -444,7 +447,8 @@ struct quo_rem
     }
 };
 
-template<EuclideanSemiring T>
+template <typename T>
+    requires EuclideanSemiring<T>
 struct input_type<quo_rem<T>, 0>
 {
     using type = T;
@@ -477,7 +481,8 @@ void run_quotient_remainder()
 
 // Default remainder for EuclideanSemiring
 
-template<EuclideanSemiring T>
+template <typename T>
+    requires EuclideanSemiring<T>
 T remainder(T a, T b)
 {
     return a % b;
@@ -486,8 +491,8 @@ T remainder(T a, T b)
 
 // Default remainder for EuclideanSemimodule
 
-template<typename T, typename S>
-    requires EuclideanSemimodule<T, S>()
+template <typename T, typename S>
+    requires EuclideanSemimodule<T, S>
 T remainder(T a, T b)
 {
     return remainder_nonnegative(a, b);
@@ -521,7 +526,8 @@ void run_gcd()
 
 // Chapter 12 - Composite objects
 
-template<Regular T>
+template <typename T>
+    requires Regular<T>
 struct verify_conservation
 {
     const T* t;
@@ -595,7 +601,8 @@ void run_list_tests()
     print("Sorted:       "); print(l); print_eol();
 }
 
-template<EmptyLinkedBifurcateCoordinate C>
+template <typename C>
+    requires EmptyLinkedBifurcateCoordinate<C>
 struct serializer
 {
     using N = WeightType<C>;
@@ -610,13 +617,15 @@ struct serializer
     }
 };
 
-template<EmptyLinkedBifurcateCoordinate C>
+template <typename C>
+    requires EmptyLinkedBifurcateCoordinate<C>
 void stree_serialize(C c)
 {
     traverse_rotating(c, serializer<C>());
 }
 
-template<EmptyLinkedBifurcateCoordinate C>
+template <typename C>
+    requires EmptyLinkedBifurcateCoordinate<C>
 void tree_serialize(C c)
 {
     traverse_rotating(c, serializer<C>());
@@ -800,8 +809,8 @@ void run_tree_tests()
     print_eol();
 }
 
-template<Relation R, typename I>
-    requires Mutable<I>() && Integer<ValueType<I>>()
+template <typename R, typename I>
+    requires Relation<R> && Mutable<I> && Integer<ValueType<I>>
 struct instrumented_less
 {
     R r;
@@ -814,14 +823,15 @@ struct instrumented_less
     }
 };
 
-template<Relation R, typename I>
-    requires Mutable<I>() && Integer<ValueType<I>>()
+template <typename R, typename I>
+    requires Relation<R> && Mutable<I> && Integer<ValueType<I>>
 struct input_type<instrumented_less<R, I>, 0>
 {
     using type = Domain<R>;
 };
 
-template<Regular T>
+template <typename T>
+    requires Regular<T>
 struct tracer
 {
     T t;
@@ -848,19 +858,19 @@ struct tracer
     }
 };
 
-template<>
+template <>
 struct needs_construction_type<underlying_type<array<double>>>
 {
     using type = false_type;
 };
 
-template<>
+template <>
 struct needs_destruction_type<underlying_type<array<double>>>
 {
     using type = false_type;
 };
 
-template<int kkkk>
+template <int kkkk>
 void run_array_tests()
 {
     {

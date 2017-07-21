@@ -215,7 +215,7 @@ auto collision_point(const Domain<F>& x, F f, P p)
 
 template<Transformation F, UnaryPredicate P>
 bool terminating(const Domain<F>& x, F f, P p)
-    requires Same<Domain<F>, Domain<P>>()
+    requires Same<Domain<F>, Domain<P>>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     return !p(collision_point(x, f, p));
@@ -245,7 +245,7 @@ bool circular_nonterminating_orbit(const Domain<F>& x, F f)
 
 template<Transformation F, UnaryPredicate P>
 bool circular(const Domain<F>& x, F f, P p)
-    requires Same<Domain<F>, Domain<P>>()
+    requires Same<Domain<F>, Domain<P>>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     Domain<F> y = collision_point(x, f, p);
@@ -1213,7 +1213,7 @@ auto quotient_remainder_nonnegative_iterative(HalvableMonoid a, HalvableMonoid b
 
 template<typename Op>
 auto remainder(Domain<Op> a, Domain<Op> b, Op rem)
-    requires BinaryOperation<Op>() && ArchimedeanGroup<Domain<Op>>()
+    requires BinaryOperation<Op> && ArchimedeanGroup<Domain<Op>>
 {
     // Precondition: $b \neq 0$
     using T = decltype(a);
@@ -1235,7 +1235,7 @@ auto remainder(Domain<Op> a, Domain<Op> b, Op rem)
 
 template<HomogeneousFunction F>
 auto quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem)
-    requires ArchimedeanGroup<Domain<F>>() && Arity<F> == 2
+    requires ArchimedeanGroup<Domain<F>> && Arity<F> == 2
     __requires(Codomain<F> == pair<QuotientType<Domain<F>>, Domain<F>>)
 {
     // Precondition: $b \neq 0$
@@ -1300,12 +1300,9 @@ auto operator-(Iterator l, Iterator f)
     return n;
 }
 
-template<typename I>
-concept bool ReadableIterator = requires { Readable<I>() && Iterator<I>(); };
-
 template<ReadableIterator I, typename Proc>
 auto for_each(I f, I l, Proc proc)
-    requires Procedure<Proc, ValueType<I>>()
+    requires Procedure<Proc, ValueType<I>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1350,35 +1347,35 @@ auto find_if_not(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
 // Exercise 6.1: quantifier functions
 
 bool all(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>()
+    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if_not(f, l, p);
 }
 
 bool none(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>()
+    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if(f, l, p);
 }
 
 bool not_all(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>()
+    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !all(f, l, p);
 }
 
 bool some(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>()
+    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !none(f, l, p);
 }
 
 auto count_if(ReadableIterator f, ReadableIterator l, UnaryPredicate p, Iterator j)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>()
+    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1393,7 +1390,7 @@ auto count_if(ReadableIterator f, ReadableIterator l, UnaryPredicate p, Iterator
 
 
 auto count_if(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>()
+    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return count_if(f, l, p, DistanceType<decltype(f)>{0});
@@ -1437,7 +1434,7 @@ auto count_not(I f, I l, const ValueType<I>& x)
 
 ReadableIterator{I}
 auto count_if_not(I f, I l, UnaryPredicate p, Iterator j)
-    requires Same<Domain<decltype(p)>, ValueType<decltype(f)>>()
+    requires Same<Domain<decltype(p)>, ValueType<decltype(f)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1449,7 +1446,7 @@ auto count_if_not(I f, I l, UnaryPredicate p, Iterator j)
 
 ReadableIterator{I}
 auto count_if_not(I f, I l, UnaryPredicate p)
-    requires Same<Domain<decltype(p)>, ValueType<decltype(f)>>()
+    requires Same<Domain<decltype(p)>, ValueType<decltype(f)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return count_if_not(f, l, p, DistanceType<decltype(f)>{0});
@@ -1457,7 +1454,7 @@ auto count_if_not(I f, I l, UnaryPredicate p)
 
 template<typename I, typename Op, UnaryFunction F>
 auto reduce_nonempty(I f, I l, Op op, F fun)
-    requires Iterator<I>() && BinaryOperation<Op>()
+    requires Iterator<I> && BinaryOperation<Op>
     __requires(I == Domain<F> && Codomain<F> == Domain<Op>)
 {
     // Precondition: $\property{bounded\_range}(f, l) \wedge f \neq l$
@@ -1474,7 +1471,7 @@ auto reduce_nonempty(I f, I l, Op op, F fun)
 
 ReadableIterator{I}
 auto reduce_nonempty(I f, I l, BinaryOperation op)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(op)>>()
+    requires Same<ValueType<decltype(f)>, Domain<decltype(op)>>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge f \neq l$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1489,7 +1486,7 @@ auto reduce_nonempty(I f, I l, BinaryOperation op)
 
 BinaryOperation{Op}
 auto reduce(Iterator f, Iterator l, Op op, UnaryFunction fun, const Domain<Op>& z)
-    requires Same<decltype(f), Domain<decltype(fun)>>()
+    requires Same<decltype(f), Domain<decltype(fun)>>
     __requires(Codomain<decltype(fun)> == Domain<Op>)
 {
     // Precondition: $\property{bounded\_range}(f, l)$
@@ -1501,7 +1498,7 @@ auto reduce(Iterator f, Iterator l, Op op, UnaryFunction fun, const Domain<Op>& 
 
 BinaryOperation{Op}
 auto reduce(Iterator f, Iterator l, Op op, const Domain<Op>& z)
-    requires Same<ValueType<decltype(f)>, Domain<Op>>()
+    requires Same<ValueType<decltype(f)>, Domain<Op>>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1511,7 +1508,7 @@ auto reduce(Iterator f, Iterator l, Op op, const Domain<Op>& z)
 
 BinaryOperation{Op}
 auto reduce_nonzeroes(Iterator f, Iterator l, Op op, UnaryFunction fun, const Domain<Op>& z)
-    requires Same<decltype(f), Domain<decltype(fun)>>()
+    requires Same<decltype(f), Domain<decltype(fun)>>
     __requires(I == Domain<decltype(fun)> && Codomain<F> == Domain<Op>)
 {
     // Precondition: $\property{bounded\_range}(f, l)$
@@ -1533,7 +1530,7 @@ auto reduce_nonzeroes(Iterator f, Iterator l, Op op, UnaryFunction fun, const Do
 
 BinaryOperation{Op}
 auto reduce_nonzeroes(Iterator f, Iterator l, Op op, const Domain<Op>& z)
-    requires Same<ValueType<decltype(f)>, Domain<Op>>()
+    requires Same<ValueType<decltype(f)>, Domain<Op>>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1552,7 +1549,7 @@ auto reduce_nonzeroes(Iterator f, Iterator l, Op op, const Domain<Op>& z)
 }
 
 auto reduce(ReadableIterator f, ReadableIterator l)
-    requires AdditiveMonoid<ValueType<decltype(f)>>()
+    requires AdditiveMonoid<ValueType<decltype(f)>>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     using T = ValueType<decltype(f)>;
@@ -1561,7 +1558,7 @@ auto reduce(ReadableIterator f, ReadableIterator l)
 
 template<ReadableIterator I, typename Proc>
 auto for_each_n(I f, DistanceType<I> n, Proc proc)
-    requires Procedure<Proc, ValueType<I>>()
+    requires Procedure<Proc, ValueType<I>>
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
     while (!zero(n)) {
@@ -1668,13 +1665,9 @@ bool partitioned(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
 
 // Exercise 6.6: partitioned_n
 
-
-template<typename I>
-concept bool ReadableForwardIterator = requires { Readable<I>() && ForwardIterator<I>(); };
-
 ReadableForwardIterator{I}
 auto find_adjacent_mismatch_forward(I f, I l, Relation r)
-    requires Same<ValueType<I>, Domain<decltype(r)>>()
+    requires Same<ValueType<I>, Domain<decltype(r)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     if (f == l) return l;
@@ -1725,7 +1718,7 @@ struct lower_bound_predicate
 
 ReadableForwardIterator{I}
 auto lower_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, Relation r)
-    requires Same<ValueType<I>, Domain<decltype(r)>>()
+    requires Same<ValueType<I>, Domain<decltype(r)>>
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
@@ -1745,7 +1738,7 @@ struct upper_bound_predicate
 
 ReadableForwardIterator{I}
 auto upper_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, Relation r)
-    requires Same<ValueType<I>, Domain<decltype(r)>>()
+    requires Same<ValueType<I>, Domain<decltype(r)>>
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
@@ -1768,12 +1761,9 @@ auto operator-(I l, DistanceType<I> n)
     return l;
 }
 
-template<typename I>
-concept bool ReadableBidirectionalIterator = requires { Readable<I>() && BidirectionalIterator<I>(); };
-
 ReadableBidirectionalIterator{I}
 auto find_backward_if(I f, I l, UnaryPredicate p)
-    requires Same<ValueType<I>, Domain<decltype(p)>>()
+    requires Same<ValueType<I>, Domain<decltype(p)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (l != f && !p(source(predecessor(l))))
@@ -1783,7 +1773,7 @@ auto find_backward_if(I f, I l, UnaryPredicate p)
 
 ReadableBidirectionalIterator{I}
 auto find_backward_if_not(I f, I l, UnaryPredicate p)
-    requires Same<ValueType<I>, Domain<decltype(p)>>()
+    requires Same<ValueType<I>, Domain<decltype(p)>>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (l != f && p(source(predecessor(l))))
@@ -1799,7 +1789,7 @@ auto find_backward_if_not(I f, I l, UnaryPredicate p)
 
 
 auto find_backward_if_unguarded(ReadableBidirectionalIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(l)>, Domain<decltype(p)>>()
+    requires Same<ValueType<decltype(l)>, Domain<decltype(p)>>
 {
     // Precondition:
     // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{some}(f, l, p)$
@@ -1809,7 +1799,7 @@ auto find_backward_if_unguarded(ReadableBidirectionalIterator l, UnaryPredicate 
 }
 
 auto find_backward_if_not_unguarded(ReadableBidirectionalIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(l)>, Domain<decltype(p)>>()
+    requires Same<ValueType<decltype(l)>, Domain<decltype(p)>>
 {
     // Precondition:
     // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{not\_all}(f, l, p)$
@@ -1856,7 +1846,7 @@ enum visit { pre, in, post };
 
 template<typename Proc>
 auto traverse_nonempty(BifurcateCoordinate c, Proc proc) -> Proc
-    requires Procedure<Proc, visit, decltype(c)>()
+    requires Procedure<Proc, visit, decltype(c)>
 {
     // Precondition: $\property{tree}(c) \wedge \neg \func{empty}(c)$
     proc(pre, c);
@@ -1949,7 +1939,7 @@ auto height(BidirectionalBifurcateCoordinate c)
 
 template<typename Proc>
 auto traverse(BidirectionalBifurcateCoordinate c, Proc proc) -> Proc
-    requires Procedure<Proc, visit, decltype(c)>()
+    requires Procedure<Proc, visit, decltype(c)>
 {
     // Precondition: $\property{tree}(c)$
     if (empty(c)) return proc;
@@ -2045,9 +2035,6 @@ struct lexicographical_equal_k<0, I0, I1>
     }
 };
 
-template<typename C>
-concept bool ReadableBifurcateCoordinate = requires { Readable<C>() && BifurcateCoordinate<C>(); };
-
 template<ReadableBifurcateCoordinate C0, ReadableBifurcateCoordinate C1>
 bool bifurcate_equivalent_nonempty(C0 c0, C1 c1, Relation r)
     __requires(ValueType<C0> == ValueType<C1> && ValueType<C0> == Domain<R>)
@@ -2070,9 +2057,6 @@ bool bifurcate_equivalent_nonempty(C0 c0, C1 c1, Relation r)
     else if (has_right_successor(c1)) return false;
     return true;
 }
-
-template<typename C>
-concept bool ReadableBidirectionalBifurcateCoordinate = requires { Readable<C>() && BidirectionalBifurcateCoordinate<C>(); };
 
 template<ReadableBidirectionalBifurcateCoordinate C0, ReadableBidirectionalBifurcateCoordinate C1>
 bool bifurcate_equivalent(C0 c0, C1 c1, Relation r)
@@ -2442,7 +2426,7 @@ auto reverse_append(I f, I l, I h, ForwardLinker set_link)
 }
 
 template<Readable I, Predicate P>
-    requires Same<ValueType<I>, Domain<P>>()
+    requires Same<ValueType<I>, Domain<P>>
 struct predicate_source
 {
     P p;
@@ -2454,7 +2438,8 @@ struct predicate_source
 };
 
 template<typename I, ForwardLinker S, UnaryPredicate P>
-    requires Same<I, IteratorType<S>>() && Same<ValueType<I>, Domain<P>>()
+    requires Same<I, IteratorType<S>>
+        && Same<ValueType<I>, Domain<P>>
 auto partition_linked(I f, I l, P p, S set_link)
 {
     // Precondition: $\property{bounded\_range}(f, l)$
@@ -2463,7 +2448,8 @@ auto partition_linked(I f, I l, P p, S set_link)
 }
 
 template<Readable I0, Readable I1, Relation R>
-    requires Same<ValueType<I0>, ValueType<I1>>() && Same<ValueType<I0>, Domain<R>>()
+    requires Same<ValueType<I0>, ValueType<I1>>
+        && Same<ValueType<I0>, Domain<R>>
 struct relation_source
 {
     R r;
@@ -2476,8 +2462,8 @@ struct relation_source
 
 Readable{I}
 auto merge_linked_nonempty(I f0, I l0, I f1, I l1, Relation r, ForwardLinker set_link)
-    requires Same<I, IteratorType<decltype(set_link)>>()
-        && Same<ValueType<I>, Domain<decltype(r)>>()
+    requires Same<I, IteratorType<decltype(set_link)>>
+        && Same<ValueType<I>, Domain<decltype(r)>>
 {
     // Precondition: $f0 \neq l0 \wedge f1 \neq l1$
     // Precondition: $\property{increasing\_range}(f0, l0, r)$
@@ -2490,7 +2476,8 @@ auto merge_linked_nonempty(I f0, I l0, I f1, I l1, Relation r, ForwardLinker set
 
 template<Readable I, ForwardLinker S, Relation R>
 auto sort_linked_nonempty_n(I f, DistanceType<I> n, R r, S set_link)
-    requires Same<I, IteratorType<S>>() && Same<ValueType<I>, Domain<R>>()
+    requires Same<I, IteratorType<S>>
+        && Same<ValueType<I>, Domain<R>>
 {
     // Precondition: $\property{counted\_range}(f, n) \wedge
     //                n > 0 \wedge \func{weak\_ordering}(r)$
@@ -2522,7 +2509,7 @@ void tree_rotate(EmptyLinkedBifurcateCoordinate& curr, EmptyLinkedBifurcateCoord
 
 template<typename Proc>
 auto traverse_rotating(EmptyLinkedBifurcateCoordinate c, Proc proc)
-    requires Procedure<Proc, decltype(c)>()
+    requires Procedure<Proc, decltype(c)>
 {
     // Precondition: $\property{tree}(c)$
     if (empty(c)) return proc;
@@ -2588,7 +2575,7 @@ struct phased_applicator
 
 template<typename Proc>
 Proc traverse_phased_rotating(EmptyLinkedBifurcateCoordinate c, int phase, Proc proc)
-    requires Procedure<Proc, decltype(c)>()
+    requires Procedure<Proc, decltype(c)>
 {
     // Precondition: $\property{tree}(c) \wedge 0 \leq phase < 3$
     phased_applicator<int, Proc> applicator{3, phase, 0, proc};
@@ -2599,10 +2586,6 @@ Proc traverse_phased_rotating(EmptyLinkedBifurcateCoordinate c, int phase, Proc 
 //
 //  Chapter 9. Copying
 //
-
-
-template<typename O>
-concept bool WritableIterator = requires { Writable<O>() && Iterator<O>(); };
 
 void copy_step(ReadableIterator& f_i, WritableIterator& f_o)
     __requires(ValueType<decltype(i)> == ValueType<decltype(o)>)
@@ -2638,7 +2621,7 @@ auto fill(I f, I l, const ValueType<I>& x) -> I
 
 WritableIterator{O}
 auto iota(ValueType<O> n, O o) // like APL $\iota$
-    requires Integer<decltype(n)>()
+    requires Integer<decltype(n)>
 {
     // Precondition: $\property{writable\_counted\_range}(o, n) \wedge n \geq 0$
     return copy(ValueType<O>{0}, n, o);
@@ -2647,7 +2630,7 @@ auto iota(ValueType<O> n, O o) // like APL $\iota$
 // Useful for testing in conjunction with iota
 ReadableIterator{I}
 bool equal_iota(I f, I l, ValueType<I> n = 0)
-    requires Integer<ValueType<I>>()
+    requires Integer<ValueType<I>>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -2688,9 +2671,6 @@ auto fill_n(I f, DistanceType<I> n, const ValueType<I>& x) -> I
     while (count_down(n)) fill_step(f, x);
     return f;
 }
-
-template<typename I>
-concept bool WritableBidirectionalIterator = requires { Writable<I>() && BidirectionalIterator<I>(); };
 
 void copy_backward_step(ReadableBidirectionalIterator& l_i, WritableBidirectionalIterator & l_o)
     __requires(ValueType<decltype(l_i)> == ValueType<decltype(l_o)>)
@@ -3002,9 +2982,6 @@ void exchange_values(I0 x, I1 y)
     sink(y) = t;
 }
 
-template<typename I>
-concept bool MutableForwardIterator = requires { Mutable<I>() && ForwardIterator<I>(); };
-
 template<MutableForwardIterator I0, MutableForwardIterator I1>
 void swap_step(I0& f0, I1& f1)
     __requires(ValueType<I0> == ValueType<I1>)
@@ -3044,9 +3021,6 @@ auto swap_ranges_n(I0 f0, I1 f1, Integer n)
     while (count_down(n)) swap_step(f0, f1);
     return pair<I0, I1>{f0, f1};
 }
-
-template<typename I>
-concept bool MutableBidirectionalIterator = requires { Mutable<I>() && BidirectionalIterator<I>(); };
 
 void reverse_swap_step(MutableBidirectionalIterator& l0, MutableForwardIterator& f1)
     __requires(ValueType<decltype(l0)> == ValueType<decltype(f1)>)
@@ -3138,7 +3112,7 @@ void cycle_from(Mutable i, Transformation f)
 
 template<typename I>
 void reverse_n_indexed(I f, DistanceType<I> n)
-    requires Mutable<I>() && IndexedIterator<I>()
+    requires MutableIndexedIterator<I>
 {
     // Precondition: $\property{mutable\_counted\_range}(f, n)$
     decltype(n) i{0};
@@ -3150,9 +3124,6 @@ void reverse_n_indexed(I f, DistanceType<I> n)
         n = predecessor(n);
     }
 }
-
-template<typename I>
-concept bool MutableBidirectionalIterator = requires { Mutable<I>() && BidirectionalIterator<I>(); };
 
 void reverse_bidirectional(
     MutableBidirectionalIterator f, MutableBidirectionalIterator l
@@ -3174,9 +3145,6 @@ void reverse_n_bidirectional(I f, I l, DistanceType<I> n)
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge 0 \leq n \leq l - f$
     reverse_swap_ranges_n(l, f, half_nonnegative(n));
 }
-
-template<typename I>
-concept bool MutableForwardIterator = requires { Mutable<I>() && ForwardIterator<I>(); };
 
 MutableForwardIterator{I}
 auto reverse_n_with_buffer(I f_i, DistanceType<I> n, MutableBidirectionalIterator f_b)
@@ -3261,9 +3229,6 @@ struct k_rotate_from_permutation_indexed
     }
 };
 
-template<typename I>
-concept bool MutableIndexedIterator = requires { Mutable<I>() && IndexedIterator<I>(); };
-
 MutableIndexedIterator{I}
 auto rotate_cycles(I f, I m, I l, Transformation from)
     __requires(I == Domain<decltype(from)>)
@@ -3283,9 +3248,6 @@ auto rotate_indexed_nontrivial(I f, I m, I l)
     k_rotate_from_permutation_indexed<I> p(f, m, l);
     return rotate_cycles(f, m, l, p);
 }
-
-template<typename I>
-concept bool MutableRandomAccessIterator = requires { Mutable<I>() && RandomAccessIterator<I>(); };
 
 MutableRandomAccessIterator{I}
 auto rotate_random_access_nontrivial(I f, I m, I l)
@@ -3392,9 +3354,6 @@ void reverse_indexed(MutableIndexedIterator f, MutableIndexedIterator l)
 
 
 // temporary_buffer type
-
-template<typename I>
-concept bool WritableForwardIterator = requires { Writable<I>() && ForwardIterator<I>(); };
 
 void construct_all(WritableForwardIterator f, WritableForwardIterator l)
 {
@@ -4002,7 +3961,7 @@ auto merge_n_adaptive(
     I f1, DistanceType<I> n1,
     B f_b, DistanceType<B> n_b, Relation r
 )
-    requires Same<ValueType<I>, ValueType<B>>()
+    requires Same<ValueType<I>, ValueType<B>>
     __requires(ValueType<I> == Domain<decltype(r)>)
 {
     // Precondition: $\property{mergeable}(f_0, n_0, f_1, n_1, r)$
@@ -4776,7 +4735,7 @@ auto erase_first(slist_iterator<Regular> i)
 
 template<Regular T, typename U>
 auto erase_first(slist_iterator<T> i, U& u)
-    requires Destroyable<T, U>()
+    requires Destroyable<T, U>
 {
     auto j = successor(i);
     destroy(sink(i), u);
@@ -4792,7 +4751,7 @@ void erase_after(slist_iterator<Regular> i)
 
 template<Regular T, typename U>
 void erase_after(slist_iterator<T> i, U& u)
-    requires Destroyable<T, U>()
+    requires Destroyable<T, U>
 {
     set_successor(i, erase_first(successor(i), u));
 }
@@ -4880,7 +4839,7 @@ bool operator<(const slist<Regular>& x, const slist<Regular>& y)
 
 template<Regular T, typename U>
 auto insert(after<slist<T>> p, const U& u)
-    requires Constructible<T, U>()
+    requires Constructible<T, U>
 {
     slist_node_count = successor(slist_node_count);
     slist_iterator<T> i{reinterpret_cast<slist_node<T>*>(malloc(sizeof(slist_node<T>)))};
@@ -5044,7 +5003,7 @@ void erase(list_iterator<Regular> i)
 
 template<Regular T, typename U>
 void erase(list_iterator<T> i, U& u)
-    requires Destroyable<T, U>()
+    requires Destroyable<T, U>
 {
     set_link_bidirectional(predecessor(i), successor(i));
     destroy(sink(i), u);
@@ -5138,7 +5097,7 @@ bool operator<(const list<Regular>& x, const list<Regular>& y)
 
 template<Regular T, typename U>
 auto insert(list_iterator<T> j, const U& u)
-    requires Constructible<T, U>()
+    requires Constructible<T, U>
 {
     list_node_count = successor(list_node_count);
     list_iterator<T> i{(list_node<T>*)malloc(sizeof(list_node<T>))};
@@ -5150,7 +5109,7 @@ auto insert(list_iterator<T> j, const U& u)
 
 template<Regular T, typename U>
 auto insert(after<list<T>> p, const U& u)
-    requires Constructible<T, U>()
+    requires Constructible<T, U>
 {
     return after<list<T>>(base(p), insert(successor(current(p)), u));
 }
@@ -5478,7 +5437,7 @@ bool operator<(const stree<T>& x, const stree<T>& y)
 
 template<Regular T, typename Proc>
 void traverse(stree<T>& x, Proc proc)
-    requires Procedure<Proc, visit, CoordinateType<stree<T>>>()
+    requires Procedure<Proc, visit, CoordinateType<stree<T>>>
 {
     traverse_nonempty(begin(x), proc);
 }
@@ -5691,7 +5650,7 @@ bool operator<(const tree<Regular>& x, const tree<Regular>& y)
 
 template<Regular T, typename Proc>
 void traverse(tree<T>& x, Proc proc)
-    requires Procedure<Proc, visit, CoordinateType<tree<T>>>()
+    requires Procedure<Proc, visit, CoordinateType<tree<T>>>
 {
     traverse(begin(x), proc);
 }
@@ -5847,7 +5806,7 @@ bool operator<(const array<Regular>& x, const array<Regular>& y)
 
 template<Regular T, Regular U>
 auto insert(back<array<T>> p, const U& y)
-    requires Constructible<T, U>()
+    requires Constructible<T, U>
 {
     using N = DistanceType<IteratorType<array<T>>>;
     auto n = size(base(p));
@@ -5860,7 +5819,7 @@ auto insert(back<array<T>> p, const U& y)
 
 template<Regular T, Linearizable W>
 auto insert_range(before<array<T>> p, const W& w)
-    requires Constructible<T, ValueType<W>>()
+    requires Constructible<T, ValueType<W>>
 {
     using I = IteratorType<array<T>>;
     auto o_f = current(p) - begin(p);
