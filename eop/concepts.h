@@ -26,25 +26,108 @@
 
 #define concept concept bool
 
+template <typename T>
+    //requires TotallyOrdered<T>
+struct less
+{
+    bool operator()(const T& x, const T& y)
+    {
+        return x < y;
+    }
+};
+
 // For types X and Y, Same<X, Y> is true iff X and Y
 // denote exactly the same type after elimination of aliases.
 template <typename T, typename U>
 concept Same = std::is_same<T, U>::value;
 
-//template <typename T>
-//concept Assignable =
-//    requires (T a, const T& b) {
-//        { a = b } -> T&;
-//    };
+template <typename T, typename U>
+concept Same_remove_cv = std::is_same<typename std::remove_cv<T>::type, typename std::remove_cv<U>::type>::value;
 
 template <typename T>
-concept Assignable = true;
-//    requires (T a, const T& b) {
-//        { a = b } -> T&;
-//    };
+concept Equality_comparable =
+    requires (const T& x, const T& y) {
+        { x == y } -> bool;
+        { x != y } -> bool;
+        // axiom equivalence_relation {
+        //     x == x;
+        //     x == y => y == x;
+        //     x == y && y == z => x == z;
+        // }
+        // axiom equality {
+        //     x == y <=> eq(x, y);
+        // }
+        // axiom complement {
+        //     x != y <=> !(y == x);
+        // }
+        // complexity {
+        //     O(areaof(min(areaof(x), areaof(y))));
+        // }
+    };
+
+template <typename T, typename U>
+concept Equality_comparable_with =
+    requires (const T& x, const U& y) {
+        { x == y } -> bool;
+        { x != y } -> bool;
+        { y == x } -> bool;
+        { y != x } -> bool;
+    };
+
+template <typename T, typename U>
+concept Assignable =
+    requires (T x, U&& y) {
+        { x = std::forward<U>(y) } -> T&;
+        // axiom copy_semantics {
+        //     is_lvalue_reference<decltype(y)> => eq(x = y, y);
+        // }
+        // axiom move_semantics {
+        //     is_rvalue_reference<decltype(y)> => eq(x, y) => eq(x, z = std::move(y));
+        // }
+        // complexity {
+        //     is_lvalue_reference<decltype(y)> => O(areaof(y));
+        //     is_rvalue_reference<decltype(y)> => O(sizeof(y));
+        // }
+    };
 
 template <typename T>
-concept Destructible = std::is_nothrow_destructible<T>::value;
+concept Equality_comparable = true;
+/*    requires (const T& x, const T& y) {
+        { x == y } -> bool;
+        { x != y } -> bool;
+        // axiom equivalence_relation {
+        //     x == x;
+        //     x == y => y == x;
+        //     x == y && y == z => x == z;
+        // }
+        // axiom equality {
+        //     x == y <=> eq(x, y);
+        // }
+        // axiom complement {
+        //     x != y <=> !(y == x);
+        // }
+        // complexity {
+        //     O(areaof(min(areaof(x), areaof(y))));
+        // }
+    };
+*/
+
+template <typename T, typename U>
+concept Equality_comparable_with =
+    requires (const T& x, const U& y) {
+        { x == y } -> bool;
+        { x != y } -> bool;
+        { y == x } -> bool;
+        { y != x } -> bool;
+    };
+
+template <typename T>
+concept Destructible =
+    std::is_nothrow_destructible<T>::value;
+    // axiom end_of_object_lifetimes {}
+    // complexity {
+    //     O(areaof(x));
+    // }
 
 template <typename T, typename ...Args>
 concept Constructible =
@@ -52,18 +135,86 @@ concept Constructible =
     std::is_constructible<T, Args...>::value;
 
 template <typename T>
-concept DefaultConstructible = Constructible<T>;
+concept Default_constructible = Constructible<T>;
 
 template <typename T>
-concept CopyConstructible = Constructible<T, const T&>;
+concept Move_constructible =
+    std::is_convertible<T, T&&>::value &&
+    Constructible<T, T&&>;
+    // axiom move_semantics {
+    //     eq(x, y) => eq(T{std::move(x)}, y);
+    // }
+    // complexity {
+    //     O(sizeof(x));
+    // }
 
 template <typename T>
-concept Copyable = true; // Constructible<T, const T&> && Assignable<T>;
+concept Copy_constructible =
+    //Move_constructible<T> &&
+    Constructible<T, const T&>;
+    // axiom copy_semantics {
+    //     eq(T{x}, y);
+    // }
+    // complexity {
+    //     O(sizeof(y));
+    // }
+
+template <typename T>
+concept Movable =
+    std::is_object<T>::value &&
+    Move_constructible<T> &&
+    Assignable<T, T&&>;
+    // axiom partially_formed {
+    //     // std::move(x) not necessarily well-formed*
+    //     T{std::move(x)} => x = std::move(y);
+    //     T{std::move(x)} => ~x;
+    //     y = std::move(x) => x = std::move(y);
+    //     y = std::move(x) => ~x;
+    // }
+
+template <typename T>
+concept Copyable = true;
+    //Copy_constructible<T>;
+    //Movable<T>;// &&
+    //Copy_constructible<T>;// &&
+    //Assignable<T, const T&>;
+    // axiom partially_formed {
+    //     // std::move(a) not necessarily well-formed
+    //     T{std::move(a)} => a = b;
+    //     b = std::move(a) = a = b;
+    // }
+
+template <typename T>
+concept Default_totally_ordered =
+    Equality_comparable<T> &&
+    requires (const T& x, const T& y) {
+        { less<T>{}(x, y) } -> bool;
+        // axiom total_ordering {
+        //    std::less<T>{}(x, y) && std::less<T>{}(y, z) => std::less<T>{}(x, z);
+        //    std::less<T>{}(x, y) || std::less<T>{}(y, x) || x == y;
+        // }
+        // complexity {
+        //     O(areaof(x));
+        // }
+    };
 
 // Chapter 1: Foundations
 
-template <typename T, typename ...Args>
-concept Regular = Copyable<T> && DefaultConstructible<T>;
+template <typename T>
+concept Regular =
+    Equality_comparable<T> &&
+    Default_constructible<T> &&
+    Copyable<T>;
+    // Default_totally_ordered<T>;
+    // axiom partially_formed {
+    //     // T x not necessarily well-formed
+    //     T x => x = std::move(y);
+    //     T x => x = y;
+    //     T x => ~x;
+    // }
+    // complexity default_constructor {
+    //     O(1);
+    // }
 
 template <typename T>
 typename std::decay<T>::type decay_(T&&);

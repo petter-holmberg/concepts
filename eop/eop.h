@@ -65,7 +65,8 @@ auto square(const Domain<BinaryOperation>& x, BinaryOperation op)
 
 // Function object for equality
 
-Regular{T}
+template <typename T>
+    requires Regular<T>
 struct equal
 {
     bool operator()(const T& x, const T& y)
@@ -74,7 +75,8 @@ struct equal
     }
 };
 
-Regular{T}
+template <typename T>
+    requires Regular<T>
 struct input_type<equal<T>, 0>
 {
     using type = T;
@@ -84,7 +86,8 @@ struct input_type<equal<T>, 0>
 // type pair (see chapter 12 of Elements of Programming)
 // model Regular(Pair)
 
-template<Regular T0, Regular T1>
+template <typename T0, typename T1>
+    requires Regular<T0> && Regular<T1>
 struct pair
 {
     T0 m0;
@@ -93,19 +96,22 @@ struct pair
     pair(const T0& m0, const T1& m1) : m0{m0}, m1{m1} {}
 };
 
-template<Regular T0, Regular T1>
+template <typename T0, typename T1>
+    requires Regular<T0> && Regular<T1>
 struct underlying_type<pair<T0, T1>>
 {
     using type = pair<UnderlyingType<T0>, UnderlyingType<T1>>;
 };
 
-template<Regular T0, Regular T1>
+template <typename T0, typename T1>
+    requires Regular<T0> && Regular<T1>
 bool operator==(const pair<T0, T1>& x, const pair<T0, T1>& y)
 {
     return x.m0 == y.m0 && x.m1 == y.m1;
 }
 
-template<TotallyOrdered T0, TotallyOrdered T1>
+template <typename T0, typename T1>
+    requires Regular<T0> && Regular<T1>
 bool operator<(const pair<T0, T1>& x, const pair<T0, T1>& y)
 {
     return x.m0 < y.m0 || (!(y.m0 < x.m0) && x.m1 < y.m1);
@@ -115,7 +121,8 @@ bool operator<(const pair<T0, T1>& x, const pair<T0, T1>& y)
 // type triple (see Exercise 12.2 of Elements of Programming)
 // model Regular(triple)
 
-template<Regular T0, Regular T1, Regular T2>
+template <typename T0, typename T1, typename T2>
+    requires Regular<T0> && Regular<T1> && Regular<T2>
 struct triple
 {
     T0 m0;
@@ -125,19 +132,22 @@ struct triple
     triple(T0 m0, T1 m1, T2 m2) : m0{m0}, m1{m1}, m2{m2} {}
 };
 
-template<Regular T0, Regular T1, Regular T2>
+template <typename T0, typename T1, typename T2>
+    requires Regular<T0> && Regular<T1> && Regular<T2>
 struct underlying_type<triple<T0, T1, T2>>
 {
     using type = triple<UnderlyingType<T0>, UnderlyingType<T1>, UnderlyingType<T2>>;
 };
 
-template<Regular T0, Regular T1, Regular T2>
+template <typename T0, typename T1, typename T2>
+    requires Regular<T0> && Regular<T1> && Regular<T2>
 bool operator==(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
 {
     return x.m0 == y.m0 && x.m1 == y.m1 && x.m2 == y.m2;
 }
 
-template<Regular T0, Regular T1, Regular T2>
+template <typename T0, typename T1, typename T2>
+    requires Regular<T0> && Regular<T1> && Regular<T2>
 bool operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
 {
     return
@@ -166,12 +176,12 @@ auto euclidean_norm(double x, double y, double z)
     return sqrt(x * x + y * y + z * z);
 } // ternary operation
 
-Transformation{F}
-auto power_unary(Domain<F> x, Integer n, F f)
+template <typename F, typename N>
+    requires Transformation<F> && Integer<N>
+auto power_unary(Domain<F> x, N n, F f) -> Domain<F>
 {
     // Precondition:
     // $n \geq 0 \wedge (\forall i \in N)\,0 < i \leq n \Rightarrow f^i(x)$ is defined
-    using N = decltype(n);
     while (n != N{0}) {
         n = n - N{1};
         x = f(x);
@@ -179,8 +189,9 @@ auto power_unary(Domain<F> x, Integer n, F f)
     return x;
 }
 
-Transformation{F}
-auto distance(Domain<F> x, Domain<F> y, F f)
+template <typename F>
+    requires Transformation<F>
+auto distance(Domain<F> x, Domain<F> y, F f) -> DistanceType<F>
 {
     // Precondition: $y$ is reachable from $x$ under $f$
     using N = DistanceType<F>;
@@ -192,9 +203,10 @@ auto distance(Domain<F> x, Domain<F> y, F f)
     return n;
 }
 
-template<Transformation F, UnaryPredicate P>
-auto collision_point(const Domain<F>& x, F f, P p)
+template <typename F, typename P>
+    requires Transformation<F> && UnaryPredicate<P>
     __requires(Domain<F> == Domain<P>)
+auto collision_point(const Domain<F>& x, F f, P p) -> Domain<F>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     if (!p(x)) return x;
@@ -213,15 +225,16 @@ auto collision_point(const Domain<F>& x, F f, P p)
     // Postcondition: return value is terminal point or collision point
 }
 
-template<Transformation F, UnaryPredicate P>
+template <typename F, typename P>
+    requires Transformation<F> && UnaryPredicate<P> && Same<Domain<F>, Domain<P>>
 bool terminating(const Domain<F>& x, F f, P p)
-    requires Same<Domain<F>, Domain<P>>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     return !p(collision_point(x, f, p));
 }
 
-Transformation{F}
+template <typename F>
+    requires Transformation<F>
 auto collision_point_nonterminating_orbit(const Domain<F>& x, F f)
 {
     Domain<F> slow = x;        // $slow = f^0(x)$
@@ -237,23 +250,25 @@ auto collision_point_nonterminating_orbit(const Domain<F>& x, F f)
     // Postcondition: return value is collision point
 }
 
-Transformation{F}
+template <typename F>
+    requires Transformation<F>
 bool circular_nonterminating_orbit(const Domain<F>& x, F f)
 {
     return x == f(collision_point_nonterminating_orbit(x, f));
 }
 
-template<Transformation F, UnaryPredicate P>
+template <typename F, typename P>
+    requires Transformation<F> && UnaryPredicate<P> && Same<Domain<F>, Domain<P>>
 bool circular(const Domain<F>& x, F f, P p)
-    requires Same<Domain<F>, Domain<P>>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     Domain<F> y = collision_point(x, f, p);
     return p(y) && x == f(y);
 }
 
-Transformation{F}
-auto convergent_point(Domain<F> x0, Domain<F> x1, F f)
+template <typename F>
+    requires Transformation<F>
+auto convergent_point(Domain<F> x0, Domain<F> x1, F f) -> Domain<F>
 {
     // Precondition: $(\exists n \in \func{DistanceType}(F))\,n \geq 0 \wedge f^n(x0) = f^n(x1)$
     while (x0 != x1) {
@@ -263,17 +278,19 @@ auto convergent_point(Domain<F> x0, Domain<F> x1, F f)
     return x0;
 }
 
-Transformation{F}
-auto connection_point_nonterminating_orbit(const Domain<F>& x, F f)
+template <typename F>
+    requires Transformation<F>
+auto connection_point_nonterminating_orbit(const Domain<F>& x, F f) -> Domain<F>
 {
     return convergent_point(
         x, f(collision_point_nonterminating_orbit(x, f)), f
     );
 }
 
-template<Transformation F, UnaryPredicate P>
-auto connection_point(const Domain<F>& x, F f, P p)
+template <typename F, typename P>
+    requires Transformation<F> && UnaryPredicate<P>
     __requires(Domain<F> == Domain<P>)
+auto connection_point(const Domain<F>& x, F f, P p) -> Domain<F>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     auto y = collision_point(x, f, p);
@@ -283,8 +300,9 @@ auto connection_point(const Domain<F>& x, F f, P p)
 
 // Exercise 2.3:
 
-Transformation{F}
-auto convergent_point_guarded(Domain<F> x0, Domain<F> x1, Domain<F> y, F f)
+template <typename F>
+    requires Transformation<F>
+auto convergent_point_guarded(Domain<F> x0, Domain<F> x1, Domain<F> y, F f) -> Domain<F>
 {
     // Precondition: $\func{reachable}(x0, y, f) \wedge \func{reachable}(x1, y, f)$
     using N = DistanceType<F>;
@@ -297,8 +315,10 @@ auto convergent_point_guarded(Domain<F> x0, Domain<F> x1, Domain<F> y, F f)
     return convergent_point(x0, x1, f);
 }
 
-Transformation{F}
-auto orbit_structure_nonterminating_orbit(const Domain<F>& x, F f)
+template <typename F>
+    requires Transformation<F>
+auto orbit_structure_nonterminating_orbit(const Domain<F>& x, F f) ->
+    triple<DistanceType<F>, DistanceType<F>, Domain<F>>
 {
     auto y = connection_point_nonterminating_orbit(x, f);
     return triple<DistanceType<F>, DistanceType<F>, Domain<F>>{
@@ -306,9 +326,11 @@ auto orbit_structure_nonterminating_orbit(const Domain<F>& x, F f)
     };
 }
 
-Transformation{F}
-auto orbit_structure(const Domain<F>& x, F f, UnaryPredicate p)
+template <typename F, typename P>
+    requires Transformation<F> && UnaryPredicate<P>
     __requires(Domain<F> == Domain<P>)
+auto orbit_structure(const Domain<F>& x, F f, P p) ->
+    triple<DistanceType<F>, DistanceType<F>, Domain<F>>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     using N = DistanceType<F>;
@@ -327,24 +349,27 @@ auto orbit_structure(const Domain<F>& x, F f, UnaryPredicate p)
 //
 
 
-template<Integer I, BinaryOperation Op>
-auto power_left_associated(Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_left_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $n > 0$
     if (n == I{1}) return a;
     return op(power_left_associated(a, n - I{1}, op), a);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_right_associated(Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_right_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $n > 0$
     if (n == I{1}) return a;
     return op(a, power_right_associated(a, n - I{1}, op));
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_0(Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_0(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     if (n == I{1}) return a;
@@ -352,8 +377,9 @@ auto power_0(Domain<Op> a, I n, Op op)
     return op(power_0(op(a, a), n / I{2}, op), a);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_1(Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_1(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     if (n == I{1}) return a;
@@ -362,8 +388,9 @@ auto power_1(Domain<Op> a, I n, Op op)
     return r;
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n == I{0}) return r;
@@ -371,8 +398,9 @@ auto power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op)
     return power_accumulate_0(r, op(a, a), n / I{2}, op);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n == I{0}) return r;
@@ -381,8 +409,9 @@ auto power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op)
     return power_accumulate_1(r, op(a, a), n / I{2}, op);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n % I{2} != I{0}) {
@@ -392,8 +421,9 @@ auto power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op)
     return power_accumulate_2(r, op(a, a), n / I{2}, op);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n % I{2} != I{0}) {
@@ -405,8 +435,9 @@ auto power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op)
     return power_accumulate_3(r, a, n, op);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     while (true) {
@@ -419,8 +450,9 @@ auto power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op)
     }
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     while (true) {
@@ -433,23 +465,26 @@ auto power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op)
     }
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_accumulate_5(Domain<Op> r, Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_accumulate_5(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
     if (n == I{0}) return r;
     return power_accumulate_positive_0(r, a, n, op);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_2(Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_2(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     return power_accumulate_5(a, a, n - I{1}, op);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_3(Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_3(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
     while (n % I{2} == I{0}) {
@@ -461,8 +496,9 @@ auto power_3(Domain<Op> a, I n, Op op)
     return power_accumulate_positive_0(a, op(a, a), n, op);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
     while (true) {
@@ -475,16 +511,18 @@ auto power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op)
     }
 }
 
-template<Integer I, BinaryOperation Op>
-auto power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
     if (zero(n)) return r;
     return power_accumulate_positive(r, a, n, op);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power(Domain<Op> a, I n, Op op)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
     while (even(n)) {
@@ -496,24 +534,27 @@ auto power(Domain<Op> a, I n, Op op)
     return power_accumulate_positive(a, op(a, a), n, op);
 }
 
-template<Integer I, BinaryOperation Op>
-auto power(Domain<Op> a, I n, Op op, Domain<Op> id)
+template <typename I, typename Op>
+    requires Integer<I> && BinaryOperation<Op>
+auto power(Domain<Op> a, I n, Op op, Domain<Op> id) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
     if (zero(n)) return id;
     return power(a, n, op);
 }
 
-Integer{I}
+template <typename I>
+    requires Integer<I>
 auto fibonacci_matrix_multiply(const pair<I, I>& x, const pair<I, I>& y) -> pair<I, I>
 {
     return {x.m0 * (y.m1 + y.m0) + x.m1 * y.m0, x.m0 * y.m0 + x.m1 * y.m1};
 }
 
-auto fibonacci(Integer n)
+template <typename I>
+    requires Integer<I>
+auto fibonacci(I n) -> I
 {
     // Precondition: $n \geq 0$
-    using I = decltype(n);
     if (n == I{0}) return I{0};
     return power({I{1}, I{0}}, n, fibonacci_matrix_multiply<I>).m0;
 }
@@ -529,7 +570,8 @@ auto fibonacci(Integer n)
 // Exercise 4.3: Give an example of a symmetric relation that is not reflexive
 
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct complement
 {
     R r;
@@ -539,13 +581,15 @@ struct complement
     }
 };
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct input_type<complement<R>, 0>
 {
     using type = Domain<R>;
 };
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct converse
 {
     R r;
@@ -556,13 +600,15 @@ struct converse
     }
 };
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct input_type<converse<R>, 0>
 {
     using type = Domain<R>;
 };
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct complement_of_converse
 {
     using T = Domain<R>;
@@ -574,13 +620,15 @@ struct complement_of_converse
     }
 };
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct input_type<complement_of_converse<R>, 0>
 {
     using type = Domain<R>;
 };
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct symmetric_complement
 {
     R r;
@@ -591,13 +639,15 @@ struct symmetric_complement
     }
 };
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct input_type<symmetric_complement<R>, 0>
 {
     using type = Domain<R>;
 };
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto select_0_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     // Precondition: $\func{weak\_ordering}(r)$
@@ -605,7 +655,8 @@ auto select_0_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
     return a;
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto select_1_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     // Precondition: $\func{weak\_ordering}(r)$
@@ -613,15 +664,17 @@ auto select_1_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
     return b;
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto select_0_3(
-    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
-) -> const Domain<R>&
+    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r) ->
+    const Domain<R>&
 {
     return select_0_2(select_0_2(a, b, r), c, r);
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto select_2_3(
     const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
 ) -> const Domain<R>&
@@ -629,7 +682,8 @@ auto select_2_3(
     return select_1_2(select_1_2(a, b, r), c, r);
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto select_1_3_ab(
     const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
 ) -> const Domain<R>&
@@ -638,7 +692,8 @@ auto select_1_3_ab(
     return select_1_2(a, c, r); // $b$ is not the median
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto select_1_3(
     const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
 ) -> const Domain<R>&
@@ -649,7 +704,8 @@ auto select_1_3(
         select_1_3_ab(a, b, c, r);
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto select_1_4_ab_cd(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -664,7 +720,8 @@ auto select_1_4_ab_cd(
         select_0_2(b, c, r);
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto select_1_4_ab(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -679,7 +736,8 @@ auto select_1_4_ab(
         select_1_4_ab_cd(a, b, c, d, r);
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto select_1_4(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -699,10 +757,12 @@ auto select_1_4(
 
 // Order selection procedures with stability indices
 
-template<bool strict, Relation R>
+template <bool strict, typename R>
+    requires Relation<R>
 struct compare_strict_or_reflexive;
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct compare_strict_or_reflexive<true, R> // strict
 {
     bool operator()(const Domain<R>& a, const Domain<R>& b, R r)
@@ -711,7 +771,8 @@ struct compare_strict_or_reflexive<true, R> // strict
     }
 };
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct compare_strict_or_reflexive<false, R> // reflexive
 {
     bool operator()(const Domain<R>& a, const Domain<R>& b, R r)
@@ -720,7 +781,8 @@ struct compare_strict_or_reflexive<false, R> // reflexive
     }
 };
 
-template<int ia, int ib, Relation R>
+template <int ia, int ib, typename R>
+    requires Relation<R>
 auto select_0_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
@@ -728,7 +790,8 @@ auto select_0_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
     return a;
 }
 
-template<int ia, int ib, Relation R>
+template <int ia, int ib, typename R>
+    requires Relation<R>
 auto select_1_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
@@ -736,7 +799,8 @@ auto select_1_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
     return b;
 }
 
-template<int ia, int ib, int ic, int id, Relation R>
+template <int ia, int ib, int ic, int id, typename R>
+    requires Relation<R>
 auto select_1_4_ab_cd(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -752,7 +816,8 @@ auto select_1_4_ab_cd(
         select_0_2<ib,ic>(b, c, r);
 }
 
-template<int ia, int ib, int ic, int id, Relation R>
+template <int ia, int ib, int ic, int id, typename R>
+    requires Relation<R>
 auto select_1_4_ab(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -768,7 +833,8 @@ auto select_1_4_ab(
         select_1_4_ab_cd<ia,ib,ic,id>(a, b, c, d, r);
 }
 
-template<int ia, int ib, int ic, int id, Relation R>
+template <int ia, int ib, int ic, int id, typename R>
+    requires Relation<R>
 auto select_1_4(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -784,7 +850,8 @@ auto select_1_4(
         select_1_4_ab<ia,ib,ic,id>(a, b, c, d, r);
 }
 
-template<int ia, int ib, int ic, int id, int ie, Relation R>
+template <int ia, int ib, int ic, int id, int ie, typename R>
+    requires Relation<R>
 auto select_2_5_ab_cd(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -801,7 +868,8 @@ auto select_2_5_ab_cd(
         select_1_4_ab<ic,id,ib,ie>(c, d, b, e, r);
 }
 
-template<int ia, int ib, int ic, int id, int ie, Relation R>
+template <int ia, int ib, int ic, int id, int ie, typename R>
+    requires Relation<R>
 auto select_2_5_ab(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -818,7 +886,8 @@ auto select_2_5_ab(
         select_2_5_ab_cd<ia,ib,ic,id,ie>(a, b, c, d, e, r);
 }
 
-template<int ia, int ib, int ic, int id, int ie, Relation R>
+template <int ia, int ib, int ic, int id, int ie, typename R>
+    requires Relation<R>
 auto select_2_5(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -839,7 +908,8 @@ auto select_2_5(
 // on average
 
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 auto median_5(
     const Domain<R>& a,
     const Domain<R>& b,
@@ -860,29 +930,33 @@ auto median_5(
 
 // Natural total ordering
 
-TotallyOrdered{T}
-struct less
-{
-    bool operator()(const T& x, const T& y)
-    {
-        return x < y;
-    }
-};
+//template <typename T>
+//    requires TotallyOrdered<T>
+//struct less
+//{
+//    bool operator()(const T& x, const T& y)
+//    {
+//        return x < y;
+//    }
+//};
 
-TotallyOrdered{T}
+template <typename T>
+    requires TotallyOrdered<T>
 struct input_type<less<T>, 0>
 {
     using type = T;
 };
 
-TotallyOrdered{T}
+template <typename T>
 auto min(const T& a, const T& b)
+    requires TotallyOrdered<T>
 {
     return select_0_2(a, b, less<T>());
 }
 
-TotallyOrdered{T}
+template <typename T>
 auto max(const T& a, const T& b)
+    requires TotallyOrdered<T>
 {
     return select_1_2(a, b, less<T>());
 }
@@ -923,7 +997,8 @@ bool operator>=(const T& x, const T& y)
 //
 
 
-AdditiveSemigroup{T}
+template <typename T>
+    requires AdditiveSemigroup<T>
 struct plus
 {
     auto operator()(const T& x, const T& y)
@@ -932,13 +1007,15 @@ struct plus
     }
 };
 
-AdditiveSemigroup{T}
+template <typename T>
+    requires AdditiveSemigroup<T>
 struct input_type<plus<T>, 0>
 {
     using type = T;
 };
 
-MultiplicativeSemigroup{T}
+template <typename T>
+    requires MultiplicativeSemigroup<T>
 struct multiplies
 {
     auto operator()(const T& x, const T& y)
@@ -947,13 +1024,14 @@ struct multiplies
     }
 };
 
-MultiplicativeSemigroup{T}
+template <typename T>
+    requires MultiplicativeSemigroup<T>
 struct input_type<multiplies<T>, 0>
 {
     using type = T;
 };
 
-template<typename Op>
+template <typename Op>
     __requires(SemigroupOperation(Op)) // ***** or MultiplicativeSemigroup ?????
 struct multiplies_transformation
 {
@@ -966,14 +1044,15 @@ struct multiplies_transformation
     }
 };
 
-template<typename Op>
+template <typename Op>
    __requires(SemigroupOperation(Op))
 struct input_type<multiplies_transformation<Op>, 0>
 {
     using type = Domain<Op>;
 };
 
-AdditiveGroup{T}
+template <typename T>
+    requires AdditiveGroup<T>
 struct negate
 {
     auto operator()(const T& x)
@@ -982,29 +1061,36 @@ struct negate
     }
 };
 
-AdditiveGroup{T}
+template <typename T>
+    requires AdditiveGroup<T>
 struct input_type<negate<T>, 0>
 {
     using type = T;
 };
 
-auto abs(const OrderedAdditiveGroup& a)
+template <typename T>
+    requires OrderedAdditiveGroup<T>
+auto abs(const T& a) -> T
 {
     if (a < decltype(a){0}) return -a;
     else return a;
 }
 
-auto slow_remainder(CancellableMonoid a, CancellableMonoid b)
+template <typename T>
+    requires CancellableMonoid<T>
+auto slow_remainder(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     while (b <= a) a = a - b;
     return a;
 }
 
-auto slow_quotient(ArchimedeanMonoid a, ArchimedeanMonoid b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto slow_quotient(T a, T b) -> QuotientType<T>
 {
     // Precondition: $a \geq 0 \wedge b > 0$
-    QuotientType<decltype(a)> n{0};
+    QuotientType<T> n{0};
     while (b <= a) {
         a = a - b;
         n = successor(n);
@@ -1012,7 +1098,8 @@ auto slow_quotient(ArchimedeanMonoid a, ArchimedeanMonoid b)
     return n;
 }
 
-ArchimedeanMonoid{T}
+template <typename T>
+    requires ArchimedeanMonoid<T>
 auto remainder_recursive(T a, T b) -> T
 {
     // Precondition: $a \geq b > 0$
@@ -1023,7 +1110,9 @@ auto remainder_recursive(T a, T b) -> T
     return a - b;
 }
 
-auto remainder_nonnegative(ArchimedeanMonoid a, ArchimedeanMonoid b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto remainder_nonnegative(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     if (a < b) return a;
@@ -1037,7 +1126,9 @@ auto remainder_nonnegative(ArchimedeanMonoid a, ArchimedeanMonoid b)
     Volume 19, Number 2, 1990, pages 329--340.
 */
 
-auto remainder_nonnegative_fibonacci(ArchimedeanMonoid a, ArchimedeanMonoid b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto remainder_nonnegative_fibonacci(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     if (a < b) return a;
@@ -1056,14 +1147,18 @@ auto remainder_nonnegative_fibonacci(ArchimedeanMonoid a, ArchimedeanMonoid b)
     return a;
 }
 
-auto largest_doubling(ArchimedeanMonoid a, ArchimedeanMonoid b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto largest_doubling(T a, T b) -> T
 {
     // Precondition: $a \geq b > 0$
     while (b <= a - b) b = b + b;
     return b;
 }
 
-auto remainder_nonnegative_iterative(HalvableMonoid a, HalvableMonoid b)
+template <typename T>
+    requires HalvableMonoid<T>
+auto remainder_nonnegative_iterative(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     if (a < b) return a;
@@ -1078,7 +1173,9 @@ auto remainder_nonnegative_iterative(HalvableMonoid a, HalvableMonoid b)
 
 // Jon Brandt suggested this algorithm (it is not mentioned in chapter 5):
 
-auto remainder_nonnegative_with_largest_doubling(ArchimedeanMonoid a, ArchimedeanMonoid b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto remainder_nonnegative_with_largest_doubling(T a, T b) -> T
 {
     // Precondition: $a \geq T(0) \wedge b > T(0)$
     while (b <= a)
@@ -1086,7 +1183,9 @@ auto remainder_nonnegative_with_largest_doubling(ArchimedeanMonoid a, Archimedea
     return a;
 }
 
-auto subtractive_gcd_nonzero(ArchimedeanMonoid a, ArchimedeanMonoid b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto subtractive_gcd_nonzero(T a, T b) -> T
 {
     // Precondition: $a > 0 \wedge b > 0$
     while (true) {
@@ -1099,10 +1198,11 @@ auto subtractive_gcd_nonzero(ArchimedeanMonoid a, ArchimedeanMonoid b)
     }
 }
 
-auto subtractive_gcd(EuclideanMonoid a, EuclideanMonoid b)
+template <typename T>
+    requires EuclideanMonoid<T>
+auto subtractive_gcd(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
-    using T = decltype(a);
     while (true) {
         if (b == T{0}) return a;
         while (b <= a) a = a - b;
@@ -1111,10 +1211,11 @@ auto subtractive_gcd(EuclideanMonoid a, EuclideanMonoid b)
     }
 }
 
-auto fast_subtractive_gcd(EuclideanMonoid a, EuclideanMonoid b)
+template <typename T>
+    requires EuclideanMonoid<T>
+auto fast_subtractive_gcd(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
-    using T = decltype(a);
     while (true) {
         if (b == T{0}) return a;
         a = remainder_nonnegative(a, b);
@@ -1123,10 +1224,11 @@ auto fast_subtractive_gcd(EuclideanMonoid a, EuclideanMonoid b)
     }
 }
 
-auto gcd(EuclideanSemiring a, EuclideanSemiring b)
+template <typename T>
+    requires EuclideanSemiring<T>
+auto gcd(T a, T b) -> T
 {
     // Precondition: $\neg(a = 0 \wedge b = 0)$
-    using T = decltype(a);
     while (true) {
         if (b == T{0}) return a;
         a = remainder(a, b);
@@ -1135,7 +1237,8 @@ auto gcd(EuclideanSemiring a, EuclideanSemiring b)
     }
 }
 
-EuclideanSemimodule{T, S}
+template <typename T, typename S>
+    requires EuclideanSemimodule<T, S>
 auto gcd(T a, T b)
 {
     // Precondition: $\neg(a = 0 \wedge b = 0)$
@@ -1150,7 +1253,9 @@ auto gcd(T a, T b)
 
 // Exercise 5.3:
 
-auto stein_gcd_nonnegative(Integer a, Integer b)
+template <typename T>
+    requires Integer<T>
+auto stein_gcd_nonnegative(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
     if (zero(a)) return b;
@@ -1173,10 +1278,11 @@ auto stein_gcd_nonnegative(Integer a, Integer b)
         } else return binary_scale_up_nonnegative(a, d);
 }
 
-auto quotient_remainder_nonnegative(ArchimedeanMonoid a, ArchimedeanMonoid b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto quotient_remainder_nonnegative(T a, T b) -> pair<QuotientType<T>, T>
 {
     // Precondition: $a \geq 0 \wedge b > 0$
-    using T = decltype(a);
     using N = QuotientType<T>;
     using NT = pair<N, T>;
     if (a < b) return NT{N{0}, a};
@@ -1190,10 +1296,11 @@ auto quotient_remainder_nonnegative(ArchimedeanMonoid a, ArchimedeanMonoid b)
         return NT{successor(m), a - b};
 }
 
-auto quotient_remainder_nonnegative_iterative(HalvableMonoid a, HalvableMonoid b)
+template <typename T>
+    requires HalvableMonoid<T>
+auto quotient_remainder_nonnegative_iterative(T a, T b) -> pair<QuotientType<T>, T>
 {
     // Precondition: $a \geq 0 \wedge b > 0$
-    using T = decltype(a);
     using N = QuotientType<T>;
     using NT = pair<N, T>;
     if (a < b) return NT{N{0}, a};
@@ -1211,9 +1318,9 @@ auto quotient_remainder_nonnegative_iterative(HalvableMonoid a, HalvableMonoid b
     return NT{n, a};
 }
 
-template<typename Op>
-auto remainder(Domain<Op> a, Domain<Op> b, Op rem)
+template <typename Op>
     requires BinaryOperation<Op> && ArchimedeanGroup<Domain<Op>>
+auto remainder(Domain<Op> a, Domain<Op> b, Op rem) -> Domain<Op>
 {
     // Precondition: $b \neq 0$
     using T = decltype(a);
@@ -1233,10 +1340,11 @@ auto remainder(Domain<Op> a, Domain<Op> b, Op rem)
     return r;
 }
 
-template<HomogeneousFunction F>
-auto quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem)
-    requires ArchimedeanGroup<Domain<F>> && Arity<F> == 2
+template <typename F>
+    requires HomogeneousFunction<F> && ArchimedeanGroup<Domain<F>> && Arity<F> == 2
     __requires(Codomain<F> == pair<QuotientType<Domain<F>>, Domain<F>>)
+auto quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem) ->
+    pair<QuotientType<Domain<F>>, Domain<F>>
 {
     // Precondition: $b \neq 0$
     using T = decltype(a);
@@ -1271,14 +1379,18 @@ auto quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem)
 //
 
 
-void increment(Iterator& x)
+template <typename I>
+    requires Iterator<I>
+void increment(I& x)
 {
     // Precondition: $\func{successor}(x)$ is defined
     x = successor(x);
 }
 
 
-auto operator+(Iterator f, DistanceType<Iterator> n)
+template <typename I>
+    requires Iterator<I>
+auto operator+(I f, DistanceType<I> n) -> I
 {
     // Precondition: $n \geq 0 \wedge \property{weak\_range}(f, n)$
     while (!zero(n)) {
@@ -1289,10 +1401,12 @@ auto operator+(Iterator f, DistanceType<Iterator> n)
 }
 
 
-auto operator-(Iterator l, Iterator f)
+template <typename I>
+    requires Iterator<I>
+auto operator-(I l, I f) -> DistanceType<I>
 {
     // Precondition: $\property{bounded\_range}(f, l)$
-    DistanceType<decltype(l)> n{0};
+    DistanceType<I> n{0};
     while (f != l) {
         n = successor(n);
         f = successor(f);
@@ -1300,9 +1414,9 @@ auto operator-(Iterator l, Iterator f)
     return n;
 }
 
-template<ReadableIterator I, typename Proc>
-auto for_each(I f, I l, Proc proc)
-    requires Procedure<Proc, ValueType<I>>
+template <typename I, typename Proc>
+    requires ReadableIterator<I> && Procedure<Proc, ValueType<I>>
+auto for_each(I f, I l, Proc proc) -> Proc
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1312,32 +1426,40 @@ auto for_each(I f, I l, Proc proc)
     return proc;
 }
 
-template<typename I>
-auto find(I f, I l, const ValueType<I>& x)
+template <typename I>
+    requires Iterator<I>
+auto find(I f, I l, const ValueType<I>& x) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && source(f) != x) f = successor(f);
     return f;
 }
 
-ReadableIterator{I}
-auto find_not(I f, I l, const ValueType<I>& x)
+template <typename I>
+    requires ReadableIterator<I>
+auto find_not(I f, I l, const ValueType<I>& x) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && source(f) == x) f = successor(f);
     return f;
 }
 
-auto find_if(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_if(I f, I l, P p) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && !p(source(f))) f = successor(f);
     return f;
 }
 
-auto find_if_not(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_if_not(I f, I l, P p) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && p(source(f))) f = successor(f);
@@ -1346,36 +1468,51 @@ auto find_if_not(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
 
 // Exercise 6.1: quantifier functions
 
-bool all(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+bool all(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if_not(f, l, p);
 }
 
-bool none(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+bool none(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if(f, l, p);
 }
 
-bool not_all(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+bool not_all(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !all(f, l, p);
 }
 
-bool some(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+bool some(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !none(f, l, p);
 }
 
-auto count_if(ReadableIterator f, ReadableIterator l, UnaryPredicate p, Iterator j)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
+template <typename I, typename P, typename J>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> && Iterator<J> &&
+        Same<ValueType<I>, Domain<P>>
+auto count_if(I f, I l, P p, J j) -> J
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1385,19 +1522,21 @@ auto count_if(ReadableIterator f, ReadableIterator l, UnaryPredicate p, Iterator
     return j;
 }
 
-
 // Exercise 6.2: implement count_if using for_each
 
-
-auto count_if(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(p)>>
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto count_if(I f, I l, P p) -> DistanceType<I>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return count_if(f, l, p, DistanceType<decltype(f)>{0});
 }
 
-ReadableIterator{I}
-auto count(I f, I l, const ValueType<I>& x, Iterator j)
+template <typename I, typename J>
+    requires ReadableIterator<I> && Iterator<J>
+auto count(I f, I l, const ValueType<I>& x, J j) -> J
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1407,15 +1546,17 @@ auto count(I f, I l, const ValueType<I>& x, Iterator j)
     return j;
 }
 
-ReadableIterator{I}
-auto count(I f, I l, const ValueType<I>& x)
+template <typename I>
+    requires ReadableIterator<I>
+auto count(I f, I l, const ValueType<I>& x) -> DistanceType<I>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return count(f, l, x, DistanceType<I>{0});
 }
 
-ReadableIterator{I}
-auto count_not(I f, I l, const ValueType<I>& x, Iterator j)
+template <typename I, typename J>
+    requires ReadableIterator<I> && Iterator<J>
+auto count_not(I f, I l, const ValueType<I>& x, J j) -> J
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1425,16 +1566,19 @@ auto count_not(I f, I l, const ValueType<I>& x, Iterator j)
     return j;
 }
 
-ReadableIterator{I}
-auto count_not(I f, I l, const ValueType<I>& x)
+template <typename I>
+    requires ReadableIterator<I>
+auto count_not(I f, I l, const ValueType<I>& x) -> DistanceType<I>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return count_not(f, l, x, DistanceType<I>{0});
 }
 
-ReadableIterator{I}
-auto count_if_not(I f, I l, UnaryPredicate p, Iterator j)
-    requires Same<Domain<decltype(p)>, ValueType<decltype(f)>>
+template <typename I, typename P, typename J>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<Domain<P>, ValueType<I>> && Iterator<J>
+auto count_if_not(I f, I l, P p, J j) -> J
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -1444,18 +1588,21 @@ auto count_if_not(I f, I l, UnaryPredicate p, Iterator j)
     return j;
 }
 
-ReadableIterator{I}
-auto count_if_not(I f, I l, UnaryPredicate p)
-    requires Same<Domain<decltype(p)>, ValueType<decltype(f)>>
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<Domain<P>, ValueType<I>>
+auto count_if_not(I f, I l, P p) -> DistanceType<I>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return count_if_not(f, l, p, DistanceType<decltype(f)>{0});
 }
 
-template<typename I, typename Op, UnaryFunction F>
-auto reduce_nonempty(I f, I l, Op op, F fun)
-    requires Iterator<I> && BinaryOperation<Op>
-    __requires(I == Domain<F> && Codomain<F> == Domain<Op>)
+template <typename I, typename Op, typename F>
+    requires
+        Iterator<I> && BinaryOperation<Op> && UnaryFunction<F> &&
+        Same<I, Domain<F>> && Same<Codomain<F>, Domain<Op>>
+auto reduce_nonempty(I f, I l, Op op, F fun) -> Domain<Op>
 {
     // Precondition: $\property{bounded\_range}(f, l) \wedge f \neq l$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1469,9 +1616,11 @@ auto reduce_nonempty(I f, I l, Op op, F fun)
     return r;
 }
 
-ReadableIterator{I}
-auto reduce_nonempty(I f, I l, BinaryOperation op)
-    requires Same<ValueType<decltype(f)>, Domain<decltype(op)>>
+template <typename I, typename Op>
+    requires
+        ReadableIterator<I> && BinaryOperation<Op> &&
+        Same<ValueType<I>, Domain<Op>>
+auto reduce_nonempty(I f, I l, Op op) -> Domain<Op>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge f \neq l$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1484,10 +1633,11 @@ auto reduce_nonempty(I f, I l, BinaryOperation op)
     return r;
 }
 
-BinaryOperation{Op}
-auto reduce(Iterator f, Iterator l, Op op, UnaryFunction fun, const Domain<Op>& z)
-    requires Same<decltype(f), Domain<decltype(fun)>>
-    __requires(Codomain<decltype(fun)> == Domain<Op>)
+template <typename I, typename Op, typename F>
+    requires
+        Iterator<I> && BinaryOperation<Op> && UnaryFunction<F> &&
+        Same<I, Domain<F>> && Same<Codomain<F>, Domain<Op>>
+auto reduce(I f, I l, Op op, F fun, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1496,9 +1646,11 @@ auto reduce(Iterator f, Iterator l, Op op, UnaryFunction fun, const Domain<Op>& 
     return reduce_nonempty(f, l, op, fun);
 }
 
-BinaryOperation{Op}
-auto reduce(Iterator f, Iterator l, Op op, const Domain<Op>& z)
-    requires Same<ValueType<decltype(f)>, Domain<Op>>
+template <typename I, typename Op>
+    requires
+        Iterator<I> && BinaryOperation<Op> &&
+        Same<ValueType<I>, Domain<Op>>
+auto reduce(I f, I l, Op op, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1506,10 +1658,11 @@ auto reduce(Iterator f, Iterator l, Op op, const Domain<Op>& z)
     return reduce_nonempty(f, l, op);
 }
 
-BinaryOperation{Op}
-auto reduce_nonzeroes(Iterator f, Iterator l, Op op, UnaryFunction fun, const Domain<Op>& z)
-    requires Same<decltype(f), Domain<decltype(fun)>>
-    __requires(I == Domain<decltype(fun)> && Codomain<F> == Domain<Op>)
+template <typename I, typename Op, typename F>
+    requires
+        Iterator<I> && BinaryOperation<Op> && UnaryFunction<F> &&
+        Same<I, Domain<F>> && Same<I, Domain<F>> && Same<Codomain<F>, Domain<Op>>
+auto reduce_nonzeroes(I f, I l, Op op, F fun, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1528,9 +1681,11 @@ auto reduce_nonzeroes(Iterator f, Iterator l, Op op, UnaryFunction fun, const Do
     return x;
 }
 
-BinaryOperation{Op}
-auto reduce_nonzeroes(Iterator f, Iterator l, Op op, const Domain<Op>& z)
-    requires Same<ValueType<decltype(f)>, Domain<Op>>
+template <typename I, typename Op>
+    requires
+        Iterator<I> && BinaryOperation<Op> &&
+        Same<ValueType<I>, Domain<Op>>
+auto reduce_nonzeroes(I f, I l, Op op, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -1548,17 +1703,18 @@ auto reduce_nonzeroes(Iterator f, Iterator l, Op op, const Domain<Op>& z)
     return x;
 }
 
-auto reduce(ReadableIterator f, ReadableIterator l)
-    requires AdditiveMonoid<ValueType<decltype(f)>>
+template <typename I>
+    requires ReadableIterator<I> && AdditiveMonoid<ValueType<I>>
+auto reduce(I f, I l) -> ValueType<I>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     using T = ValueType<decltype(f)>;
     return reduce(f, l, plus<T>(), T{0});
 }
 
-template<ReadableIterator I, typename Proc>
-auto for_each_n(I f, DistanceType<I> n, Proc proc)
-    requires Procedure<Proc, ValueType<I>>
+template <typename I, typename Proc>
+    requires ReadableIterator<I> && Procedure<Proc, ValueType<I>>
+auto for_each_n(I f, DistanceType<I> n, Proc proc) -> pair<Proc, I>
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
     while (!zero(n)) {
@@ -1569,8 +1725,9 @@ auto for_each_n(I f, DistanceType<I> n, Proc proc)
     return pair<Proc, I>{proc, f};
 }
 
-ReadableIterator{I}
-auto find_n(I f, DistanceType<I> n, const ValueType<I>& x)
+template <typename I>
+    requires ReadableIterator<I>
+auto find_n(I f, DistanceType<I> n, const ValueType<I>& x) -> pair<I, DistanceType<I>>
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
     while (!zero(n) && source(f) != x) {
@@ -1585,8 +1742,11 @@ auto find_n(I f, DistanceType<I> n, const ValueType<I>& x)
 // of all the versions of find, quantifiers, count, and reduce
 
 
-auto find_if_unguarded(ReadableIterator f, UnaryPredicate p)
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_if_unguarded(I f, P p) -> I
 {
     // Precondition:
     // $(\exists l)\,\func{readable\_bounded\_range}(f, l) \wedge \func{some}(f, l, p)$
@@ -1595,8 +1755,11 @@ auto find_if_unguarded(ReadableIterator f, UnaryPredicate p)
     // Postcondition: $p(\func{source}(f))$
 }
 
-auto find_if_not_unguarded(ReadableIterator f, UnaryPredicate p)
-    __requires(Domain<declype(f)> == ValueType<decltype(p)>)
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_if_not_unguarded(I f, P p)
 {
     // Let $l$ be the end of the implied range starting with $f$
     // Precondition:
@@ -1605,9 +1768,11 @@ auto find_if_not_unguarded(ReadableIterator f, UnaryPredicate p)
     return f;
 }
 
-template<ReadableIterator I0, ReadableIterator I1>
-auto find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, Relation r)
-    __requires(ValueType<I0> == ValueType<I1> && ValueType<I0> == Domain<decltype(r)>)
+template <typename I0, typename I1, typename R>
+    requires
+        ReadableIterator<I0> && ReadableIterator<I1> && Relation<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<I1>> && Same<ValueType<I0>, Domain<R>>
+auto find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r) -> pair<I0, I1>
 {
     // Precondition: $\func{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\func{readable\_bounded\_range}(f1, l1)$
@@ -1618,8 +1783,11 @@ auto find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, Relation r)
     return pair<I0, I1>{f0, f1};
 }
 
-auto find_adjacent_mismatch(ReadableIterator f, ReadableIterator l, Relation r)
-    __requires(ValueType<decltype(f)> == Domain<decltype(r)>)
+template <typename I, typename R>
+    requires
+        ReadableIterator<I> && Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto find_adjacent_mismatch(I f, I l, R r) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     if (f == l) return l;
@@ -1632,31 +1800,43 @@ auto find_adjacent_mismatch(ReadableIterator f, ReadableIterator l, Relation r)
     return f;
 }
 
-bool relation_preserving(ReadableIterator f, ReadableIterator l, Relation r)
-    __requires(ValueType<decltype(f)> == Domain<decltype(r)>)
+template <typename I, typename R>
+    requires
+        ReadableIterator<I> && Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+bool relation_preserving(I f, I l, R r)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_adjacent_mismatch(f, l, r);
 }
 
-bool strictly_increasing_range(ReadableIterator f, ReadableIterator l, Relation r)
-    __requires(ValueType<decltype(f)> == Domain<decltype(r)>)
+template <typename I, typename R>
+    requires
+        ReadableIterator<I> && Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+bool strictly_increasing_range(I f, I l, R r)
 {
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{weak\_ordering}(r)$
     return relation_preserving(f, l, r);
 }
 
-bool increasing_range(ReadableIterator f, ReadableIterator l, Relation r)
-    __requires(ValueType<decltype(f)> == Domain<decltype(r)>)
+template <typename I, typename R>
+    requires
+        ReadableIterator<I> && Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+bool increasing_range(I f, I l, R r)
 {
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{weak\_ordering}(r)$
     return relation_preserving(f, l, complement_of_converse<decltype(r)>(r));
 }
 
-bool partitioned(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+bool partitioned(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if_not(find_if(f, l, p), l, p);
@@ -1665,9 +1845,12 @@ bool partitioned(ReadableIterator f, ReadableIterator l, UnaryPredicate p)
 
 // Exercise 6.6: partitioned_n
 
-ReadableForwardIterator{I}
-auto find_adjacent_mismatch_forward(I f, I l, Relation r)
-    requires Same<ValueType<I>, Domain<decltype(r)>>
+
+template <typename I, typename R>
+    requires
+        ReadableForwardIterator<I> && Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto find_adjacent_mismatch_forward(I f, I l, R r) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     if (f == l) return l;
@@ -1679,9 +1862,11 @@ auto find_adjacent_mismatch_forward(I f, I l, Relation r)
     return f;
 }
 
-ReadableForwardIterator{I}
-auto partition_point_n(I f, DistanceType<I> n, UnaryPredicate p)
-    __requires(ValueType<I> == Domain<decltype(p)>)
+template <typename I, typename P>
+    requires
+        ReadableForwardIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_point_n(I f, DistanceType<I> n, P p) -> I
 {
     // Precondition:
     // $\func{readable\_counted\_range}(f, n) \wedge \func{partitioned\_n}(f, n, p)$
@@ -1697,16 +1882,19 @@ auto partition_point_n(I f, DistanceType<I> n, UnaryPredicate p)
     return f;
 }
 
-ReadableForwardIterator{I}
-auto partition_point(I f, I l, UnaryPredicate p)
-    __requires(ValueType<I> == Domain<decltype(p)>)
+template <typename I, typename P>
+    requires
+        ReadableForwardIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_point(I f, I l, P p) -> I
 {
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{partitioned}(f, l, p)$
     return partition_point_n(f, l - f, p);
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct lower_bound_predicate
 {
     using T = Domain<R>;
@@ -1716,9 +1904,18 @@ struct lower_bound_predicate
     bool operator()(const T& x) { return !r(x, a); }
 };
 
-ReadableForwardIterator{I}
-auto lower_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, Relation r)
-    requires Same<ValueType<I>, Domain<decltype(r)>>
+template <typename R>
+    requires Relation<R>
+struct input_type<lower_bound_predicate<R>, 0>
+{
+    using type = Domain<R>;
+};
+
+template <typename I, typename R>
+    requires
+        ReadableForwardIterator<I> && Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto lower_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r) -> I
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
@@ -1726,7 +1923,8 @@ auto lower_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, Relation r)
     return partition_point_n(f, n, p);
 }
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct upper_bound_predicate
 {
     using T = Domain<R>;
@@ -1736,9 +1934,18 @@ struct upper_bound_predicate
     bool operator()(const T& x) { return r(a, x); }
 };
 
-ReadableForwardIterator{I}
-auto upper_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, Relation r)
-    requires Same<ValueType<I>, Domain<decltype(r)>>
+template <typename R>
+    requires Relation<R>
+struct input_type<upper_bound_predicate<R>, 0>
+{
+    using type = Domain<R>;
+};
+
+template <typename I, typename R>
+    requires
+        ReadableForwardIterator<I> && Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto upper_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r) -> I
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
@@ -1750,8 +1957,9 @@ auto upper_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, Relation r)
 // Exercise 6.7: equal_range
 
 
-BidirectionalIterator{I}
-auto operator-(I l, DistanceType<I> n)
+template <typename I>
+    requires BidirectionalIterator<I>
+auto operator-(I l, DistanceType<I> n) -> I
 {
     // Precondition: $n \geq 0 \wedge (\exists f \in I)\,(\func{weak\_range}(f, n) \wedge l = f+n)$
     while (!zero(n)) {
@@ -1761,9 +1969,11 @@ auto operator-(I l, DistanceType<I> n)
     return l;
 }
 
-ReadableBidirectionalIterator{I}
-auto find_backward_if(I f, I l, UnaryPredicate p)
-    requires Same<ValueType<I>, Domain<decltype(p)>>
+template <typename I, typename P>
+    requires
+        ReadableBidirectionalIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_backward_if(I f, I l, P p) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (l != f && !p(source(predecessor(l))))
@@ -1771,9 +1981,11 @@ auto find_backward_if(I f, I l, UnaryPredicate p)
     return l;
 }
 
-ReadableBidirectionalIterator{I}
-auto find_backward_if_not(I f, I l, UnaryPredicate p)
-    requires Same<ValueType<I>, Domain<decltype(p)>>
+template <typename I, typename P>
+    requires
+        ReadableBidirectionalIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_backward_if_not(I f, I l, P p) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (l != f && p(source(predecessor(l))))
@@ -1788,8 +2000,11 @@ auto find_backward_if_not(I f, I l, UnaryPredicate p)
 // Exercise 6.9: palindrome predicate
 
 
-auto find_backward_if_unguarded(ReadableBidirectionalIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(l)>, Domain<decltype(p)>>
+template <typename I, typename P>
+    requires
+        ReadableBidirectionalIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_backward_if_unguarded(I l, P p) -> I
 {
     // Precondition:
     // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{some}(f, l, p)$
@@ -1798,8 +2013,11 @@ auto find_backward_if_unguarded(ReadableBidirectionalIterator l, UnaryPredicate 
     // Postcondition: $p(\func{source}(l))$
 }
 
-auto find_backward_if_not_unguarded(ReadableBidirectionalIterator l, UnaryPredicate p)
-    requires Same<ValueType<decltype(l)>, Domain<decltype(p)>>
+template <typename I, typename P>
+    requires
+        ReadableBidirectionalIterator<I> && UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_backward_if_not_unguarded(I l, P p) -> I
 {
     // Precondition:
     // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{not\_all}(f, l, p)$
@@ -1813,11 +2031,12 @@ auto find_backward_if_not_unguarded(ReadableBidirectionalIterator l, UnaryPredic
 //  Chapter 7. Coordinate structures
 //
 
-
-auto weight_recursive(BifurcateCoordinate c)
+template <typename C>
+    requires BifurcateCoordinate<C>
+auto weight_recursive(C c)
 {
     // Precondition: $\property{tree}(c)$
-    using N = WeightType<decltype(c)>;
+    using N = WeightType<C>;
     if (empty(c)) return N{0};
     N l{0};
     N r{0};
@@ -1828,10 +2047,12 @@ auto weight_recursive(BifurcateCoordinate c)
     return successor(l + r);
 }
 
-auto height_recursive(BifurcateCoordinate c)
+template <typename C>
+    requires BifurcateCoordinate<C>
+auto height_recursive(C c)
 {
     // Precondition: $\property{tree}(c)$
-    using N = WeightType<decltype(c)>;
+    using N = WeightType<C>;
     if (empty(c)) return N{0};
     N l{0};
     N r{0};
@@ -1844,9 +2065,9 @@ auto height_recursive(BifurcateCoordinate c)
 
 enum visit { pre, in, post };
 
-template<typename Proc>
-auto traverse_nonempty(BifurcateCoordinate c, Proc proc) -> Proc
-    requires Procedure<Proc, visit, decltype(c)>
+template <typename C, typename Proc>
+    requires BifurcateCoordinate<C> && Procedure<Proc, visit, C>
+auto traverse_nonempty(C c, Proc proc) -> Proc
 {
     // Precondition: $\property{tree}(c) \wedge \neg \func{empty}(c)$
     proc(pre, c);
@@ -1859,21 +2080,27 @@ auto traverse_nonempty(BifurcateCoordinate c, Proc proc) -> Proc
     return proc;
 }
 
-bool is_left_successor(BidirectionalBifurcateCoordinate j)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+bool is_left_successor(C j)
 {
     // Precondition: $\func{has\_predecessor}(j)$
     auto i = predecessor(j);
     return has_left_successor(i) && left_successor(i) == j;
 }
 
-bool is_right_successor(BidirectionalBifurcateCoordinate j)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+bool is_right_successor(C j)
 {
     // Precondition: $\func{has\_predecessor}(j)$
     auto i = predecessor(j);
     return has_right_successor(i) && right_successor(i) == j;
 }
 
-auto traverse_step(visit& v, BidirectionalBifurcateCoordinate& c)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+auto traverse_step(visit& v, C& c)
 {
     // Precondition: $\func{has\_predecessor}(c) \vee v \neq post$
     switch (v) {
@@ -1892,7 +2119,8 @@ auto traverse_step(visit& v, BidirectionalBifurcateCoordinate& c)
     }
 }
 
-BidirectionalBifurcateCoordinate{C}
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
 bool reachable(C x, C y)
 {
     // Precondition: $\property{tree}(x)$
@@ -1906,10 +2134,12 @@ bool reachable(C x, C y)
     return false;
 }
 
-auto weight(BidirectionalBifurcateCoordinate c)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+auto weight(C c) -> WeightType<C>
 {
     // Precondition: $\property{tree}(c)$
-    using N = WeightType<decltype(c)>;
+    using N = WeightType<C>;
     if (empty(c)) return N{0};
     auto root = c;
     visit v = pre;
@@ -1921,10 +2151,12 @@ auto weight(BidirectionalBifurcateCoordinate c)
     return n;
 }
 
-auto height(BidirectionalBifurcateCoordinate c)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+auto height(C c) -> WeightType<C>
 {
     // Precondition: $\property{tree}(c)$
-    using N = WeightType<decltype(c)>;
+    using N = WeightType<C>;
     if (empty(c)) return N{0};
     auto root = c;
     visit v = pre;
@@ -1937,9 +2169,9 @@ auto height(BidirectionalBifurcateCoordinate c)
     return n;
 }
 
-template<typename Proc>
-auto traverse(BidirectionalBifurcateCoordinate c, Proc proc) -> Proc
-    requires Procedure<Proc, visit, decltype(c)>
+template <typename C, typename Proc>
+    requires BidirectionalBifurcateCoordinate<C> && Procedure<Proc, visit, C>
+auto traverse(C c, Proc proc) -> Proc
 {
     // Precondition: $\property{tree}(c)$
     if (empty(c)) return proc;
@@ -1958,7 +2190,8 @@ auto traverse(BidirectionalBifurcateCoordinate c, Proc proc) -> Proc
 // whether the descendants of a bidirectional bifurcate coordinate form a DAG
 
 
-template<BifurcateCoordinate C0, BifurcateCoordinate C1>
+template <typename C0, typename C1>
+    requires BifurcateCoordinate<C0> && BifurcateCoordinate<C1>
 bool bifurcate_isomorphic_nonempty(C0 c0, C1 c1)
 {
     // Precondition:
@@ -1978,7 +2211,8 @@ bool bifurcate_isomorphic_nonempty(C0 c0, C1 c1)
     return true;
 }
 
-template<BidirectionalBifurcateCoordinate C0, BidirectionalBifurcateCoordinate C1>
+template <typename C0, typename C1>
+    requires BidirectionalBifurcateCoordinate<C0> && BidirectionalBifurcateCoordinate<C1>
 bool bifurcate_isomorphic(C0 c0, C1 c1)
 {
     // Precondition: $\property{tree}(c0) \wedge \property{tree}(c1)$
@@ -1995,10 +2229,11 @@ bool bifurcate_isomorphic(C0 c0, C1 c1)
     }
 }
 
-template<ReadableIterator I0, ReadableIterator I1>
-bool lexicographical_equivalent(I0 f0, I0 l0, I1 f1, I1 l1, Relation r)
-    __requires(ValueType<I0> == ValueType<I1> &&
-        ValueType<I0> == Domain<decltype(r)>)
+template <typename I0, typename I1, typename R>
+    requires
+        ReadableIterator<I0> && ReadableIterator<I1> && Relation<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<I1>> && Same<ValueType<I0>, Domain<R>>
+bool lexicographical_equivalent(I0 f0, I0 l0, I1 f1, I1 l1, R r)
 {
     // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
@@ -2007,16 +2242,20 @@ bool lexicographical_equivalent(I0 f0, I0 l0, I1 f1, I1 l1, Relation r)
     return p.m0 == l0 && p.m1 == l1;
 }
 
-template<ReadableIterator I0, ReadableIterator I1>
+template <typename I0, typename I1>
+    requires
+        ReadableIterator<I0> && ReadableIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 bool lexicographical_equal(I0 f0, I0 l0, I1 f1, I1 l1)
-    __requires(ValueType<I0> == ValueType<I1>)
 {
     return lexicographical_equivalent(f0, l0, f1, l1, equal<ValueType<I0>>());
 }
 
 // Could specialize to use lexicographic_equal for k > some cutoff
-template<int k, ReadableForwardIterator I0, ReadableForwardIterator I1>
-    __requires(ValueType<I0> == ValueType<I1>)
+template <int k, typename I0, typename I1>
+    requires
+        ReadableForwardIterator<I0> && ReadableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 struct lexicographical_equal_k
 {
    bool operator()(I0 f0, I1 f1)
@@ -2026,7 +2265,7 @@ struct lexicographical_equal_k
    }
 };
 
-template<typename I0, typename I1>
+template <typename I0, typename I1>
 struct lexicographical_equal_k<0, I0, I1>
 {
     bool operator()(I0, I1)
@@ -2035,9 +2274,11 @@ struct lexicographical_equal_k<0, I0, I1>
     }
 };
 
-template<ReadableBifurcateCoordinate C0, ReadableBifurcateCoordinate C1>
-bool bifurcate_equivalent_nonempty(C0 c0, C1 c1, Relation r)
-    __requires(ValueType<C0> == ValueType<C1> && ValueType<C0> == Domain<R>)
+template <typename C0, typename C1, typename R>
+    requires
+        ReadableBifurcateCoordinate<C0> && ReadableBifurcateCoordinate<C1> && Relation<R> &&
+        Same<ValueType<C0>, ValueType<C1>> && Same<ValueType<C0>, Domain<R>>
+bool bifurcate_equivalent_nonempty(C0 c0, C1 c1, R r)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
     // Precondition: $\neg \func{empty}(c0) \wedge \neg \func{empty}(c1)$
@@ -2058,9 +2299,13 @@ bool bifurcate_equivalent_nonempty(C0 c0, C1 c1, Relation r)
     return true;
 }
 
-template<ReadableBidirectionalBifurcateCoordinate C0, ReadableBidirectionalBifurcateCoordinate C1>
-bool bifurcate_equivalent(C0 c0, C1 c1, Relation r)
-    __requires(ValueType<C0> == ValueType<C1> && ValueType<C0> == Domain<decltype(r)>)
+template <typename C0, typename C1, typename R>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1> &&
+        Relation<R> &&
+        Same<ValueType<C0>, ValueType<C1>> && Same<ValueType<C0>, Domain<R>>
+bool bifurcate_equivalent(C0 c0, C1 c1, R r)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
     // Precondition: $\property{equivalence}(r)$
@@ -2078,16 +2323,21 @@ bool bifurcate_equivalent(C0 c0, C1 c1, Relation r)
     }
 }
 
-template<ReadableBidirectionalBifurcateCoordinate C0, ReadableBidirectionalBifurcateCoordinate C1>
+template <typename C0, typename C1>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1> &&
+        Same<ValueType<C0>, ValueType<C1>>
 bool bifurcate_equal(C0 c0, C1 c1)
-    __requires(ValueType<C0> == ValueType<C1>)
 {
     return bifurcate_equivalent(c0, c1, equal<ValueType<C0>>());
 }
 
-template<ReadableIterator I0, ReadableIterator I1>
-bool lexicographical_compare(I0 f0, I0 l0, I1 f1, I1 l1, Relation r)
-    __requires(ValueType<I0> == ValueType<I1> && ValueType<I0> == Domain<R>)
+template <typename I0, typename I1, typename R>
+    requires
+        ReadableIterator<I0> && ReadableIterator<I1> && Relation<R> &&
+        Same<ValueType<I0>, ValueType<I1>> && Same<ValueType<I0>, Domain<R>>
+bool lexicographical_compare(I0 f0, I0 l0, I1 f1, I1 l1, R r)
 {
     // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
@@ -2102,15 +2352,19 @@ bool lexicographical_compare(I0 f0, I0 l0, I1 f1, I1 l1, Relation r)
     }
 }
 
-template<ReadableIterator I0, ReadableIterator I1>
+template <typename I0, typename I1>
+    requires
+        ReadableIterator<I0> && ReadableIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 bool lexicographical_less(I0 f0, I0 l0, I1 f1, I1 l1)
-    __requires(ValueType<I0> == ValueType<I1>3)
 {
     return lexicographical_compare(f0, l0, f1, l1, less<ValueType<I0>>());
 }
 
-template<int k, ReadableForwardIterator I0, ReadableForwardIterator I1>
-    __requires(ValueType<I0> == ValueType<I1>)
+template <int k, ReadableForwardIterator I0, ReadableForwardIterator I1>
+    requires
+        ReadableForwardIterator<I0> && ReadableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 struct lexicographical_less_k
 {
    bool operator()(I0 f0, I1 f1)
@@ -2121,7 +2375,7 @@ struct lexicographical_less_k
    }
 };
 
-template<typename I0, typename I1>
+template <typename I0, typename I1>
 struct lexicographical_less_k<0, I0, I1>
 {
     bool operator()(I0, I1)
@@ -2147,7 +2401,8 @@ struct lexicographical_less_k<0, I0, I1>
 //  (allowing subtraction as the comparator for numbers)
 //  Should sense of positive/negative be flipped?
 
-Relation{R}
+template <typename R>
+    requires Relation<R>
 struct comparator_3_way
 {
     using T = Domain<R>;
@@ -2165,9 +2420,12 @@ struct comparator_3_way
     }
 };
 
-template<ReadableIterator I0, ReadableIterator I1>
-auto lexicographical_compare_3way(I0 f0, I0 l0, I1 f1, I1 l1, Comparator3Way comp)
-    __requires(ValueType<I0> == ValueType<I1> && ValueType<I0> == Domain<decltype(comp)>)
+template <typename I0, typename I1, typename F>
+    requires
+        ReadableIterator<I0> && ReadableIterator<I1> && Comparator3Way<F> &&
+        Same<ValueType<I0>, ValueType<I1>>
+        __requires(ValueType<I0> == Domain<F>)
+auto lexicographical_compare_3way(I0 f0, I0 l0, I1 f1, I1 l1, F comp)
 {
     // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
@@ -2184,9 +2442,12 @@ auto lexicographical_compare_3way(I0 f0, I0 l0, I1 f1, I1 l1, Comparator3Way com
     }
 }
 
-template<ReadableBifurcateCoordinate C0, ReadableBifurcateCoordinate C1>
-auto bifurcate_compare_nonempty(C0 c0, C1 c1, Comparator3Way comp)
-    __requires(ValueType<C0> == ValueType<C1> && ValueType<I0> == Domain<decltype(comp)>)
+template <typename C0, typename C1, typename F>
+    requires
+        ReadableBifurcateCoordinate<C0> && ReadableBifurcateCoordinate<C1> && Comparator3Way<F> &&
+        Same<ValueType<C0>, ValueType<C1>>
+        __requires(ValueType<I0> == Domain<F>)
+auto bifurcate_compare_nonempty(C0 c0, C1 c1, F comp)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
     // Precondition: $\neg \func{empty}(c0) \wedge \neg \func{empty}(c1)$
@@ -2208,9 +2469,13 @@ auto bifurcate_compare_nonempty(C0 c0, C1 c1, Comparator3Way comp)
     return 0;
 }
 
-template<ReadableBidirectionalBifurcateCoordinate C0, ReadableBidirectionalBifurcateCoordinate C1>
-bool bifurcate_compare(C0 c0, C1 c1, Relation r)
-    __requires(ValueType<C0> == ValueType<C1> && ValueType<C0> == Domain<decltype(r)>)
+template <typename C0, typename C1, typename R>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1> &&
+        Relation<R> &&
+        Same<ValueType<C0>, ValueType<C1>> && Same<ValueType<C0>, Domain<R>>
+bool bifurcate_compare(C0 c0, C1 c1, R r)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge
     //                \property{readable\_tree}(c1) \wedge
@@ -2232,7 +2497,10 @@ bool bifurcate_compare(C0 c0, C1 c1, Relation r)
     }
 }
 
-template<ReadableBidirectionalBifurcateCoordinate C0, ReadableBidirectionalBifurcateCoordinate C1>
+template <typename C0, typename C1>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1>
 bool bifurcate_less(C0 c0, C1 c1)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge
@@ -2240,7 +2508,8 @@ bool bifurcate_less(C0 c0, C1 c1)
     return bifurcate_compare(c0, c1, less<ValueType<C0>>());
 }
 
-TotallyOrdered{T}
+template <typename T>
+    requires TotallyOrdered<T>
 struct always_false
 {
     bool operator()(const T& x, const T& y)
@@ -2249,7 +2518,17 @@ struct always_false
     }
 };
 
-template<ReadableBidirectionalBifurcateCoordinate C0, ReadableBidirectionalBifurcateCoordinate C1>
+template <typename T>
+    requires TotallyOrdered<T>
+struct input_type<always_false<T>, 0>
+{
+    using type = T;
+};
+
+template <typename C0, typename C1>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1>
 bool bifurcate_shape_compare(C0 c0, C1 c1)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge
@@ -3418,7 +3697,8 @@ void destroy_all(WritableForwardIterator /*f*/, WritableForwardIterator /*l*/, f
 
 // NeedsConstruction and NeedsDestruction should be overloaded for every POD type
 
-Regular{T}
+template <typename T>
+    //requires Regular<T>
 struct temporary_buffer
 {
     using P = pointer(T);
@@ -3445,12 +3725,16 @@ struct temporary_buffer
     void operator=(const temporary_buffer&) = delete;
 };
 
-auto size(const temporary_buffer<Regular>& b)
+template <typename T>
+    //requires Regular<T>
+auto size(const temporary_buffer<T>& b)
 {
     return b.n;
 }
 
-auto begin(temporary_buffer<Regular>& b)
+template <typename T>
+    //requires Regular<T>
+auto begin(temporary_buffer<T>& b)
 {
     return b.p;
 }
@@ -4876,8 +5160,9 @@ void partition(slist<T>& x, slist<T>& y, P p)
     }
 }
 
-Regular{T}
-void merge(slist<T>& x, slist<T>& y, Regular r)
+template <typename T, typename R>
+    requires Regular<T>
+void merge(slist<T>& x, slist<T>& y, R r)
     __requires(Domain<decltype(r)> == T)
 {
     // Precondition: $\func{weak\_ordering}(r)$
@@ -5137,8 +5422,9 @@ void partition(list<T>& x, list<T>& y, UnaryPredicate p)
     }
 }
 
-Regular{T}
-void merge(list<T>& x, list<T>& y, Regular r)
+template <typename T, typename R>
+    requires Regular<T>
+void merge(list<T>& x, list<T>& y, R r)
     __requires(Domain<decltype(r)> == T)
 {
     // Precondition: $\func{weak\_ordering}(r)$

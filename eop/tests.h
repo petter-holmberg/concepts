@@ -2059,6 +2059,13 @@ struct input_type<identity<T>, 0>
     using type = T;
 };
 
+template<typename T>
+    __requires(Regular(T))
+struct codomain_type<identity<T>>
+{
+    using type = T;
+};
+
 void test_ch_6()
 {
     print("  Chapter 6\n");
