@@ -26,7 +26,7 @@
 
 #define concept concept bool
 
-template <typename T>
+/*template <typename T>
     //requires TotallyOrdered<T>
 struct less
 {
@@ -35,6 +35,7 @@ struct less
         return x < y;
     }
 };
+*/
 
 // For types X and Y, Same<X, Y> is true iff X and Y
 // denote exactly the same type after elimination of aliases.
@@ -183,7 +184,7 @@ concept Copyable = true;
     //     T{std::move(a)} => a = b;
     //     b = std::move(a) = a = b;
     // }
-
+/*
 template <typename T>
 concept Default_totally_ordered =
     Equality_comparable<T> &&
@@ -197,14 +198,14 @@ concept Default_totally_ordered =
         //     O(areaof(x));
         // }
     };
-
+*/
 // Chapter 1: Foundations
 
 template <typename T>
-concept Regular =
-    Equality_comparable<T> &&
-    Default_constructible<T> &&
-    Copyable<T>;
+concept Regular = true;
+    // Equality_comparable<T> &&
+    // Default_constructible<T> &&
+    // Copyable<T>;
     // Default_totally_ordered<T>;
     // axiom partially_formed {
     //     // T x not necessarily well-formed
