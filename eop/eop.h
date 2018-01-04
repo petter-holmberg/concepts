@@ -560,819 +560,6 @@ auto fibonacci(I n) -> I
 }
 
 
-//
-//  Chapter 4. Linear orderings
-//
-
-
-// Exercise 4.1: Give an example of a relation that is neither strict nor reflexive
-// Exercise 4.2: Give an example of a symmetric relation that is not transitive
-// Exercise 4.3: Give an example of a symmetric relation that is not reflexive
-
-
-template <typename R>
-    requires Relation<R>
-struct complement
-{
-    R r;
-    complement(R r) : r{r} {}
-    bool operator()(const Domain<R>& x, const Domain<R>& y) {
-        return !r(x, y);
-    }
-};
-
-template <typename R>
-    requires Relation<R>
-struct input_type<complement<R>, 0>
-{
-    using type = Domain<R>;
-};
-
-template <typename R>
-    requires Relation<R>
-struct converse
-{
-    R r;
-    converse(R r) : r{r} {}
-    bool operator()(const Domain<R>& x, const Domain<R>& y)
-    {
-        return r(y, x);
-    }
-};
-
-template <typename R>
-    requires Relation<R>
-struct input_type<converse<R>, 0>
-{
-    using type = Domain<R>;
-};
-
-template <typename R>
-    requires Relation<R>
-struct complement_of_converse
-{
-    using T = Domain<R>;
-    R r;
-    complement_of_converse(const R& r) : r{r} {}
-    bool operator()(const T& a, const T& b)
-    {
-        return !r(b, a);
-    }
-};
-
-template <typename R>
-    requires Relation<R>
-struct input_type<complement_of_converse<R>, 0>
-{
-    using type = Domain<R>;
-};
-
-template <typename R>
-    requires Relation<R>
-struct symmetric_complement
-{
-    R r;
-    symmetric_complement(R r) : r{r} {}
-    bool operator()(const Domain<R>& a, const Domain<R>& b)
-    {
-        return !r(a, b) && !r(b, a);
-    }
-};
-
-template <typename R>
-    requires Relation<R>
-struct input_type<symmetric_complement<R>, 0>
-{
-    using type = Domain<R>;
-};
-
-template <typename R>
-    requires Relation<R>
-auto select_0_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
-{
-    // Precondition: $\func{weak\_ordering}(r)$
-    if (r(b, a)) return b;
-    return a;
-}
-
-template <typename R>
-    requires Relation<R>
-auto select_1_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
-{
-    // Precondition: $\func{weak\_ordering}(r)$
-    if (r(b, a)) return a;
-    return b;
-}
-
-template <typename R>
-    requires Relation<R>
-auto select_0_3(
-    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r) ->
-    const Domain<R>&
-{
-    return select_0_2(select_0_2(a, b, r), c, r);
-}
-
-template <typename R>
-    requires Relation<R>
-auto select_2_3(
-    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
-) -> const Domain<R>&
-{
-    return select_1_2(select_1_2(a, b, r), c, r);
-}
-
-template <typename R>
-    requires Relation<R>
-auto select_1_3_ab(
-    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
-) -> const Domain<R>&
-{
-    if (!r(c, b)) return b;     // $a$, $b$, $c$ are sorted
-    return select_1_2(a, c, r); // $b$ is not the median
-}
-
-template <typename R>
-    requires Relation<R>
-auto select_1_3(
-    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
-) -> const Domain<R>&
-{
-    if (r(b, a)) return
-        select_1_3_ab(b, a, c, r);
-    return
-        select_1_3_ab(a, b, c, r);
-}
-
-template <typename R>
-    requires Relation<R>
-auto select_1_4_ab_cd(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    R r
-) -> const Domain<R>&
-{
-    if (r(c, a)) return
-        select_0_2(a, d, r);
-    return
-        select_0_2(b, c, r);
-}
-
-template <typename R>
-    requires Relation<R>
-auto select_1_4_ab(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    R r
-) -> const Domain<R>&
-{
-    if (r(d, c)) return
-        select_1_4_ab_cd(a, b, d, c, r);
-    return
-        select_1_4_ab_cd(a, b, c, d, r);
-}
-
-template <typename R>
-    requires Relation<R>
-auto select_1_4(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    R r
-) -> const Domain<R>&
-{
-    if (r(b, a)) return
-        select_1_4_ab(b, a, c, d, r);
-    return
-        select_1_4_ab(a, b, c, d, r);
-}
-
-// Exercise 4.4: select_2_4
-
-
-// Order selection procedures with stability indices
-
-template <bool strict, typename R>
-    requires Relation<R>
-struct compare_strict_or_reflexive;
-
-template <typename R>
-    requires Relation<R>
-struct compare_strict_or_reflexive<true, R> // strict
-{
-    bool operator()(const Domain<R>& a, const Domain<R>& b, R r)
-    {
-        return r(a, b);
-    }
-};
-
-template <typename R>
-    requires Relation<R>
-struct compare_strict_or_reflexive<false, R> // reflexive
-{
-    bool operator()(const Domain<R>& a, const Domain<R>& b, R r)
-    {
-        return !r(b, a); // $\func{complement\_of\_converse}_r(a, b)$
-    }
-};
-
-template <int ia, int ib, typename R>
-    requires Relation<R>
-auto select_0_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
-{
-    compare_strict_or_reflexive<(ia < ib), R> cmp;
-    if (cmp(b, a, r)) return b;
-    return a;
-}
-
-template <int ia, int ib, typename R>
-    requires Relation<R>
-auto select_1_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
-{
-    compare_strict_or_reflexive<(ia < ib), R> cmp;
-    if (cmp(b, a, r)) return a;
-    return b;
-}
-
-template <int ia, int ib, int ic, int id, typename R>
-    requires Relation<R>
-auto select_1_4_ab_cd(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    R r
-) -> const Domain<R>&
-{
-    compare_strict_or_reflexive<(ia < ic), R> cmp;
-    if (cmp(c, a, r)) return
-        select_0_2<ia,id>(a, d, r);
-    return
-        select_0_2<ib,ic>(b, c, r);
-}
-
-template <int ia, int ib, int ic, int id, typename R>
-    requires Relation<R>
-auto select_1_4_ab(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    R r
-) -> const Domain<R>&
-{
-    compare_strict_or_reflexive<(ic < id), R> cmp;
-    if (cmp(d, c, r)) return
-        select_1_4_ab_cd<ia,ib,id,ic>(a, b, d, c, r);
-    return
-        select_1_4_ab_cd<ia,ib,ic,id>(a, b, c, d, r);
-}
-
-template <int ia, int ib, int ic, int id, typename R>
-    requires Relation<R>
-auto select_1_4(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    R r
-) -> const Domain<R>&
-{
-    compare_strict_or_reflexive<(ia < ib), R> cmp;
-    if (cmp(b, a, r)) return
-        select_1_4_ab<ib,ia,ic,id>(b, a, c, d, r);
-    return
-        select_1_4_ab<ia,ib,ic,id>(a, b, c, d, r);
-}
-
-template <int ia, int ib, int ic, int id, int ie, typename R>
-    requires Relation<R>
-auto select_2_5_ab_cd(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    const Domain<R>& e,
-    R r
-) -> const Domain<R>&
-{
-    compare_strict_or_reflexive<(ia < ic), R> cmp;
-    if (cmp(c, a, r)) return
-        select_1_4_ab<ia,ib,id,ie>(a, b, d, e, r);
-    return
-        select_1_4_ab<ic,id,ib,ie>(c, d, b, e, r);
-}
-
-template <int ia, int ib, int ic, int id, int ie, typename R>
-    requires Relation<R>
-auto select_2_5_ab(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    const Domain<R>& e,
-    R r
-) -> const Domain<R>&
-{
-    compare_strict_or_reflexive<(ic < id), R> cmp;
-    if (cmp(d, c, r)) return
-        select_2_5_ab_cd<ia,ib,id,ic,ie>(a, b, d, c, e, r);
-    return
-        select_2_5_ab_cd<ia,ib,ic,id,ie>(a, b, c, d, e, r);
-}
-
-template <int ia, int ib, int ic, int id, int ie, typename R>
-    requires Relation<R>
-auto select_2_5(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    const Domain<R>& e,
-    R r
-) -> const Domain<R>&
-{
-    compare_strict_or_reflexive<(ia < ib), R> cmp;
-    if (cmp(b, a, r)) return
-        select_2_5_ab<ib,ia,ic,id,ie>(b, a, c, d, e, r);
-    return
-        select_2_5_ab<ia,ib,ic,id,ie>(a, b, c, d, e, r);
-}
-
-// Exercise 4.5. Find an algorithm for median of 5 that does slightly fewer comparisons
-// on average
-
-
-template <typename R>
-    requires Relation<R>
-auto median_5(
-    const Domain<R>& a,
-    const Domain<R>& b,
-    const Domain<R>& c,
-    const Domain<R>& d,
-    const Domain<R>& e,
-    R r
-) -> const Domain<R>&
-{
-    return select_2_5<0,1,2,3,4>(a, b, c, d, e, r);
-}
-
-
-// Exercise 4.6. Prove the stability of every order selection procedure in this section
-// Exercise 4.7. Verify the correctness and stability of every order selection procedure
-// in this section by exhaustive testing
-
-
-// Natural total ordering
-
-//template <typename T>
-//    requires TotallyOrdered<T>
-//struct less
-//{
-//    bool operator()(const T& x, const T& y)
-//    {
-//        return x < y;
-//    }
-//};
-
-template <typename T>
-    requires TotallyOrdered<T>
-struct input_type<less<T>, 0>
-{
-    using type = T;
-};
-
-template <typename T>
-auto min(const T& a, const T& b)
-    requires TotallyOrdered<T>
-{
-    return select_0_2(a, b, less<T>());
-}
-
-template <typename T>
-auto max(const T& a, const T& b)
-    requires TotallyOrdered<T>
-{
-    return select_1_2(a, b, less<T>());
-}
-
-
-// Clusters of related procedures: equality and ordering
-
-template <typename T>
-bool operator!=(const T& x, const T& y)
-{
-    return !(x == y);
-}
-
-template <typename T>
-bool operator>(const T& x, const T& y)
-{
-    return y < x;
-}
-
-template <typename T>
-bool operator<=(const T& x, const T& y)
-{
-    return !(y < x);
-}
-
-template <typename T>
-bool operator>=(const T& x, const T& y)
-{
-    return !(x < y);
-}
-
-
-// Exercise 4.8: Rewrite the algorithms in this chapter using three-valued comparison
-
-
-//
-//  Chapter 5. Ordered algebraic structures
-//
-
-
-template <typename T>
-    requires AdditiveSemigroup<T>
-struct plus
-{
-    auto operator()(const T& x, const T& y)
-    {
-        return x + y;
-    }
-};
-
-template <typename T>
-    requires AdditiveSemigroup<T>
-struct input_type<plus<T>, 0>
-{
-    using type = T;
-};
-
-template <typename T>
-    requires MultiplicativeSemigroup<T>
-struct multiplies
-{
-    auto operator()(const T& x, const T& y)
-    {
-        return x * y;
-    }
-};
-
-template <typename T>
-    requires MultiplicativeSemigroup<T>
-struct input_type<multiplies<T>, 0>
-{
-    using type = T;
-};
-
-template <typename Op>
-    __requires(SemigroupOperation(Op)) // ***** or MultiplicativeSemigroup ?????
-struct multiplies_transformation
-{
-    Domain<Op> x;
-    Op op;
-    multiplies_transformation(Domain<Op> x, Op op) : x(x), op(op) {}
-    auto operator()(const Domain<Op>& y)
-    {
-        return op(x, y);
-    }
-};
-
-template <typename Op>
-   __requires(SemigroupOperation(Op))
-struct input_type<multiplies_transformation<Op>, 0>
-{
-    using type = Domain<Op>;
-};
-
-template <typename T>
-    requires AdditiveGroup<T>
-struct negate
-{
-    auto operator()(const T& x)
-    {
-        return -x;
-    }
-};
-
-template <typename T>
-    requires AdditiveGroup<T>
-struct input_type<negate<T>, 0>
-{
-    using type = T;
-};
-
-template <typename T>
-    requires OrderedAdditiveGroup<T>
-auto abs(const T& a) -> T
-{
-    if (a < decltype(a){0}) return -a;
-    else return a;
-}
-
-template <typename T>
-    requires CancellableMonoid<T>
-auto slow_remainder(T a, T b) -> T
-{
-    // Precondition: $a \geq 0 \wedge b > 0$
-    while (b <= a) a = a - b;
-    return a;
-}
-
-template <typename T>
-    requires ArchimedeanMonoid<T>
-auto slow_quotient(T a, T b) -> QuotientType<T>
-{
-    // Precondition: $a \geq 0 \wedge b > 0$
-    QuotientType<T> n{0};
-    while (b <= a) {
-        a = a - b;
-        n = successor(n);
-    }
-    return n;
-}
-
-template <typename T>
-    requires ArchimedeanMonoid<T>
-auto remainder_recursive(T a, T b) -> T
-{
-    // Precondition: $a \geq b > 0$
-    if (a - b >= b) {
-        a = remainder_recursive(a, b + b);
-        if (a < b) return a;
-    }
-    return a - b;
-}
-
-template <typename T>
-    requires ArchimedeanMonoid<T>
-auto remainder_nonnegative(T a, T b) -> T
-{
-    // Precondition: $a \geq 0 \wedge b > 0$
-    if (a < b) return a;
-    return remainder_recursive(a, b);
-}
-
-/* The next function is due to:
-    Robert W. Floyd and Donald E. Knuth.
-    Addition machines.
-    \emph{SIAM Journal on Computing},
-    Volume 19, Number 2, 1990, pages 329--340.
-*
-
-template <typename T>
-    requires ArchimedeanMonoid<T>
-auto remainder_nonnegative_fibonacci(T a, T b) -> T
-{
-    // Precondition: $a \geq 0 \wedge b > 0$
-    if (a < b) return a;
-    auto c = b;
-    do {
-        auto tmp = c;
-        c = b + c;
-        b = tmp;
-    } while (a >= c);
-    do {
-        if (a >= b) a = a - b;
-        auto tmp = c - b;
-        c = b;
-        b = tmp;
-    } while (b < c);
-    return a;
-}
-
-template <typename T>
-    requires ArchimedeanMonoid<T>
-auto largest_doubling(T a, T b) -> T
-{
-    // Precondition: $a \geq b > 0$
-    while (b <= a - b) b = b + b;
-    return b;
-}
-
-template <typename T>
-    requires HalvableMonoid<T>
-auto remainder_nonnegative_iterative(T a, T b) -> T
-{
-    // Precondition: $a \geq 0 \wedge b > 0$
-    if (a < b) return a;
-    auto c = largest_doubling(a, b);
-    a = a - c;
-    while (c != b) {
-        c = half(c);
-        if (c <= a) a = a - c;
-    }
-    return a;
-}
-
-// Jon Brandt suggested this algorithm (it is not mentioned in chapter 5):
-
-template <typename T>
-    requires ArchimedeanMonoid<T>
-auto remainder_nonnegative_with_largest_doubling(T a, T b) -> T
-{
-    // Precondition: $a \geq T(0) \wedge b > T(0)$
-    while (b <= a)
-        a = a - largest_doubling(a, b);
-    return a;
-}
-
-template <typename T>
-    requires ArchimedeanMonoid<T>
-auto subtractive_gcd_nonzero(T a, T b) -> T
-{
-    // Precondition: $a > 0 \wedge b > 0$
-    while (true) {
-        if (b < a)
-            a = a - b;
-        else if (a < b)
-            b = b - a;
-        else
-            return a;
-    }
-}
-
-template <typename T>
-    requires EuclideanMonoid<T>
-auto subtractive_gcd(T a, T b) -> T
-{
-    // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
-    while (true) {
-        if (b == T{0}) return a;
-        while (b <= a) a = a - b;
-        if (a == T{0}) return b;
-        while (a <= b) b = b - a;
-    }
-}
-
-template <typename T>
-    requires EuclideanMonoid<T>
-auto fast_subtractive_gcd(T a, T b) -> T
-{
-    // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
-    while (true) {
-        if (b == T{0}) return a;
-        a = remainder_nonnegative(a, b);
-        if (a == T{0}) return b;
-        b = remainder_nonnegative(b, a);
-    }
-}
-
-template <typename T>
-    requires EuclideanSemiring<T>
-auto gcd(T a, T b) -> T
-{
-    // Precondition: $\neg(a = 0 \wedge b = 0)$
-    while (true) {
-        if (b == T{0}) return a;
-        a = remainder(a, b);
-        if (a == T{0}) return b;
-        b = remainder(b, a);
-    }
-}
-
-template <typename T, typename S>
-    requires EuclideanSemimodule<T, S>
-auto gcd(T a, T b)
-{
-    // Precondition: $\neg(a = 0 \wedge b = 0)$
-    while (true) {
-        if (b == T{0}) return a;
-        a = remainder(a, b);
-        if (a == T{0}) return b;
-        b = remainder(b, a);
-    }
-}
-
-
-// Exercise 5.3:
-
-template <typename T>
-    requires Integer<T>
-auto stein_gcd_nonnegative(T a, T b) -> T
-{
-    // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
-    if (zero(a)) return b;
-    if (zero(b)) return a;
-    int d = 0;
-    while (even(a) && even(b)) {
-        a = half_nonnegative(a);
-        b = half_nonnegative(b);
-        d = d + 1;
-    }
-    while (even(a)) a = half_nonnegative(a);
-    while (even(b)) b = half_nonnegative(b);
-    while (true)
-        if (a < b) {
-            b = b - a;
-            do { b = half_nonnegative(b); } while (even(b));
-        } else if (b < a) {
-            a = a - b;
-            do { a = half_nonnegative(a); } while (even(a));
-        } else return binary_scale_up_nonnegative(a, d);
-}
-
-template <typename T>
-    requires ArchimedeanMonoid<T>
-auto quotient_remainder_nonnegative(T a, T b) -> pair<QuotientType<T>, T>
-{
-    // Precondition: $a \geq 0 \wedge b > 0$
-    using N = QuotientType<T>;
-    using NT = pair<N, T>;
-    if (a < b) return NT{N{0}, a};
-    if (a - b < b) return NT{N{1}, a - b};
-    auto q = quotient_remainder_nonnegative(a, b + b);
-    auto m = twice(q.m0);
-    a = q.m1;
-    if (a < b)
-        return NT{m, a};
-    else
-        return NT{successor(m), a - b};
-}
-
-template <typename T>
-    requires HalvableMonoid<T>
-auto quotient_remainder_nonnegative_iterative(T a, T b) -> pair<QuotientType<T>, T>
-{
-    // Precondition: $a \geq 0 \wedge b > 0$
-    using N = QuotientType<T>;
-    using NT = pair<N, T>;
-    if (a < b) return NT{N{0}, a};
-    auto c = largest_doubling(a, b);
-    a = a - c;
-    N n{1};
-    while (c != b) {
-        n = twice(n);
-        c = half(c);
-        if (c <= a) {
-            a = a - c;
-            n = successor(n);
-        }
-    }
-    return NT{n, a};
-}
-
-template <typename Op>
-    requires BinaryOperation<Op> && ArchimedeanGroup<Domain<Op>>
-auto remainder(Domain<Op> a, Domain<Op> b, Op rem) -> Domain<Op>
-{
-    // Precondition: $b \neq 0$
-    using T = decltype(a);
-    T r;
-    if (a < T{0})
-        if (b < T{0}) {
-            r = -rem(-a, -b);
-        } else {
-            r =  rem(-a,  b); if (r != T{0}) r = b - r;
-        }
-    else
-        if (b < T{0}) {
-            r =  rem(a, -b);  if (r != T{0}) r = b + r;
-        } else {
-            r =  rem(a,  b);
-        }
-    return r;
-}
-
-template <typename F>
-    requires HomogeneousFunction<F> && ArchimedeanGroup<Domain<F>> && Arity<F> == 2
-    __requires(Codomain<F> == pair<QuotientType<Domain<F>>, Domain<F>>)
-auto quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem) ->
-    pair<QuotientType<Domain<F>>, Domain<F>>
-{
-    // Precondition: $b \neq 0$
-    using T = decltype(a);
-    pair<QuotientType<T>, T> q_r;
-    if (a < T{0}) {
-        if (b < T{0}) {
-            q_r = quo_rem(-a, -b); q_r.m1 = -q_r.m1;
-        } else {
-            q_r = quo_rem(-a, b);
-            if (q_r.m1 != T{0}) {
-                q_r.m1 = b - q_r.m1; q_r.m0 = successor(q_r.m0);
-            }
-            q_r.m0 = -q_r.m0;
-        }
-    } else {
-        if (b < T{0}) {
-            q_r = quo_rem(a, -b);
-            if (q_r.m1 != T{0}) {
-                q_r.m1 = b + q_r.m1; q_r.m0 = successor(q_r.m0);
-            }
-            q_r.m0 = -q_r.m0;
-        }
-        else
-            q_r = quo_rem(a, b);
-    }
-    return q_r;
-}
-
 
 
 
@@ -2004,234 +1191,259 @@ I fibonacci(I n)
 //  Chapter 4. Linear orderings
 //
 
-
 // Exercise 4.1: Give an example of a relation that is neither strict nor reflexive
 // Exercise 4.2: Give an example of a symmetric relation that is not transitive
 // Exercise 4.3: Give an example of a symmetric relation that is not reflexive
 
-
-template<typename R>
-    __requires(Relation(R))
+template <typename R>
+    requires Relation<R>
 struct complement
 {
     R r;
-    complement(R r) : r(r) { }
-    bool operator()(const Domain<R>& x, const Domain<R>& y)
-    {
+    complement(R r)
+        : r{r}
+    {}
+    bool operator()(const Domain<R>& x, const Domain<R>& y) {
         return !r(x, y);
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
-struct input_type< complement<R>, 0>
+template <typename R>
+    requires Relation<R>
+struct input_type<complement<R>, 0>
 {
-    typedef Domain<R> type;
+    using type = Domain<R>;
 };
 
-template<typename R>
-    __requires(Relation(R))
+template <typename R>
+    requires Relation<R>
 struct converse
 {
     R r;
-    converse(R r) : r(r) { }
+    converse(R r)
+        : r{r}
+    {}
     bool operator()(const Domain<R>& x, const Domain<R>& y)
     {
         return r(y, x);
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
-struct input_type< converse<R>, 0>
+template <typename R>
+    requires Relation<R>
+struct input_type<converse<R>, 0>
 {
-    typedef Domain<R> type;
+    using type = Domain<R>;
 };
 
-template<typename R>
-    __requires(Relation(R))
+template <typename R>
+    requires Relation<R>
 struct complement_of_converse
 {
-    typedef Domain<R> T;
+    using T = Domain<R>;
     R r;
-    complement_of_converse(const R& r) : r(r) { }
+    complement_of_converse(const R& r)
+        : r{r}
+    {}
     bool operator()(const T& a, const T& b)
     {
         return !r(b, a);
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
-struct input_type< complement_of_converse<R>, 0>
+template <typename R>
+    requires Relation<R>
+struct input_type<complement_of_converse<R>, 0>
 {
-    typedef Domain<R> type;
+    using type = Domain<R>;
 };
 
-template<typename R>
-   __requires(Relation(R))
+template <typename R>
+    requires Relation<R>
 struct symmetric_complement
 {
     R r;
-    symmetric_complement(R r) : r(r) { }
+    symmetric_complement(R r)
+        : r{r}
+    {}
     bool operator()(const Domain<R>& a, const Domain<R>& b)
     {
         return !r(a, b) && !r(b, a);
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
-struct input_type< symmetric_complement<R>, 0>
+template <typename R>
+    requires Relation<R>
+struct input_type<symmetric_complement<R>, 0>
 {
-    typedef Domain<R> type;
+    using type = Domain<R>;
 };
 
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& select_0_2(const Domain<R>& a,
-                            const Domain<R>& b, R r)
+template <typename R>
+    requires Relation<R>
+auto select_0_2(
+    const Domain<R>& a, const Domain<R>& b, R r
+) -> const Domain<R>&
 {
     // Precondition: $\func{weak\_ordering}(r)$
     if (r(b, a)) return b;
     return a;
 }
 
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_2(const Domain<R>& a,
-                            const Domain<R>& b, R r)
+template <typename R>
+    requires Relation<R>
+auto select_1_2(
+    const Domain<R>& a, const Domain<R>& b, R r
+) -> const Domain<R>&
 {
     // Precondition: $\func{weak\_ordering}(r)$
     if (r(b, a)) return a;
     return b;
 }
 
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& select_0_3(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c, R r)
+template <typename R>
+    requires Relation<R>
+auto select_0_3(
+    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
+) -> const Domain<R>&
 {
     return select_0_2(select_0_2(a, b, r), c, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& select_2_3(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c, R r)
+template <typename R>
+    requires Relation<R>
+auto select_2_3(
+    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
+) -> const Domain<R>&
 {
     return select_1_2(select_1_2(a, b, r), c, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_3_ab(const Domain<R>& a,
-                               const Domain<R>& b,
-                               const Domain<R>& c, R r)
+template <typename R>
+    requires Relation<R>
+auto select_1_3_ab(
+    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
+) -> const Domain<R>&
 {
     if (!r(c, b)) return b;     // $a$, $b$, $c$ are sorted
     return select_1_2(a, c, r); // $b$ is not the median
 }
 
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_3(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c, R r)
+template <typename R>
+    requires Relation<R>
+auto select_1_3(
+    const Domain<R>& a, const Domain<R>& b, const Domain<R>& c, R r
+) -> const Domain<R>&
 {
-    if (r(b, a)) return select_1_3_ab(b, a, c, r);
-    return              select_1_3_ab(a, b, c, r);
+    if (r(b, a)) return
+        select_1_3_ab(b, a, c, r);
+    return
+        select_1_3_ab(a, b, c, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_4_ab_cd(const Domain<R>& a,
-                                  const Domain<R>& b,
-                                  const Domain<R>& c,
-                                  const Domain<R>& d, R r) {
-    if (r(c, a)) return select_0_2(a, d, r);
-    return              select_0_2(b, c, r);
+template <typename R>
+    requires Relation<R>
+auto select_1_4_ab_cd(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
+{
+    if (r(c, a)) return
+        select_0_2(a, d, r);
+    return
+        select_0_2(b, c, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_4_ab(const Domain<R>& a,
-                               const Domain<R>& b,
-                               const Domain<R>& c,
-                               const Domain<R>& d, R r) {
-    if (r(d, c)) return select_1_4_ab_cd(a, b, d, c, r);
-    return              select_1_4_ab_cd(a, b, c, d, r);
+template <typename R>
+    requires Relation<R>
+auto select_1_4_ab(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
+{
+    if (r(d, c)) return
+        select_1_4_ab_cd(a, b, d, c, r);
+    return
+        select_1_4_ab_cd(a, b, c, d, r);
 }
 
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_4(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c,
-                            const Domain<R>& d, R r) {
-    if (r(b, a)) return select_1_4_ab(b, a, c, d, r);
-    return              select_1_4_ab(a, b, c, d, r);
+template <typename R>
+    requires Relation<R>
+auto select_1_4(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
+{
+    if (r(b, a)) return
+        select_1_4_ab(b, a, c, d, r);
+    return
+        select_1_4_ab(a, b, c, d, r);
 }
 
 // Exercise 4.4: select_2_4
 
-
 // Order selection procedures with stability indices
 
-template<bool strict, typename R>
-    __requires(Relation(R))
+template <bool strict, typename R>
+    requires Relation<R>
 struct compare_strict_or_reflexive;
 
-template<typename R>
-    __requires(Relation(R))
+template <typename R>
+    requires Relation<R>
 struct compare_strict_or_reflexive<true, R> // strict
 {
-    bool operator()(const Domain<R>& a,
-                    const Domain<R>& b, R r)
+    bool operator()(const Domain<R>& a, const Domain<R>& b, R r)
     {
         return r(a, b);
     }
 };
 
-template<typename R>
-    __requires(Relation(R))
+template <typename R>
+    requires Relation<R>
 struct compare_strict_or_reflexive<false, R> // reflexive
 {
-    bool operator()(const Domain<R>& a,
-                    const Domain<R>& b, R r)
+    bool operator()(const Domain<R>& a, const Domain<R>& b, R r)
     {
         return !r(b, a); // $\func{complement\_of\_converse}_r(a, b)$
     }
 };
 
-template<int ia, int ib, typename R>
-    __requires(Relation(R))
-const Domain<R>& select_0_2(const Domain<R>& a,
-                            const Domain<R>& b, R r)
+template <int ia, int ib, typename R>
+    requires Relation<R>
+auto select_0_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return b;
     return a;
 }
 
-template<int ia, int ib, typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_2(const Domain<R>& a,
-                            const Domain<R>& b, R r)
+template <int ia, int ib, typename R>
+    requires Relation<R>
+auto select_1_2(const Domain<R>& a, const Domain<R>& b, R r) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return a;
     return b;
 }
 
-template<int ia, int ib, int ic, int id, typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_4_ab_cd(const Domain<R>& a,
-                                  const Domain<R>& b,
-                                  const Domain<R>& c,
-                                  const Domain<R>& d, R r)
+template <int ia, int ib, int ic, int id, typename R>
+    requires Relation<R>
+auto select_1_4_ab_cd(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ic), R> cmp;
     if (cmp(c, a, r)) return
@@ -2240,12 +1452,15 @@ const Domain<R>& select_1_4_ab_cd(const Domain<R>& a,
         select_0_2<ib,ic>(b, c, r);
 }
 
-template<int ia, int ib, int ic, int id, typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_4_ab(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c,
-                            const Domain<R>& d, R r)
+template <int ia, int ib, int ic, int id, typename R>
+    requires Relation<R>
+auto select_1_4_ab(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ic < id), R> cmp;
     if (cmp(d, c, r)) return
@@ -2254,12 +1469,15 @@ const Domain<R>& select_1_4_ab(const Domain<R>& a,
         select_1_4_ab_cd<ia,ib,ic,id>(a, b, c, d, r);
 }
 
-template<int ia, int ib, int ic, int id, typename R>
-    __requires(Relation(R))
-const Domain<R>& select_1_4(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c,
-                            const Domain<R>& d, R r)
+template <int ia, int ib, int ic, int id, typename R>
+    requires Relation<R>
+auto select_1_4(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return
@@ -2268,13 +1486,16 @@ const Domain<R>& select_1_4(const Domain<R>& a,
         select_1_4_ab<ia,ib,ic,id>(a, b, c, d, r);
 }
 
-template<int ia, int ib, int ic, int id, int ie, typename R>
-    __requires(Relation(R))
-const Domain<R>& select_2_5_ab_cd(const Domain<R>& a,
-                                  const Domain<R>& b,
-                                  const Domain<R>& c,
-                                  const Domain<R>& d,
-                                  const Domain<R>& e, R r)
+template <int ia, int ib, int ic, int id, int ie, typename R>
+    requires Relation<R>
+auto select_2_5_ab_cd(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    const Domain<R>& e,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ic), R> cmp;
     if (cmp(c, a, r)) return
@@ -2283,30 +1504,34 @@ const Domain<R>& select_2_5_ab_cd(const Domain<R>& a,
         select_1_4_ab<ic,id,ib,ie>(c, d, b, e, r);
 }
 
-template<int ia, int ib, int ic, int id, int ie, typename R>
-    __requires(Relation(R))
-const Domain<R>& select_2_5_ab(const Domain<R>& a,
-                               const Domain<R>& b,
-                               const Domain<R>& c,
-                               const Domain<R>& d,
-                               const Domain<R>& e, R r)
+template <int ia, int ib, int ic, int id, int ie, typename R>
+    requires Relation<R>
+auto select_2_5_ab(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    const Domain<R>& e,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ic < id), R> cmp;
     if (cmp(d, c, r)) return
-        select_2_5_ab_cd<ia,ib,id,ic,ie>(
-                          a, b, d, c, e, r);
+        select_2_5_ab_cd<ia,ib,id,ic,ie>(a, b, d, c, e, r);
     return
-        select_2_5_ab_cd<ia,ib,ic,id,ie>(
-                          a, b, c, d, e, r);
+        select_2_5_ab_cd<ia,ib,ic,id,ie>(a, b, c, d, e, r);
 }
 
-template<int ia, int ib, int ic, int id, int ie, typename R>
-    __requires(Relation(R))
-const Domain<R>& select_2_5(const Domain<R>& a,
-                            const Domain<R>& b,
-                            const Domain<R>& c,
-                            const Domain<R>& d,
-                            const Domain<R>& e, R r)
+template <int ia, int ib, int ic, int id, int ie, typename R>
+    requires Relation<R>
+auto select_2_5(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    const Domain<R>& e,
+    R r
+) -> const Domain<R>&
 {
     compare_strict_or_reflexive<(ia < ib), R> cmp;
     if (cmp(b, a, r)) return
@@ -2318,28 +1543,28 @@ const Domain<R>& select_2_5(const Domain<R>& a,
 // Exercise 4.5. Find an algorithm for median of 5 that does slightly fewer comparisons
 // on average
 
-
-template<typename R>
-    __requires(Relation(R))
-const Domain<R>& median_5(const Domain<R>& a,
-                          const Domain<R>& b,
-                          const Domain<R>& c,
-                          const Domain<R>& d,
-                          const Domain<R>& e, R r)
+template <typename R>
+    requires Relation<R>
+auto median_5(
+    const Domain<R>& a,
+    const Domain<R>& b,
+    const Domain<R>& c,
+    const Domain<R>& d,
+    const Domain<R>& e,
+    R r
+) -> const Domain<R>&
 {
     return select_2_5<0,1,2,3,4>(a, b, c, d, e, r);
 }
-
 
 // Exercise 4.6. Prove the stability of every order selection procedure in this section
 // Exercise 4.7. Verify the correctness and stability of every order selection procedure
 // in this section by exhaustive testing
 
-
 // Natural total ordering
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template <typename T>
+    requires TotallyOrdered<T>
 struct less
 {
     bool operator()(const T& x, const T& y)
@@ -2348,161 +1573,155 @@ struct less
     }
 };
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template <typename T>
+    requires TotallyOrdered<T>
 struct input_type<less<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename T>
-    __requires(TotallyOrdered(T))
-const T& min(const T& a, const T& b)
+template <typename T>
+auto min(const T& a, const T& b) -> const T&
+    requires TotallyOrdered<T>
 {
     return select_0_2(a, b, less<T>());
 }
 
-template<typename T>
-    __requires(TotallyOrdered(T))
-const T& max(const T& a, const T& b)
+template <typename T>
+auto max(const T& a, const T& b) -> const T&
+    requires TotallyOrdered<T>
 {
     return select_1_2(a, b, less<T>());
 }
 
-
 // Clusters of related procedures: equality and ordering
 
-template<typename T>
-    __requires(Regular(T))
+template <typename T>
 bool operator!=(const T& x, const T& y)
 {
-    return !(x==y);
+    return !(x == y);
 }
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template <typename T>
 bool operator>(const T& x, const T& y)
 {
     return y < x;
 }
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template <typename T>
 bool operator<=(const T& x, const T& y)
 {
     return !(y < x);
 }
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template <typename T>
 bool operator>=(const T& x, const T& y)
 {
     return !(x < y);
 }
 
-
 // Exercise 4.8: Rewrite the algorithms in this chapter using three-valued comparison
-
 
 //
 //  Chapter 5. Ordered algebraic structures
 //
 
-
-template<typename T>
-    __requires(AdditiveSemigroup(T))
+template <typename T>
+    requires AdditiveSemigroup<T>
 struct plus
 {
-    T operator()(const T& x, const T& y)
+    auto operator()(const T& x, const T& y)
     {
         return x + y;
     }
 };
 
-template<typename T>
-    __requires(AdditiveSemigroup(T))
-struct input_type< plus<T>, 0 >
+template <typename T>
+    requires AdditiveSemigroup<T>
+struct input_type<plus<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename T>
-    __requires(MultiplicativeSemigroup(T))
+template <typename T>
+    requires MultiplicativeSemigroup<T>
 struct multiplies
 {
-    T operator()(const T& x, const T& y)
+    auto operator()(const T& x, const T& y)
     {
         return x * y;
     }
 };
 
-template<typename T>
-    __requires(MultiplicativeSemigroup(T))
-struct input_type< multiplies<T>, 0 >
+template <typename T>
+    requires MultiplicativeSemigroup<T>
+struct input_type<multiplies<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename Op>
-    __requires(SemigroupOperation(Op)) // ***** or MultiplicativeSemigroup ?????
+template <typename Op>
+    __requires(SemigroupOperation<Op>) // ***** or MultiplicativeSemigroup ?????
 struct multiplies_transformation
 {
     Domain<Op> x;
     Op op;
-    multiplies_transformation(Domain<Op> x, Op op) : x(x), op(op) { }
-    Domain<Op> operator()(const Domain<Op>& y)
+    multiplies_transformation(Domain<Op> x, Op op)
+        : x(x), op(op)
+    {}
+    auto operator()(const Domain<Op>& y)
     {
         return op(x, y);
     }
 };
 
-template<typename Op>
-    __requires(SemigroupOperation(Op))
-struct input_type< multiplies_transformation<Op>, 0 >
+template <typename Op>
+   __requires(SemigroupOperation<Op>)
+struct input_type<multiplies_transformation<Op>, 0>
 {
-    typedef Domain<Op> type;
+    using type = Domain<Op>;
 };
 
-template<typename T>
-    __requires(AdditiveGroup(T))
+template <typename T>
+    requires AdditiveGroup<T>
 struct negate
 {
-    T operator()(const T& x)
+    auto operator()(const T& x)
     {
         return -x;
     }
 };
 
-template<typename T>
-    __requires(AdditiveGroup(T))
-struct input_type< negate<T>, 0>
+template <typename T>
+    requires AdditiveGroup<T>
+struct input_type<negate<T>, 0>
 {
-    typedef T type;
+    using type = T;
 };
 
-template<typename T>
-    __requires(OrderedAdditiveGroup(T))
-T abs(const T& a)
+template <typename T>
+    requires OrderedAdditiveGroup<T>
+auto abs(const T& a) -> T
 {
-    if (a < T(0)) return -a;
-    else          return  a;
+    if (a < decltype(a){0}) return -a;
+    else return a;
 }
 
-template<typename T>
-    __requires(CancellableMonoid(T))
-T slow_remainder(T a, T b)
+template <typename T>
+    requires CancellableMonoid<T>
+auto slow_remainder(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     while (b <= a) a = a - b;
     return a;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
-QuotientType<T> slow_quotient(T a, T b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto slow_quotient(T a, T b) -> QuotientType<T>
 {
     // Precondition: $a \geq 0 \wedge b > 0$
-    QuotientType<T> n(0);
+    QuotientType<T> n{0};
     while (b <= a) {
         a = a - b;
         n = successor(n);
@@ -2510,9 +1729,9 @@ QuotientType<T> slow_quotient(T a, T b)
     return n;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
-T remainder_recursive(T a, T b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto remainder_recursive(T a, T b) -> T
 {
     // Precondition: $a \geq b > 0$
     if (a - b >= b) {
@@ -2522,9 +1741,9 @@ T remainder_recursive(T a, T b)
     return a - b;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
-T remainder_nonnegative(T a, T b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto remainder_nonnegative(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     if (a < b) return a;
@@ -2538,43 +1757,43 @@ T remainder_nonnegative(T a, T b)
     Volume 19, Number 2, 1990, pages 329--340.
 */
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
-T remainder_nonnegative_fibonacci(T a, T b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto remainder_nonnegative_fibonacci(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     if (a < b) return a;
-    T c = b;
+    auto c = b;
     do {
-        T tmp = c;
+        auto tmp = c;
         c = b + c;
         b = tmp;
     } while (a >= c);
     do {
         if (a >= b) a = a - b;
-        T tmp = c - b;
+        auto tmp = c - b;
         c = b;
         b = tmp;
     } while (b < c);
     return a;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
-T largest_doubling(T a, T b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto largest_doubling(T a, T b) -> T
 {
     // Precondition: $a \geq b > 0$
     while (b <= a - b) b = b + b;
     return b;
 }
 
-template<typename T>
-    __requires(HalvableMonoid(T))
-T remainder_nonnegative_iterative(T a, T b)
+template <typename T>
+    requires HalvableMonoid<T>
+auto remainder_nonnegative_iterative(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b > 0$
     if (a < b) return a;
-    T c = largest_doubling(a, b);
+    auto c = largest_doubling(a, b);
     a = a - c;
     while (c != b) {
         c = half(c);
@@ -2585,9 +1804,9 @@ T remainder_nonnegative_iterative(T a, T b)
 
 // Jon Brandt suggested this algorithm (it is not mentioned in chapter 5):
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
-T remainder_nonnegative_with_largest_doubling(T a, T b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto remainder_nonnegative_with_largest_doubling(T a, T b) -> T
 {
     // Precondition: $a \geq T(0) \wedge b > T(0)$
     while (b <= a)
@@ -2595,76 +1814,78 @@ T remainder_nonnegative_with_largest_doubling(T a, T b)
     return a;
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
-T subtractive_gcd_nonzero(T a, T b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto subtractive_gcd_nonzero(T a, T b) -> T
 {
     // Precondition: $a > 0 \wedge b > 0$
     while (true) {
-        if (b < a)      a = a - b;
-        else if (a < b) b = b - a;
-        else            return a;
+        if (b < a)
+            a = a - b;
+        else if (a < b)
+            b = b - a;
+        else
+            return a;
     }
 }
 
-template<typename T>
-    __requires(EuclideanMonoid(T))
-T subtractive_gcd(T a, T b)
+template <typename T>
+    requires EuclideanMonoid<T>
+auto subtractive_gcd(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
     while (true) {
-        if (b == T(0)) return a;
+        if (b == T{0}) return a;
         while (b <= a) a = a - b;
-        if (a == T(0)) return b;
+        if (a == T{0}) return b;
         while (a <= b) b = b - a;
     }
 }
 
-template<typename T>
-    __requires(EuclideanMonoid(T))
-T fast_subtractive_gcd(T a, T b)
+template <typename T>
+    requires EuclideanMonoid<T>
+auto fast_subtractive_gcd(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
     while (true) {
-        if (b == T(0)) return a;
+        if (b == T{0}) return a;
         a = remainder_nonnegative(a, b);
-        if (a == T(0)) return b;
+        if (a == T{0}) return b;
         b = remainder_nonnegative(b, a);
     }
 }
 
-template<typename T>
-    __requires(EuclideanSemiring(T))
-T gcd(T a, T b)
+template <typename T>
+    requires EuclideanSemiring<T>
+auto gcd(T a, T b) -> T
 {
     // Precondition: $\neg(a = 0 \wedge b = 0)$
     while (true) {
-        if (b == T(0)) return a;
+        if (b == T{0}) return a;
         a = remainder(a, b);
-        if (a == T(0)) return b;
+        if (a == T{0}) return b;
         b = remainder(b, a);
     }
 }
 
-template<typename T, typename S>
-    __requires(EuclideanSemimodule(T, S))
-T gcd(T a, T b)
+template <typename T, typename S>
+    requires EuclideanSemimodule<T, S>
+auto gcd(T a, T b)
 {
     // Precondition: $\neg(a = 0 \wedge b = 0)$
     while (true) {
-        if (b == T(0)) return a;
+        if (b == T{0}) return a;
         a = remainder(a, b);
-        if (a == T(0)) return b;
+        if (a == T{0}) return b;
         b = remainder(b, a);
     }
 }
-
 
 // Exercise 5.3:
 
-template<typename T>
-    __requires(Integer(T))
-T stein_gcd_nonnegative(T a, T b)
+template <typename T>
+    requires Integer<T>
+auto stein_gcd_nonnegative(T a, T b) -> T
 {
     // Precondition: $a \geq 0 \wedge b \geq 0 \wedge \neg(a = 0 \wedge b = 0)$
     if (zero(a)) return b;
@@ -2687,33 +1908,35 @@ T stein_gcd_nonnegative(T a, T b)
         } else return binary_scale_up_nonnegative(a, d);
 }
 
-template<typename T>
-    __requires(ArchimedeanMonoid(T))
-pair<QuotientType<T>, T>
-quotient_remainder_nonnegative(T a, T b)
+template <typename T>
+    requires ArchimedeanMonoid<T>
+auto quotient_remainder_nonnegative(T a, T b) -> pair<QuotientType<T>, T>
 {
     // Precondition: $a \geq 0 \wedge b > 0$
-    typedef QuotientType<T> N;
-    if (a < b) return pair<N, T>(N(0), a);
-    if (a - b < b) return pair<N, T>(N(1), a - b);
-    pair<N, T> q = quotient_remainder_nonnegative(a, b + b);
-    N m = twice(q.m0);
+    using N = QuotientType<T>;
+    using NT = pair<N, T>;
+    if (a < b) return NT{N{0}, a};
+    if (a - b < b) return NT{N{1}, a - b};
+    auto q = quotient_remainder_nonnegative(a, b + b);
+    auto m = twice(q.m0);
     a = q.m1;
-    if (a < b) return pair<N, T>(m, a);
-    else       return pair<N, T>(successor(m), a - b);
+    if (a < b)
+        return NT{m, a};
+    else
+        return NT{successor(m), a - b};
 }
 
-template<typename T>
-    __requires(HalvableMonoid(T))
-pair<QuotientType<T>, T>
-quotient_remainder_nonnegative_iterative(T a, T b)
+template <typename T>
+    requires HalvableMonoid<T>
+auto quotient_remainder_nonnegative_iterative(T a, T b) -> pair<QuotientType<T>, T>
 {
     // Precondition: $a \geq 0 \wedge b > 0$
-    typedef QuotientType<T> N;
-    if (a < b) return pair<N, T>(N(0), a);
-    T c = largest_doubling(a, b);
+    using N = QuotientType<T>;
+    using NT = pair<N, T>;
+    if (a < b) return NT{N{0}, a};
+    auto c = largest_doubling(a, b);
     a = a - c;
-    N n(1);
+    N n{1};
     while (c != b) {
         n = twice(n);
         c = half(c);
@@ -2722,72 +1945,71 @@ quotient_remainder_nonnegative_iterative(T a, T b)
             n = successor(n);
         }
     }
-    return pair<N, T>(n, a);
+    return NT{n, a};
 }
 
-template<typename Op>
-    __requires(BinaryOperation(Op) &&
-        ArchimedeanGroup(Domain<Op>))
-Domain<Op> remainder(Domain<Op> a, Domain<Op> b, Op rem)
+template <typename Op>
+    requires
+        BinaryOperation<Op> &&
+        ArchimedeanGroup<Domain<Op>>
+auto remainder(Domain<Op> a, Domain<Op> b, Op rem) -> Domain<Op>
 {
     // Precondition: $b \neq 0$
-    typedef Domain<Op> T;
+    using T = decltype(a);
     T r;
-    if (a < T(0))
-        if (b < T(0)) {
+    if (a < T{0})
+        if (b < T{0}) {
             r = -rem(-a, -b);
         } else {
-            r =  rem(-a,  b); if (r != T(0)) r = b - r;
+            r =  rem(-a,  b); if (r != T{0}) r = b - r;
         }
     else
-        if (b < T(0)) {
-            r =  rem(a, -b);  if (r != T(0)) r = b + r;
+        if (b < T{0}) {
+            r =  rem(a, -b);  if (r != T{0}) r = b + r;
         } else {
             r =  rem(a,  b);
         }
     return r;
 }
 
-template<typename F>
-    __requires(HomogeneousFunction(F) && Arity(F) == 2 &&
-        ArchimedeanGroup(Domain<F>) &&
-        CoDomain<F> == pair<QuotientType(Domain<F>),
-                            Domain<F>>)
-pair<QuotientType<Domain<F>>, Domain<F>>
-quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem)
+template <typename F>
+    requires
+        HomogeneousFunction<F> &&
+        ArchimedeanGroup<Domain<F>> &&
+        Arity<F> == 2
+    __requires(Codomain<F> == pair<QuotientType<Domain<F>>, Domain<F>>)
+auto quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem) -> pair<QuotientType<Domain<F>>, Domain<F>>
 {
     // Precondition: $b \neq 0$
-    typedef Domain<F> T;
+    using T = decltype(a);
     pair<QuotientType<T>, T> q_r;
-    if (a < T(0)) {
-        if (b < T(0)) {
+    if (a < T{0}) {
+        if (b < T{0}) {
             q_r = quo_rem(-a, -b); q_r.m1 = -q_r.m1;
         } else {
-            q_r = quo_rem(-a,  b);
-            if (q_r.m1 != T(0)) {
+            q_r = quo_rem(-a, b);
+            if (q_r.m1 != T{0}) {
                 q_r.m1 = b - q_r.m1; q_r.m0 = successor(q_r.m0);
             }
             q_r.m0 = -q_r.m0;
         }
     } else {
-        if (b < T(0)) {
-            q_r = quo_rem( a, -b);
-            if (q_r.m1 != T(0)) {
+        if (b < T{0}) {
+            q_r = quo_rem(a, -b);
+            if (q_r.m1 != T{0}) {
                 q_r.m1 = b + q_r.m1; q_r.m0 = successor(q_r.m0);
             }
             q_r.m0 = -q_r.m0;
         }
         else
-            q_r = quo_rem( a,  b);
+            q_r = quo_rem(a, b);
     }
     return q_r;
 }
 
-
 //
 //  Chapter 6. Iterators
 //
-
 
 template <typename I>
     requires Iterator<I>
