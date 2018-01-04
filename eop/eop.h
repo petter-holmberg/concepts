@@ -17,9 +17,7 @@
 // by Alexander Stepanov and Paul McJones
 // Addison-Wesley Professional, 2009
 
-/*
-#ifndef EOP_EOP
-#define EOP_EOP
+#pragma once
 
 #include "assertions.h"
 #include "intrinsics.h"
@@ -30,19 +28,18 @@
 
 #include <cstdlib> // malloc, free
 #include <cmath> // sqrt
-#include <cstddef>
+#include <limits> // numeric_limits
 
 //
 //  Chapter 1. Foundations
 //
 
-
-auto plus_0(int a, int b)
+auto plus_0(int a, int b) -> int
 {
     return a + b;
 }
 
-auto plus_1(const int& a, const int& b)
+auto plus_1(const int& a, const int& b) -> int
 {
     return a + b;
 }
@@ -52,16 +49,17 @@ void plus_2(int* a, int* b, int* c)
     *c = *a + *b;
 }
 
-auto square(int n)
+auto square(int n) -> int
 {
     return n * n;
 }
 
-auto square(const Domain<BinaryOperation>& x, BinaryOperation op)
+template <typename Op>
+    requires BinaryOperation<Op>
+auto square(const Domain<Op>& x, Op op) -> Domain<Op>
 {
     return op(x, x);
 }
-
 
 // Function object for equality
 
@@ -69,7 +67,7 @@ template <typename T>
     requires Regular<T>
 struct equal
 {
-    bool operator()(const T& x, const T& y)
+    auto operator()(const T& x, const T& y) -> bool
     {
         return x == y;
     }
@@ -82,7 +80,6 @@ struct input_type<equal<T>, 0>
     using type = T;
 };
 
-
 // type pair (see chapter 12 of Elements of Programming)
 // model Regular(Pair)
 
@@ -93,7 +90,9 @@ struct pair
     T0 m0;
     T1 m1;
     pair() {} // default constructor
-    pair(const T0& m0, const T1& m1) : m0{m0}, m1{m1} {}
+    pair(const T0& m0, const T1& m1)
+        : m0{m0}, m1{m1}
+    {}
 };
 
 template <typename T0, typename T1>
@@ -105,18 +104,17 @@ struct underlying_type<pair<T0, T1>>
 
 template <typename T0, typename T1>
     requires Regular<T0> && Regular<T1>
-bool operator==(const pair<T0, T1>& x, const pair<T0, T1>& y)
+auto operator==(const pair<T0, T1>& x, const pair<T0, T1>& y) -> bool
 {
     return x.m0 == y.m0 && x.m1 == y.m1;
 }
 
 template <typename T0, typename T1>
     requires Regular<T0> && Regular<T1>
-bool operator<(const pair<T0, T1>& x, const pair<T0, T1>& y)
+auto operator<(const pair<T0, T1>& x, const pair<T0, T1>& y) -> bool
 {
     return x.m0 < y.m0 || (!(y.m0 < x.m0) && x.m1 < y.m1);
 }
-
 
 // type triple (see Exercise 12.2 of Elements of Programming)
 // model Regular(triple)
@@ -129,7 +127,9 @@ struct triple
     T1 m1;
     T2 m2;
     triple() {}
-    triple(T0 m0, T1 m1, T2 m2) : m0{m0}, m1{m1}, m2{m2} {}
+    triple(T0 m0, T1 m1, T2 m2)
+        : m0{m0}, m1{m1}, m2{m2}
+    {}
 };
 
 template <typename T0, typename T1, typename T2>
@@ -141,14 +141,14 @@ struct underlying_type<triple<T0, T1, T2>>
 
 template <typename T0, typename T1, typename T2>
     requires Regular<T0> && Regular<T1> && Regular<T2>
-bool operator==(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
+auto operator==(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y) -> bool
 {
     return x.m0 == y.m0 && x.m1 == y.m1 && x.m2 == y.m2;
 }
 
 template <typename T0, typename T1, typename T2>
     requires Regular<T0> && Regular<T1> && Regular<T2>
-bool operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
+auto operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y) -> bool
 {
     return
         x.m0 < y.m0 ||
@@ -156,22 +156,20 @@ bool operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
         (!(y.m1 < x.m1) && x.m2 < y.m2);
 }
 
-
 //
 //  Chapter 2. Transformations and their orbits
 //
-
 
 //int abs(int x) {
 //    if (x < 0) return -x; else return x;
 //} // unary operation
 
-auto euclidean_norm(double x, double y)
+auto euclidean_norm(double x, double y) -> double
 {
     return sqrt(x * x + y * y);
 } // binary operation
 
-auto euclidean_norm(double x, double y, double z)
+auto euclidean_norm(double x, double y, double z) -> double
 {
     return sqrt(x * x + y * y + z * z);
 } // ternary operation
@@ -204,8 +202,10 @@ auto distance(Domain<F> x, Domain<F> y, F f) -> DistanceType<F>
 }
 
 template <typename F, typename P>
-    requires Transformation<F> && UnaryPredicate<P>
-    __requires(Domain<F> == Domain<P>)
+    requires
+        Transformation<F> &&
+        UnaryPredicate<P>
+    __requires(Same<Domain<F>, Domain<P>>)
 auto collision_point(const Domain<F>& x, F f, P p) -> Domain<F>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
@@ -226,8 +226,11 @@ auto collision_point(const Domain<F>& x, F f, P p) -> Domain<F>
 }
 
 template <typename F, typename P>
-    requires Transformation<F> && UnaryPredicate<P> && Same<Domain<F>, Domain<P>>
-bool terminating(const Domain<F>& x, F f, P p)
+    requires
+        Transformation<F> &&
+        UnaryPredicate<P> &&
+        Same<Domain<F>, Domain<P>>
+auto terminating(const Domain<F>& x, F f, P p) -> bool
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     return !p(collision_point(x, f, p));
@@ -252,14 +255,17 @@ auto collision_point_nonterminating_orbit(const Domain<F>& x, F f)
 
 template <typename F>
     requires Transformation<F>
-bool circular_nonterminating_orbit(const Domain<F>& x, F f)
+auto circular_nonterminating_orbit(const Domain<F>& x, F f) -> bool
 {
     return x == f(collision_point_nonterminating_orbit(x, f));
 }
 
 template <typename F, typename P>
-    requires Transformation<F> && UnaryPredicate<P> && Same<Domain<F>, Domain<P>>
-bool circular(const Domain<F>& x, F f, P p)
+    requires
+        Transformation<F> &&
+        UnaryPredicate<P> &&
+        Same<Domain<F>, Domain<P>>
+auto circular(const Domain<F>& x, F f, P p) -> bool
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
     Domain<F> y = collision_point(x, f, p);
@@ -288,8 +294,10 @@ auto connection_point_nonterminating_orbit(const Domain<F>& x, F f) -> Domain<F>
 }
 
 template <typename F, typename P>
-    requires Transformation<F> && UnaryPredicate<P>
-    __requires(Domain<F> == Domain<P>)
+    requires
+        Transformation<F> &&
+        UnaryPredicate<P>
+    __requires(Same<Domain<F>, Domain<P>>)
 auto connection_point(const Domain<F>& x, F f, P p) -> Domain<F>
 {
     // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
@@ -317,8 +325,9 @@ auto convergent_point_guarded(Domain<F> x0, Domain<F> x1, Domain<F> y, F f) -> D
 
 template <typename F>
     requires Transformation<F>
-auto orbit_structure_nonterminating_orbit(const Domain<F>& x, F f) ->
-    triple<DistanceType<F>, DistanceType<F>, Domain<F>>
+auto orbit_structure_nonterminating_orbit(
+    const Domain<F>& x, F f
+) -> triple<DistanceType<F>, DistanceType<F>, Domain<F>>
 {
     auto y = connection_point_nonterminating_orbit(x, f);
     return triple<DistanceType<F>, DistanceType<F>, Domain<F>>{
@@ -327,8 +336,10 @@ auto orbit_structure_nonterminating_orbit(const Domain<F>& x, F f) ->
 }
 
 template <typename F, typename P>
-    requires Transformation<F> && UnaryPredicate<P>
-    __requires(Domain<F> == Domain<P>)
+    requires
+        Transformation<F> &&
+        UnaryPredicate<P>
+    __requires(Same<Domain<F>, Domain<P>>)
 auto orbit_structure(const Domain<F>& x, F f, P p) ->
     triple<DistanceType<F>, DistanceType<F>, Domain<F>>
 {
@@ -343,14 +354,14 @@ auto orbit_structure(const Domain<F>& x, F f, P p) ->
     return triple<N, N, Domain<F>>{m, n, y};
 }
 
-
 //
 //  Chapter 3. Associative operations
 //
 
-
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_left_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $n > 0$
@@ -359,7 +370,9 @@ auto power_left_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_right_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $n > 0$
@@ -368,7 +381,9 @@ auto power_right_associated(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_0(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
@@ -378,7 +393,9 @@ auto power_0(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_1(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
@@ -389,7 +406,9 @@ auto power_1(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
@@ -399,7 +418,9 @@ auto power_accumulate_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
@@ -410,7 +431,9 @@ auto power_accumulate_1(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
@@ -422,7 +445,9 @@ auto power_accumulate_2(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
@@ -436,7 +461,9 @@ auto power_accumulate_3(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
@@ -451,7 +478,9 @@ auto power_accumulate_4(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
@@ -466,7 +495,9 @@ auto power_accumulate_positive_0(Domain<Op> r, Domain<Op> a, I n, Op op) -> Doma
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_accumulate_5(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n \geq 0$
@@ -475,7 +506,9 @@ auto power_accumulate_5(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_2(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
@@ -483,7 +516,9 @@ auto power_2(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_3(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge n > 0$
@@ -497,7 +532,9 @@ auto power_3(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
@@ -512,7 +549,9 @@ auto power_accumulate_positive(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
@@ -521,7 +560,9 @@ auto power_accumulate(Domain<Op> r, Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power(Domain<Op> a, I n, Op op) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
@@ -535,7 +576,9 @@ auto power(Domain<Op> a, I n, Op op) -> Domain<Op>
 }
 
 template <typename I, typename Op>
-    requires Integer<I> && BinaryOperation<Op>
+    requires
+        Integer<I> &&
+        BinaryOperation<Op>
 auto power(Domain<Op> a, I n, Op op, Domain<Op> id) -> Domain<Op>
 {
     // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
@@ -559,634 +602,6 @@ auto fibonacci(I n) -> I
     return power({I{1}, I{0}}, n, fibonacci_matrix_multiply<I>).m0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// eop.h
-
-// Copyright (c) 2009 Alexander Stepanov and Paul McJones
-//
-// Permission to use, copy, modify, distribute and sell this software
-// and its documentation for any purpose is hereby granted without
-// fee, provided that the above copyright notice appear in all copies
-// and that both that copyright notice and this permission notice
-// appear in supporting documentation. The authors make no
-// representations about the suitability of this software for any
-// purpose. It is provided "as is" without express or implied
-// warranty.
-
-
-// Algorithms from
-// Elements of Programming
-// by Alexander Stepanov and Paul McJones
-// Addison-Wesley Professional, 2009
-
-*/
-#ifndef EOP_EOP
-#define EOP_EOP
-
-#include "assertions.h"
-#include "intrinsics.h"
-#include "type_functions.h"
-#include "pointers.h"
-#include "integers.h"
-#include "concepts.h"
-
-#include <cstdlib> // malloc, free
-#include <cmath> // sqrt
-#include <limits> // numeric_limits
-
-//
-//  Chapter 1. Foundations
-//
-
-
-int plus_0(int a, int b)
-{
-    return a + b;
-}
-
-int plus_1(const int& a, const int& b)
-{
-    return a + b;
-}
-
-void plus_2(int* a, int* b, int* c)
-{
-    *c = *a + *b;
-}
-
-int square(int n) { return n * n; }
-
-template<typename Op>
-    __requires(BinaryOperation(Op))
-Domain<Op> square(const Domain<Op>& x, Op op)
-{
-    return op(x, x);
-}
-
-
-// Function object for equality
-
-template<typename T>
-    __requires(Regular(T))
-struct equal
-{
-    bool operator()(const T& x, const T& y)
-    {
-        return x == y;
-    }
-};
-
-template<typename T>
-    __requires(Regular(T))
-struct input_type<equal<T>, 0>
-{
-    typedef T type;
-};
-
-
-// type pair (see chapter 12 of Elements of Programming)
-// model Regular(Pair)
-
-template<typename T0, typename T1>
-    __requires(Regular(T0) && Regular(T1))
-struct pair
-{
-    T0 m0;
-    T1 m1;
-    pair() {} // default constructor
-    pair(const T0& m0, const T1& m1) : m0(m0), m1(m1) { }
-};
-
-template<typename T0, typename T1>
-    __requires(Regular(T0) && Regular(T1))
-struct underlying_type< pair<T0, T1> >
-{
-    typedef pair<UnderlyingType<T0>, UnderlyingType<T1>> type;
-};
-
-template<typename T0, typename T1>
-    __requires(Regular(T0) && Regular(T1))
-bool operator==(const pair<T0, T1>& x, const pair<T0, T1>& y)
-{
-    return x.m0 == y.m0 && x.m1 == y.m1;
-}
-
-template<typename T0, typename T1>
-    __requires(TotallyOrdered(T0) && TotallyOrdered(T1))
-bool operator<(const pair<T0, T1>& x, const pair<T0, T1>& y)
-{
-    return x.m0 < y.m0 || (!(y.m0 < x.m0) && x.m1 < y.m1);
-}
-
-
-// type triple (see Exercise 12.2 of Elements of Programming)
-// model Regular(triple)
-
-template<typename T0, typename T1, typename T2>
-    __requires(Regular(T0) && Regular(T1) && Regular(T2))
-struct triple
-{
-    T0 m0;
-    T1 m1;
-    T2 m2;
-    triple() { }
-    triple(T0 m0, T1 m1, T2 m2) : m0(m0), m1(m1), m2(m2) { }
-};
-
-template<typename T0, typename T1, typename T2>
-    __requires(Regular(T0) && Regular(T1) && Regular(T2))
-struct underlying_type< triple<T0, T1, T2> >
-{
-    typedef triple<UnderlyingType<T0>, UnderlyingType<T1>, UnderlyingType<T2>> type;
-};
-
-template<typename T0, typename T1, typename T2>
-    __requires(Regular(T0) && Regular(T1) && Regular(T2))
-bool operator==(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
-{
-    return x.m0 == y.m0 && x.m1 == y.m1 && x.m2 == y.m2;
-}
-
-template<typename T0, typename T1, typename T2>
-    __requires(Regular(T0) && Regular(T1) && Regular(T2))
-bool operator<(const triple<T0, T1, T2>& x, const triple<T0, T1, T2>& y)
-{
-    return x.m0 < y.m0 ||
-           (!(y.m0 < x.m0) && x.m1 < y.m1) ||
-           (!(y.m1 < x.m1) && x.m2 < y.m2);
-}
-
-
-//
-//  Chapter 2. Transformations and their orbits
-//
-
-
-//int abs(int x) {
-//    if (x < 0) return -x; else return x;
-//} // unary operation
-
-double euclidean_norm(double x, double y) {
-    return sqrt(x * x + y * y);
-} // binary operation
-
-double euclidean_norm(double x, double y, double z) {
-    return sqrt(x * x + y * y + z * z);
-} // ternary operation
-
-template<typename F, typename N>
-    __requires(Transformation<F> && Integer(N))
-Domain<F> power_unary(Domain<F> x, N n, F f)
-{
-    // Precondition:
-    // $n \geq 0 \wedge (\forall i \in N)\,0 < i \leq n \Rightarrow f^i(x)$ is defined
-    while (n != N(0)) {
-        n = n - N(1);
-        x = f(x);
-    }
-    return x;
-}
-
-template<typename F>
-    __requires(Transformation<F>)
-DistanceType<F> distance(Domain<F> x, Domain<F> y, F f)
-{
-    // Precondition: $y$ is reachable from $x$ under $f$
-    typedef DistanceType<F> N;
-    N n(0);
-    while (x != y) {
-        x = f(x);
-        n = n + N(1);
-    }
-    return n;
-}
-
-template<typename F, typename P>
-    __requires(Transformation<F> && UnaryPredicate(P) &&
-        Domain<F> == Domain(P))
-Domain<F> collision_point(const Domain<F>& x, F f, P p)
-{
-    // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
-    if (!p(x)) return x;
-    Domain<F> slow = x;        // $slow = f^0(x)$
-    Domain<F> fast = f(x);     // $fast = f^1(x)$
-                               // $n \gets 0$ (completed iterations)
-    while (fast != slow) {     // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
-        slow = f(slow);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 1}(x)$
-        if (!p(fast)) return fast;
-        fast = f(fast);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 2}(x)$
-        if (!p(fast)) return fast;
-        fast = f(fast);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 3}(x)$
-                               // $n \gets n + 1$
-    }
-    return fast;               // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
-    // Postcondition: return value is terminal point or collision point
-}
-
-template<typename F, typename P>
-    __requires(Transformation<F> && UnaryPredicate(P) &&
-        Domain<F> == Domain(P))
-bool terminating(const Domain<F>& x, F f, P p)
-{
-    // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
-    return !p(collision_point(x, f, p));
-}
-
-template<typename F>
-    __requires(Transformation<F>)
-Domain<F>
-collision_point_nonterminating_orbit(const Domain<F>& x, F f)
-{
-    Domain<F> slow = x;        // $slow = f^0(x)$
-    Domain<F> fast = f(x);     // $fast = f^1(x)$
-                               // $n \gets 0$ (completed iterations)
-    while (fast != slow) {     // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
-        slow = f(slow);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 1}(x)$
-        fast = f(fast);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 2}(x)$
-        fast = f(fast);        // $slow = f^{n+1}(x) \wedge fast = f^{2 n + 3}(x)$
-                               // $n \gets n + 1$
-    }
-    return fast;               // $slow = f^n(x) \wedge fast = f^{2 n + 1}(x)$
-    // Postcondition: return value is collision point
-}
-
-template<typename F>
-    __requires(Transformation<F>)
-bool circular_nonterminating_orbit(const Domain<F>& x, F f)
-{
-    return x == f(collision_point_nonterminating_orbit(x, f));
-}
-
-template<typename F, typename P>
-    __requires(Transformation<F> && UnaryPredicate(P) &&
-        Domain<F> == Domain(P))
-bool circular(const Domain<F>& x, F f, P p)
-{
-    // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
-    Domain<F> y = collision_point(x, f, p);
-    return p(y) && x == f(y);
-}
-
-template<typename F>
-    __requires(Transformation<F>)
-Domain<F> convergent_point(Domain<F> x0, Domain<F> x1, F f)
-{
-    // Precondition: $(\exists n \in \func{DistanceType}(F))\,n \geq 0 \wedge f^n(x0) = f^n(x1)$
-    while (x0 != x1) {
-        x0 = f(x0);
-        x1 = f(x1);
-    }
-    return x0;
-}
-
-template<typename F>
-    __requires(Transformation<F>)
-Domain<F>
-connection_point_nonterminating_orbit(const Domain<F>& x, F f)
-{
-    return convergent_point(
-        x,
-        f(collision_point_nonterminating_orbit(x, f)),
-        f);
-}
-
-template<typename F, typename P>
-    __requires(Transformation<F> && UnaryPredicate(P) &&
-        Domain<F> == Domain(P))
-Domain<F> connection_point(const Domain<F>& x, F f, P p)
-{
-    // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
-    Domain<F> y = collision_point(x, f, p);
-    if (!p(y)) return y;
-    return convergent_point(x, f(y), f);
-}
-
-// Exercise 2.3:
-
-template<typename F>
-    __requires(Transformation<F>)
-Domain<F> convergent_point_guarded(Domain<F> x0,
-                                   Domain<F> x1,
-                                   Domain<F> y, F f)
-{
-    // Precondition: $\func{reachable}(x0, y, f) \wedge \func{reachable}(x1, y, f)$
-    typedef DistanceType<F> N;
-    N d0 = distance(x0, y, f);
-    N d1 = distance(x1, y, f);
-    if      (d0 < d1) x1 = power_unary(x1, d1 - d0, f);
-    else if (d1 < d0) x0 = power_unary(x0, d0 - d1, f);
-    return convergent_point(x0, x1, f);
-}
-
-template<typename F>
-    __requires(Transformation<F>)
-triple<DistanceType<F>, DistanceType<F>, Domain<F>>
-orbit_structure_nonterminating_orbit(const Domain<F>& x, F f)
-{
-    typedef DistanceType<F> N;
-    Domain<F> y = connection_point_nonterminating_orbit(x, f);
-    return triple<N, N, Domain<F>>(distance(x, y, f),
-                                   distance(f(y), y, f),
-                                   y);
-}
-
-template<typename F, typename P>
-    __requires(Transformation<F> &&
-        UnaryPredicate(P) && Domain<F> == Domain(P))
-triple<DistanceType<F>, DistanceType<F>, Domain<F>>
-orbit_structure(const Domain<F>& x, F f, P p)
-{
-    // Precondition: $p(x) \Leftrightarrow \text{$f(x)$ is defined}$
-    typedef DistanceType<F> N;
-    Domain<F> y = connection_point(x, f, p);
-    N m = distance(x, y, f);
-    N n(0);
-    if (p(y)) n = distance(f(y), y, f);
-    // Terminating: $m = h - 1 \wedge n = 0$
-    // Otherwise:   $m = h \wedge n = c - 1$
-    return triple<N, N, Domain<F>>(m, n, y);
-}
-
-
-//
-//  Chapter 3. Associative operations
-//
-
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_left_associated(Domain<Op> a, I n, Op op)
-{
-    // Precondition: $n > 0$
-    if (n == I(1)) return a;
-    return op(power_left_associated(a, n - I(1), op), a);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_right_associated(Domain<Op> a, I n, Op op)
-{
-    // Precondition: $n > 0$
-    if (n == I(1)) return a;
-    return op(a, power_right_associated(a, n - I(1), op));
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_0(Domain<Op> a, I n, Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n > 0$
-    if (n == I(1)) return a;
-    if (n % I(2) == I(0))
-        return power_0(op(a, a), n / I(2), op);
-    return op(power_0(op(a, a), n / I(2), op), a);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_1(Domain<Op> a, I n, Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n > 0$
-    if (n == I(1)) return a;
-    Domain<Op> r = power_1(op(a, a), n / I(2), op);
-    if (n % I(2) != I(0)) r = op(r, a);
-    return r;
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_accumulate_0(Domain<Op> r, Domain<Op> a, I n,
-                              Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n == I(0)) return r;
-    if (n % I(2) != I(0)) r = op(r, a);
-    return power_accumulate_0(r, op(a, a), n / I(2), op);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_accumulate_1(Domain<Op> r, Domain<Op> a, I n,
-                              Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n == I(0)) return r;
-    if (n == I(1)) return op(r, a);
-    if (n % I(2) != I(0)) r = op(r, a);
-    return power_accumulate_1(r, op(a, a), n / I(2), op);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_accumulate_2(Domain<Op> r, Domain<Op> a, I n,
-                              Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n % I(2) != I(0)) {
-        r = op(r, a);
-        if (n == I(1)) return r;
-    } else if (n == I(0)) return r;
-    return power_accumulate_2(r, op(a, a), n / I(2), op);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_accumulate_3(Domain<Op> r, Domain<Op> a, I n,
-                              Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n % I(2) != I(0)) {
-        r = op(r, a);
-        if (n == I(1)) return r;
-    } else if (n == I(0)) return r;
-    a = op(a, a);
-    n = n / I(2);
-    return power_accumulate_3(r, a, n, op);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_accumulate_4(Domain<Op> r, Domain<Op> a, I n,
-                              Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    while (true) {
-        if (n % I(2) != I(0)) {
-            r = op(r, a);
-            if (n == I(1)) return r;
-        } else if (n == I(0)) return r;
-        a = op(a, a);
-        n = n / I(2);
-    }
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_accumulate_positive_0(Domain<Op> r,
-                                       Domain<Op> a, I n,
-                                       Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n > 0$
-    while (true) {
-        if (n % I(2) != I(0)) {
-            r = op(r, a);
-            if (n == I(1)) return r;
-        }
-        a = op(a, a);
-        n = n / I(2);
-    }
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_accumulate_5(Domain<Op> r, Domain<Op> a, I n,
-                              Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n \geq 0$
-    if (n == I(0)) return r;
-    return power_accumulate_positive_0(r, a, n, op);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_2(Domain<Op> a, I n, Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n > 0$
-    return power_accumulate_5(a, a, n - I(1), op);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_3(Domain<Op> a, I n, Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge n > 0$
-    while (n % I(2) == I(0)) {
-        a = op(a, a);
-        n = n / I(2);
-    }
-    n = n / I(2);
-    if (n == I(0)) return a;
-    return power_accumulate_positive_0(a, op(a, a), n, op);
-}
-
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_accumulate_positive(Domain<Op> r,
-                                     Domain<Op> a, I n,
-                                     Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
-    while (true) {
-      if (odd(n)) {
-          r = op(r, a);
-          if (one(n)) return r;
-      }
-      a = op(a, a);
-      n = half_nonnegative(n);
-    }
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power_accumulate(Domain<Op> r, Domain<Op> a, I n,
-                            Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
-    if (zero(n)) return r;
-    return power_accumulate_positive(r, a, n, op);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power(Domain<Op> a, I n, Op op)
-{
-    // Precondition: $\func{associative}(op) \wedge \func{positive}(n)$
-    while (even(n)) {
-        a = op(a, a);
-        n = half_nonnegative(n);
-    }
-    n = half_nonnegative(n);
-    if (zero(n)) return a;
-    return power_accumulate_positive(a, op(a, a), n, op);
-}
-
-template<typename I, typename Op>
-    __requires(Integer(I) && BinaryOperation(Op))
-Domain<Op> power(Domain<Op> a, I n, Op op, Domain<Op> id)
-{
-    // Precondition: $\func{associative}(op) \wedge \neg \func{negative}(n)$
-    if (zero(n)) return id;
-    return power(a, n, op);
-}
-
-template<typename I>
-    __requires(Integer(I))
-pair<I, I> fibonacci_matrix_multiply(const pair<I, I>& x,
-                                     const pair<I, I>& y)
-{
-    return pair<I, I>(
-        x.m0 * (y.m1 + y.m0) + x.m1 * y.m0,
-        x.m0 * y.m0 + x.m1 * y.m1);
-}
-
-template<typename I>
-    __requires(Integer(I))
-I fibonacci(I n)
-{
-    // Precondition: $n \geq 0$
-    if (n == I(0)) return I(0);
-    return power(pair<I, I>(I(1), I(0)),
-                 n,
-                 fibonacci_matrix_multiply<I>).m0;
-}
-
-
 //
 //  Chapter 4. Linear orderings
 //
@@ -1203,7 +618,8 @@ struct complement
     complement(R r)
         : r{r}
     {}
-    bool operator()(const Domain<R>& x, const Domain<R>& y) {
+    auto operator()(const Domain<R>& x, const Domain<R>& y) -> bool
+    {
         return !r(x, y);
     }
 };
@@ -1223,7 +639,7 @@ struct converse
     converse(R r)
         : r{r}
     {}
-    bool operator()(const Domain<R>& x, const Domain<R>& y)
+    auto operator()(const Domain<R>& x, const Domain<R>& y) -> bool
     {
         return r(y, x);
     }
@@ -1245,7 +661,7 @@ struct complement_of_converse
     complement_of_converse(const R& r)
         : r{r}
     {}
-    bool operator()(const T& a, const T& b)
+    auto operator()(const T& a, const T& b) -> bool
     {
         return !r(b, a);
     }
@@ -1266,7 +682,7 @@ struct symmetric_complement
     symmetric_complement(R r)
         : r{r}
     {}
-    bool operator()(const Domain<R>& a, const Domain<R>& b)
+    auto operator()(const Domain<R>& a, const Domain<R>& b) -> bool
     {
         return !r(a, b) && !r(b, a);
     }
@@ -1401,7 +817,7 @@ template <typename R>
     requires Relation<R>
 struct compare_strict_or_reflexive<true, R> // strict
 {
-    bool operator()(const Domain<R>& a, const Domain<R>& b, R r)
+    auto operator()(const Domain<R>& a, const Domain<R>& b, R r) -> bool
     {
         return r(a, b);
     }
@@ -1411,7 +827,7 @@ template <typename R>
     requires Relation<R>
 struct compare_strict_or_reflexive<false, R> // reflexive
 {
-    bool operator()(const Domain<R>& a, const Domain<R>& b, R r)
+    auto operator()(const Domain<R>& a, const Domain<R>& b, R r) -> bool
     {
         return !r(b, a); // $\func{complement\_of\_converse}_r(a, b)$
     }
@@ -1567,7 +983,7 @@ template <typename T>
     requires TotallyOrdered<T>
 struct less
 {
-    bool operator()(const T& x, const T& y)
+    auto operator()(const T& x, const T& y) -> bool
     {
         return x < y;
     }
@@ -1597,25 +1013,25 @@ auto max(const T& a, const T& b) -> const T&
 // Clusters of related procedures: equality and ordering
 
 template <typename T>
-bool operator!=(const T& x, const T& y)
+auto operator!=(const T& x, const T& y) -> bool
 {
     return !(x == y);
 }
 
 template <typename T>
-bool operator>(const T& x, const T& y)
+auto operator>(const T& x, const T& y) -> bool
 {
     return y < x;
 }
 
 template <typename T>
-bool operator<=(const T& x, const T& y)
+auto operator<=(const T& x, const T& y) -> bool
 {
     return !(y < x);
 }
 
 template <typename T>
-bool operator>=(const T& x, const T& y)
+auto operator>=(const T& x, const T& y) -> bool
 {
     return !(x < y);
 }
@@ -2105,7 +1521,7 @@ template <typename I, typename P>
         ReadableIterator<I> &&
         UnaryPredicate<P> &&
         Same<ValueType<I>, Domain<P>>
-bool all(I f, I l, P p)
+auto all(I f, I l, P p) -> bool
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if_not(f, l, p);
@@ -2116,7 +1532,7 @@ template <typename I, typename P>
         ReadableIterator<I> &&
         UnaryPredicate<P> &&
         Same<ValueType<I>, Domain<P>>
-bool none(I f, I l, P p)
+auto none(I f, I l, P p) -> bool
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if(f, l, p);
@@ -2127,7 +1543,7 @@ template <typename I, typename P>
         ReadableIterator<I> &&
         UnaryPredicate<P> &&
         Same<ValueType<I>, Domain<P>>
-bool not_all(I f, I l, P p)
+auto not_all(I f, I l, P p) -> bool
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !all(f, l, p);
@@ -2138,7 +1554,7 @@ template <typename I, typename P>
         ReadableIterator<I> &&
         UnaryPredicate<P> &&
         Same<ValueType<I>, Domain<P>>
-bool some(I f, I l, P p)
+auto some(I f, I l, P p) -> bool
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !none(f, l, p);
@@ -2471,7 +1887,7 @@ template <typename I, typename R>
         ReadableIterator<I> &&
         Relation<R> &&
         Same<ValueType<I>, Domain<R>>
-bool relation_preserving(I f, I l, R r)
+auto relation_preserving(I f, I l, R r) -> bool
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_adjacent_mismatch(f, l, r);
@@ -2482,7 +1898,7 @@ template <typename I, typename R>
         ReadableIterator<I> &&
         Relation<R> &&
         Same<ValueType<I>, Domain<R>>
-bool strictly_increasing_range(I f, I l, R r)
+auto strictly_increasing_range(I f, I l, R r) -> bool
 {
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{weak\_ordering}(r)$
@@ -2494,7 +1910,7 @@ template <typename I, typename R>
         ReadableIterator<I> &&
         Relation<R> &&
         Same<ValueType<I>, Domain<R>>
-bool increasing_range(I f, I l, R r)
+auto increasing_range(I f, I l, R r) -> bool
 {
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{weak\_ordering}(r)$
@@ -2506,7 +1922,7 @@ template <typename I, typename P>
         ReadableIterator<I> &&
         UnaryPredicate<P> &&
         Same<ValueType<I>, Domain<P>>
-bool partitioned(I f, I l, P p)
+auto partitioned(I f, I l, P p) -> bool
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if_not(find_if(f, l, p), l, p);
@@ -2574,7 +1990,10 @@ struct lower_bound_predicate
     lower_bound_predicate(const T& a, R r)
         : a{a}, r{r}
     {}
-    bool operator()(const T& x) { return !r(x, a); }
+    auto operator()(const T& x) -> bool
+    {
+        return !r(x, a);
+    }
 };
 
 template <typename R>
@@ -2607,7 +2026,10 @@ struct upper_bound_predicate
     upper_bound_predicate(const T& a, R r)
         : a{a}, r{r}
     {}
-    bool operator()(const T& x) { return r(a, x); }
+    auto operator()(const T& x) -> bool
+    {
+        return r(a, x);
+    }
 };
 
 template <typename R>
@@ -2757,7 +2179,7 @@ auto traverse_nonempty(C c, Proc proc) -> Proc
 
 template <typename C>
     requires BidirectionalBifurcateCoordinate<C>
-bool is_left_successor(C j)
+auto is_left_successor(C j) -> bool
 {
     // Precondition: $\func{has\_predecessor}(j)$
     auto i = predecessor(j);
@@ -2766,7 +2188,7 @@ bool is_left_successor(C j)
 
 template <typename C>
     requires BidirectionalBifurcateCoordinate<C>
-bool is_right_successor(C j)
+auto is_right_successor(C j) -> bool
 {
     // Precondition: $\func{has\_predecessor}(j)$
     auto i = predecessor(j);
@@ -2796,7 +2218,7 @@ auto traverse_step(visit& v, C& c) -> int
 
 template <typename C>
     requires BidirectionalBifurcateCoordinate<C>
-bool reachable(C x, C y)
+auto reachable(C x, C y) -> bool
 {
     // Precondition: $\property{tree}(x)$
     if (empty(x)) return false;
@@ -2865,7 +2287,7 @@ auto traverse(C c, Proc proc) -> Proc
 
 template <typename C0, typename C1>
     requires BifurcateCoordinate<C0> && BifurcateCoordinate<C1>
-bool bifurcate_isomorphic_nonempty(C0 c0, C1 c1)
+auto bifurcate_isomorphic_nonempty(C0 c0, C1 c1) -> bool
 {
     // Precondition:
     // $\property{tree}(c0) \wedge \property{tree}(c1) \wedge \neg \func{empty}(c0) \wedge \neg \func{empty}(c1)$
@@ -2886,7 +2308,7 @@ bool bifurcate_isomorphic_nonempty(C0 c0, C1 c1)
 
 template <typename C0, typename C1>
     requires BidirectionalBifurcateCoordinate<C0> && BidirectionalBifurcateCoordinate<C1>
-bool bifurcate_isomorphic(C0 c0, C1 c1)
+auto bifurcate_isomorphic(C0 c0, C1 c1) -> bool
 {
     // Precondition: $\property{tree}(c0) \wedge \property{tree}(c1)$
     if (empty(c0)) return empty(c1);
@@ -2909,7 +2331,7 @@ template <typename I0, typename I1, typename R>
         Relation<R> &&
         Same_remove_cv<ValueType<I0>, ValueType<I1>> &&
         Same<ValueType<I0>, Domain<R>>
-bool lexicographical_equivalent(I0 f0, I0 l0, I1 f1, I1 l1, R r)
+auto lexicographical_equivalent(I0 f0, I0 l0, I1 f1, I1 l1, R r) -> bool
 {
     // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
@@ -2923,7 +2345,7 @@ template <typename I0, typename I1>
         ReadableIterator<I0> &&
         ReadableIterator<I1> &&
         Same<ValueType<I0>, ValueType<I1>>
-bool lexicographical_equal(I0 f0, I0 l0, I1 f1, I1 l1)
+auto lexicographical_equal(I0 f0, I0 l0, I1 f1, I1 l1) -> bool
 {
     return lexicographical_equivalent(f0, l0, f1, l1, equal<ValueType<I0>>());
 }
@@ -2936,7 +2358,7 @@ template <int k, typename I0, typename I1>
         Same<ValueType<I0>, ValueType<I1>>
 struct lexicographical_equal_k
 {
-   bool operator()(I0 f0, I1 f1)
+   auto operator()(I0 f0, I1 f1) -> bool
    {
        if (source(f0) != source(f1)) return false;
        return lexicographical_equal_k<k - 1, I0, I1>()(successor(f0), successor(f1));
@@ -2946,7 +2368,7 @@ struct lexicographical_equal_k
 template <typename I0, typename I1>
 struct lexicographical_equal_k<0, I0, I1>
 {
-    bool operator()(I0, I1)
+    auto operator()(I0, I1) -> bool
     {
         return true;
     }
@@ -2959,7 +2381,7 @@ template <typename C0, typename C1, typename R>
         Relation<R> &&
         Same<ValueType<C0>, ValueType<C1>> &&
         Same<ValueType<C0>, Domain<R>>
-bool bifurcate_equivalent_nonempty(C0 c0, C1 c1, R r)
+auto bifurcate_equivalent_nonempty(C0 c0, C1 c1, R r) -> bool
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
     // Precondition: $\neg \func{empty}(c0) \wedge \neg \func{empty}(c1)$
@@ -2987,7 +2409,7 @@ template <typename C0, typename C1, typename R>
         Relation<R> &&
         Same<ValueType<C0>, ValueType<C1>> &&
         Same<ValueType<C0>, Domain<R>>
-bool bifurcate_equivalent(C0 c0, C1 c1, R r)
+auto bifurcate_equivalent(C0 c0, C1 c1, R r) -> bool
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
     // Precondition: $\property{equivalence}(r)$
@@ -3010,7 +2432,7 @@ template <typename C0, typename C1>
         ReadableBidirectionalBifurcateCoordinate<C0> &&
         ReadableBidirectionalBifurcateCoordinate<C1> &&
         Same<ValueType<C0>, ValueType<C1>>
-bool bifurcate_equal(C0 c0, C1 c1)
+auto bifurcate_equal(C0 c0, C1 c1) -> bool
 {
     return bifurcate_equivalent(c0, c1, equal<ValueType<C0>>());
 }
@@ -3022,7 +2444,7 @@ template <typename I0, typename I1, typename R>
         Relation<R> &&
         Same<ValueType<I0>, ValueType<I1>> &&
         Same<ValueType<I0>, Domain<R>>
-bool lexicographical_compare(I0 f0, I0 l0, I1 f1, I1 l1, R r)
+auto lexicographical_compare(I0 f0, I0 l0, I1 f1, I1 l1, R r) -> bool
 {
     // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
@@ -3042,7 +2464,7 @@ template <typename I0, typename I1>
         ReadableIterator<I0> &&
         ReadableIterator<I1> &&
         Same<ValueType<I0>, ValueType<I1>>
-bool lexicographical_less(I0 f0, I0 l0, I1 f1, I1 l1)
+auto lexicographical_less(I0 f0, I0 l0, I1 f1, I1 l1) -> bool
 {
     return lexicographical_compare(f0, l0, f1, l1, less<ValueType<I0>>());
 }
@@ -3054,7 +2476,7 @@ template <int k, ReadableForwardIterator I0, ReadableForwardIterator I1>
         Same<ValueType<I0>, ValueType<I1>>
 struct lexicographical_less_k
 {
-   bool operator()(I0 f0, I1 f1)
+   auto operator()(I0 f0, I1 f1) -> bool
    {
        if (source(f0) < source(f1)) return true;
        if (source(f0) > source(f1)) return false;
@@ -3065,7 +2487,7 @@ struct lexicographical_less_k
 template <typename I0, typename I1>
 struct lexicographical_less_k<0, I0, I1>
 {
-    bool operator()(I0, I1)
+    auto operator()(I0, I1) -> bool
     {
         return false;
     }
@@ -3166,7 +2588,7 @@ template <typename C0, typename C1, typename R>
         ReadableBidirectionalBifurcateCoordinate<C1> &&
         Relation<R> &&
         Same<ValueType<C0>, ValueType<C1>> && Same<ValueType<C0>, Domain<R>>
-bool bifurcate_compare(C0 c0, C1 c1, R r)
+auto bifurcate_compare(C0 c0, C1 c1, R r) -> bool
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge
     //                \property{readable\_tree}(c1) \wedge
@@ -3192,7 +2614,7 @@ template <typename C0, typename C1>
     requires
         ReadableBidirectionalBifurcateCoordinate<C0> &&
         ReadableBidirectionalBifurcateCoordinate<C1>
-bool bifurcate_less(C0 c0, C1 c1)
+auto bifurcate_less(C0 c0, C1 c1) -> bool
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge
     //                \property{readable\_tree}(c1)
@@ -3203,7 +2625,7 @@ template <typename T>
     requires TotallyOrdered<T>
 struct always_false
 {
-    bool operator()(const T& x, const T& y)
+    auto operator()(const T& x, const T& y) -> bool
     {
         return false;
     }
@@ -3220,7 +2642,7 @@ template <typename C0, typename C1>
     requires
         ReadableBidirectionalBifurcateCoordinate<C0> &&
         ReadableBidirectionalBifurcateCoordinate<C1>
-bool bifurcate_shape_compare(C0 c0, C1 c1)
+auto bifurcate_shape_compare(C0 c0, C1 c1) -> bool
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge
     //                \property{readable\_tree}(c1)
@@ -3423,7 +2845,7 @@ struct predicate_source
     predicate_source(const P& p)
         : p{p}
     {}
-    bool operator()(I i)
+    auto operator()(I i) -> bool
     {
         return p(source(i));
     }
@@ -3454,7 +2876,7 @@ struct relation_source
     relation_source(const R& r)
         : r{r}
     {}
-    bool operator()(I0 i0, I1 i1)
+    auto operator()(I0 i0, I1 i1) -> bool
     {
         return r(source(i0), source(i1));
     }
@@ -3662,7 +3084,7 @@ auto iota(ValueType<O> n, O o) -> O // like APL $\iota$
 // Useful for testing in conjunction with iota
 template <typename I>
     requires ReadableIterator<I> && Integer<ValueType<I>>
-bool equal_iota(I f, I l, ValueType<I> n = 0)
+auto equal_iota(I f, I l, ValueType<I> n = 0) -> bool
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -3687,7 +3109,7 @@ auto copy_bounded(I f_i, I l_i, O f_o, O l_o) -> pair<I, O>
 
 template <typename I>
     requires Integer<I>
-bool count_down(I& n)
+auto count_down(I& n) -> bool
 {
     // Precondition: $n \geq 0$
     if (zero(n)) return false;
@@ -4715,7 +4137,7 @@ template <typename I, typename P>
         ReadableIterator<I> &&
         UnaryPredicate<P> &&
         Same<ValueType<I>, Domain<P>>
-bool partitioned_at_point(I f, I m, I l, P p)
+auto partitioned_at_point(I f, I m, I l, P p) -> bool
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge m \in [f, l]$
     return none(f, m, p) && all(m, l, p);
@@ -5392,14 +4814,14 @@ auto end(const array_k<k, T>& x) -> const pointer(T)
 
 template <int k, typename T>
     requires Regular<T>
-bool operator==(const array_k<k, T>& x, const array_k<k, T>& y)
+auto operator==(const array_k<k, T>& x, const array_k<k, T>& y) -> bool
 {
     return lexicographical_equal(begin(x), end(x), begin(y), end(y));
 }
 
 template <int k, typename T>
     requires Regular<T>
-bool operator<(const array_k<k, T>& x, const array_k<k, T>& y)
+auto operator<(const array_k<k, T>& x, const array_k<k, T>& y) -> bool
 {
     return lexicographical_less(begin(x), end(x), begin(y), end(y));
 }
@@ -5413,7 +4835,7 @@ auto size(const array_k<k, T>&) -> int
 
 template <int k, typename T>
     requires Regular<T>
-bool empty(const array_k<k, T>&)
+auto empty(const array_k<k, T>&) -> bool
 {
     return false;
 }
@@ -5434,7 +4856,7 @@ bool empty(const array_k<k, T>&)
 //      the corresponding specialization of value_type
 
 template <typename W>
-bool linearizable_equal(const W& x, const W& y)
+auto linearizable_equal(const W& x, const W& y) -> bool
     requires Linearizable<W>
 {
     return lexicographical_equal(begin(x), end(x), begin(y), end(y));
@@ -5442,7 +4864,7 @@ bool linearizable_equal(const W& x, const W& y)
 
 template <typename W>
     requires Linearizable<W>
-bool linearizable_ordering(const W& x, const W& y)
+auto linearizable_ordering(const W& x, const W& y) -> bool
 {
     return lexicographical_less(begin(x), end(x), begin(y), end(y));
 }
@@ -5456,7 +4878,7 @@ auto size(const W& x) -> DistanceType<IteratorType<W>>
 
 template <typename W>
     requires Linearizable<W>
-bool empty(const W& x)
+auto empty(const W& x) -> bool
 {
     return begin(x) == end(x);
 }
@@ -5519,7 +4941,7 @@ auto end(const bounded_range<I>& x) -> I
 
 template <typename I>
     requires ReadableIterator<I>
-bool operator==(const bounded_range<I>& x, const bounded_range<I>& y)
+auto operator==(const bounded_range<I>& x, const bounded_range<I>& y) -> bool
 {
     return begin(x) == begin(y) && end(x) == end(y);
 }
@@ -5528,7 +4950,7 @@ template <typename I>
     requires ReadableIterator<I>
 struct less<bounded_range<I>>
 {
-    bool operator()(const bounded_range<I>& x, const bounded_range<I>& y)
+    auto operator()(const bounded_range<I>& x, const bounded_range<I>& y) -> bool
     {
         less<I> less_I;
         return
@@ -5601,14 +5023,14 @@ auto size(const counted_range<I>& x) -> DistanceType<I>
 
 template <typename I>
     requires ReadableIterator<I>
-bool empty(counted_range<I>& x)
+auto empty(counted_range<I>& x) -> bool
 {
     return size(x) == 0;
 }
 
 template <typename I>
     requires ReadableIterator<I>
-bool operator==(const counted_range<I>& x, const counted_range<I>& y)
+auto operator==(const counted_range<I>& x, const counted_range<I>& y) -> bool
 {
     return begin(x) == begin(y) && size(x) == size(y);
 }
@@ -5617,7 +5039,7 @@ template <typename I>
     requires ReadableIterator<I>
 struct less<counted_range<I>>
 {
-    bool operator()(const counted_range<I>& x, const counted_range<I>& y)
+    auto operator()(const counted_range<I>& x, const counted_range<I>& y) -> bool
     {
         less<I> less_I;
         return
@@ -6128,7 +5550,7 @@ void set_link_forward(I i, I j)
 
 template <typename T>
     requires Regular<T>
-bool operator==(slist_iterator<T> i, slist_iterator<T> j)
+auto operator==(slist_iterator<T> i, slist_iterator<T> j) -> bool
 {
     return i.p == j.p;
 }
@@ -6137,7 +5559,7 @@ template <typename T>
     requires Regular<T>
 struct less<slist_iterator<T>>
 {
-    bool operator()(slist_iterator<T> i, slist_iterator<T> j)
+    auto operator()(slist_iterator<T> i, slist_iterator<T> j) -> bool
     {
         return i.p < j.p;
     }
@@ -6285,14 +5707,14 @@ void erase_all(slist<T>& x)
 
 template <typename T>
     requires Regular<T>
-bool operator==(const slist<T>& x, const slist<T>& y)
+auto operator==(const slist<T>& x, const slist<T>& y) -> bool
 {
     return linearizable_equal(x, y);
 }
 
 template <typename T>
     requires Regular<T>
-bool operator<(const slist<T>& x, const slist<T>& y)
+auto operator<(const slist<T>& x, const slist<T>& y) -> bool
 {
     return linearizable_ordering(x, y);
 }
@@ -6443,7 +5865,7 @@ void set_link_bidirectional(I i, I j)
 
 template <typename T>
     requires Regular<T>
-bool operator==(list_iterator<T> i, list_iterator<T> j)
+auto operator==(list_iterator<T> i, list_iterator<T> j) -> bool
 {
     return i.p == j.p;
 }
@@ -6452,7 +5874,7 @@ template <typename T>
     requires Regular<T>
 struct less<list_iterator<T>>
 {
-    bool operator()(list_iterator<T> i, list_iterator<T> j)
+    auto operator()(list_iterator<T> i, list_iterator<T> j) -> bool
     {
         return i.p < j.p;
     }
@@ -6587,14 +6009,14 @@ void erase_all(list<T>& x)
 
 template <typename T>
     requires Regular<T>
-bool operator==(const list<T>& x, const list<T>& y)
+auto operator==(const list<T>& x, const list<T>& y) -> bool
 {
     return linearizable_equal(x, y);
 }
 
 template <typename T>
     requires Regular<T>
-bool operator<(const list<T>& x, const list<T>& y)
+auto operator<(const list<T>& x, const list<T>& y) -> bool
 {
     return linearizable_ordering(x, y);
 }
@@ -6721,7 +6143,7 @@ struct weight_type<stree_coordinate<T>>
 
 template <typename T>
     requires Regular<T>
-bool empty(stree_coordinate<T> c)
+auto empty(stree_coordinate<T> c) -> bool
 {
     using I = pointer(stree_node<T>);
     return c.ptr == I{0};
@@ -6743,14 +6165,14 @@ auto right_successor(stree_coordinate<T> c) -> stree_coordinate<T>
 
 template <typename T>
     requires Regular<T>
-bool has_left_successor(stree_coordinate<T> c)
+auto has_left_successor(stree_coordinate<T> c) -> bool
 {
     return !empty(left_successor(c));
 }
 
 template <typename T>
     requires Regular<T>
-bool has_right_successor(stree_coordinate<T> c)
+auto has_right_successor(stree_coordinate<T> c) -> bool
 {
     return !empty(right_successor(c));
 }
@@ -6771,7 +6193,7 @@ void set_right_successor(stree_coordinate<T> c, stree_coordinate<T> r)
 
 template <typename T>
     requires Regular<T>
-bool operator==(stree_coordinate<T> c0, stree_coordinate<T> c1)
+auto operator==(stree_coordinate<T> c0, stree_coordinate<T> c1) -> bool
 {
     return c0.ptr == c1.ptr;
 }
@@ -6956,14 +6378,14 @@ auto begin(const stree<T>& x) -> stree_coordinate<T>
 
 template <typename T>
     requires Regular<T>
-bool empty(const stree<T>& x)
+auto empty(const stree<T>& x) -> bool
 {
     return empty(x.root);
 }
 
 template <typename T>
     requires Regular<T>
-bool operator==(const stree<T>& x, const stree<T>& y)
+auto operator==(const stree<T>& x, const stree<T>& y) -> bool
 {
     if (empty(x)) return empty(y);
     if (empty(y)) return false;
@@ -6972,7 +6394,7 @@ bool operator==(const stree<T>& x, const stree<T>& y)
 
 template <typename T>
     requires Regular<T>
-bool operator<(const stree<T>& x, const stree<T>& y)
+auto operator<(const stree<T>& x, const stree<T>& y) -> bool
 {
     if (empty(x)) return !empty(y);
     if (empty(y)) return false;
@@ -7034,7 +6456,7 @@ struct weight_type<tree_coordinate<T>>
 
 template <typename T>
     requires Regular<T>
-bool empty(tree_coordinate<T> c)
+auto empty(tree_coordinate<T> c) -> bool
 {
     return c.ptr == 0;
 }
@@ -7055,14 +6477,14 @@ auto right_successor(tree_coordinate<T> c) -> tree_coordinate<T>
 
 template <typename T>
     requires Regular<T>
-bool has_left_successor(tree_coordinate<T> c)
+auto has_left_successor(tree_coordinate<T> c) -> bool
 {
     return !empty(left_successor(c));
 }
 
 template <typename T>
     requires Regular<T>
-bool has_right_successor(tree_coordinate<T> c)
+auto has_right_successor(tree_coordinate<T> c) -> bool
 {
     return !empty(right_successor(c));
 }
@@ -7076,7 +6498,7 @@ auto predecessor(tree_coordinate<T> c) -> tree_coordinate<T>
 
 template <typename T>
     requires Regular<T>
-bool has_predecessor(tree_coordinate<T> c)
+auto has_predecessor(tree_coordinate<T> c) -> bool
 {
     return !empty(predecessor(c));
 }
@@ -7106,7 +6528,7 @@ void set_right_successor(tree_coordinate<T> c, tree_coordinate<T> r)
 
 template <typename T>
     requires Regular<T>
-bool operator==(tree_coordinate<T> c0, tree_coordinate<T> c1)
+auto operator==(tree_coordinate<T> c0, tree_coordinate<T> c1) -> bool
 {
     return c0.ptr == c1.ptr;
 }
@@ -7220,21 +6642,21 @@ auto begin(const tree<T>& x)
 
 template <typename T>
     requires Regular<T>
-bool empty(const tree<T>& x)
+auto empty(const tree<T>& x) -> bool
 {
     return empty(x.root);
 }
 
 template <typename T>
     requires Regular<T>
-bool operator==(const tree<T>& x, const tree<T>& y)
+auto operator==(const tree<T>& x, const tree<T>& y) -> bool
 {
     return bifurcate_equal(begin(x), begin(y));
 }
 
 template <typename T>
     requires Regular<T>
-bool operator<(const tree<T>& x, const tree<T>& y)
+auto operator<(const tree<T>& x, const tree<T>& y) -> bool
 {
     return bifurcate_less(begin(x), begin(y));
 }
@@ -7402,21 +6824,21 @@ auto capacity(const array<T>& x) -> DistanceType<IteratorType<array<T>>>
 
 template <typename T>
     requires Regular<T>
-bool full(const array<T>& x)
+auto full(const array<T>& x) -> bool
 {
     return end(x) == end_of_storage(x);
 }
 
 template <typename T>
     requires Regular<T>
-bool operator==(const array<T>& x, const array<T>& y)
+auto operator==(const array<T>& x, const array<T>& y) -> bool
 {
     return linearizable_equal(x, y);
 }
 
 template <typename T>
     requires Regular<T>
-bool operator<(const array<T>& x, const array<T>& y)
+auto operator<(const array<T>& x, const array<T>& y) -> bool
 {
     return linearizable_ordering(x, y);
 }
@@ -7568,14 +6990,14 @@ auto operator-(underlying_iterator<I> x, DistanceType<I> n) -> underlying_iterat
 
 template <typename I>
     requires Iterator<I>
-bool operator==(const underlying_iterator<I>& x, const underlying_iterator<I>& y)
+auto operator==(const underlying_iterator<I>& x, const underlying_iterator<I>& y) -> bool
 {
     return x.i == y.i;
 }
 
 template <typename I>
     requires Iterator<I>
-bool operator<(const underlying_iterator<I>& x, const underlying_iterator<I>& y)
+auto operator<(const underlying_iterator<I>& x, const underlying_iterator<I>& y) -> bool
 {
     return x.i < y.i;
 }
@@ -7652,7 +7074,7 @@ struct underlying_predicate
     using U = UnderlyingType<Domain<P>>;
     P p;
     underlying_predicate(P p) : p{p} {}
-    bool operator()(const U& x)
+    auto operator()(const U& x) -> bool
     {
         return p(original_ref<Domain<P>>(x));
     }
@@ -7672,7 +7094,7 @@ struct underlying_relation
     using U = UnderlyingType<Domain<R>>;
     R r;
     underlying_relation(R r) : r{r} {}
-    bool operator()(const U& x, const U& y)
+    auto operator()(const U& x, const U& y) -> bool
     {
         return r(original_ref<Domain<R>>(x), original_ref<Domain<R>>(y));
     }
@@ -7714,5 +7136,3 @@ void sort(array<T>& x, R r)
     // Precondition: $\func{weak\_ordering}(r)$
     advanced_sort_n(begin(x), size(x), r);
 }
-
-#endif // EOP_EOP
