@@ -4008,542 +4008,7 @@ auto rotate_nontrivial(I f, I m, I l, random_access_iterator_tag)
 }
 
 
-//
-//  Chapter 11. Partition and merging
-//
 
-
-// Exercise 11.1:
-
-template <typename I, typename P>
-bool partitioned_at_point(I f, I m, I l, P p)
-    requires ReadableIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge m \in [f, l]$
-    return none(f, m, p) && all(m, l, p);
-}
-
-
-// Exercise 11.2:
-
-template <typename I, typename P>
-auto potential_partition_point(I f, I l, P p)
-    requires ReadableForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<I> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{readable\_bounded\_range}(f, l)$
-    return count_if_not(f, l, p, f);
-}
-
-template <typename I, typename P>
-auto partition_semistable(I f, I l, P p)
-    requires MutableForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<I> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    auto i = find_if(f, l, p);
-    if (i == l) return i;
-    auto j = successor(i);
-    while (true) {
-        j = find_if_not(j, l, p);
-        if (j == l) return i;
-        swap_step(i, j);
-    }
-}
-
-// Exercise 11.3: rewrite partition_semistable, expanding find_if_not inline and
-// eliminating extra test against l
-
-
-// Exercise 11.4: substitute copy_step(j, i) for swap_step(i, j) in partition_semistable
-
-template <typename I, typename P>
-auto remove_if(I f, I l, P p)
-    requires MutableForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    auto i = find_if(f, l, p);
-    if (i == l) return i;
-    auto j = successor(i);
-    while (true) {
-        j = find_if_not(j, l, p);
-        if (j == l) return i;
-        copy_step(j, i);
-    }
-}
-
-
-// Exercise 11.5:
-
-//template<typename I, typename P>
-//    __requires(Mutable(I) && ForwardIterator(I) &&
-//        UnaryPredicate(P) && ValueType<I> == Domain<P>)
-//void partition_semistable_omit_last_predicate_evaluation(I f, I l, P p)
-//{
-//    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-//    ...
-//}
-
-template <typename I, typename P>
-auto partition_bidirectional(I f, I l, P p)
-    requires MutableBidirectionalIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    while (true) {
-        f = find_if(f, l, p);
-        l = find_backward_if_not(f, l, p);
-        if (f == l) return f;
-        reverse_swap_step(l, f);
-    }
-}
-
-// Exercise 11.6:
-
-template <typename I, typename P>
-auto partition_forward(I f, I l, P p)
-    requires MutableForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    auto i = count_if_not(f, l, p, f);
-    auto j = i;
-    while (true) {
-        j = find_if_not(j, l, p);
-        if (j == l) return i;
-        f = find_if_unguarded(f, p);
-        swap_step(f, j);
-    }
-}
-
-// Exercise 11.7: partition_single_cycle
-
-template <typename I, typename P>
-auto partition_single_cycle(I f, I l, P p)
-    requires MutableBidirectionalIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    f = find_if(f, l, p);
-    l = find_backward_if_not(f, l, p);
-    if (f == l) return f;
-    l = predecessor(l);
-    auto tmp = source(f);
-    while (true) {
-        sink(f) = source(l);
-        f = find_if(successor(f), l, p);
-        if (f == l) {
-            sink(l) = tmp;
-            return f;
-        }
-        sink(l) = source(f);
-        l = find_backward_if_not_unguarded(l, p);
-    }
-}
-
-
-// Exercise 11.8: partition_sentinel
-
-template <typename I, typename P>
-auto partition_bidirectional_unguarded(I f, I l, P p)
-    requires MutableBidirectionalIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<decltype(p)> == Domain<decltype(p)>)
-{
-    // Precondition:
-    // $(\neg \func{all}(f, l, p) \wedge \func{some}(f, l, p)) \vee
-    // (\neg p(\func{source}(f-1)) \wedge p(\func{source}(l)))$
-    while (true) {
-        f = find_if_unguarded(f, p);
-        l = find_backward_if_not_unguarded(l, p);
-        if (successor(l) == f) return f;
-        exchange_values(f, l);
-        f = successor(f); // $\neg p(\func{source}(f-1)) \wedge p(\func{source}(l))$
-    }
-}
-
-template <typename I, typename P>
-auto partition_sentinel(I f, I l, P p)
-    requires MutableBidirectionalIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    f = find_if(f, l, p);
-    l = find_backward_if_not(f, l, p);
-    if (f == l) return f;
-    l = predecessor(l);
-    exchange_values(f, l);
-    f = successor(f);
-    return partition_bidirectional_unguarded(f, l, p);
-}
-
-
-// Exercise 11.9: partition_single_cycle_sentinel
-
-template <typename I, typename P>
-auto partition_indexed(I f, I l, P p
-)
-    requires MutableIndexedIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    using N = DistanceType<decltype(f)>;
-    N i{0};
-    auto j = l - f;
-    while (true) {
-        while (true) {
-            if (i == j) return f + i;
-            if (p(source(f + i))) break;
-            i = successor(i);
-        }
-        while (true) {
-            j = predecessor(j);
-            if (i == j) return f + j + 1;
-            if (!p(source(f + j))) break;
-        }
-        exchange_values(f + i, f + j);
-        i = successor(i);
-    }
-}
-
-template <typename I, typename B, typename P>
-auto partition_stable_with_buffer(I f, I l, B f_b, P p)
-    requires MutableForwardIterator<I> && MutableForwardIterator<B> && UnaryPredicate<P>
-    __requires(ValueType<I> == ValueType<B> &&
-        ValueType<I> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    // Precondition: $\property{mutable\_counted\_range}(f_b, l-f)$
-    auto x = partition_copy(f, l, f, f_b, p);
-    copy(f_b, x.m1, x.m0);
-    return x.m0;
-}
-
-template <typename I, typename P>
-auto partition_stable_singleton(I f, P p)
-    requires MutableForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<decltype(f)> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{readable\_bounded\_range}(f, \func{successor}(f))$
-    auto l = successor(f);
-    if (!p(source(f))) f = l;
-    return pair<decltype(f), decltype(l)>{f, l};
-}
-
-template <typename I>
-auto combine_ranges(const pair<I, I>& x, const pair<I, I>& y)
-    requires MutableForwardIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(x.m0, y.m0)$
-    // Precondition: $x.m1 \in [x.m0, y.m0]$
-    return pair<I, I>{rotate(x.m0, x.m1, y.m0), y.m1};
-}
-
-template <typename I, typename P>
-auto partition_stable_n_nonempty(I f, DistanceType<I> n, P p)
-    requires MutableForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<I> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_counted\_range}(f, n) \wedge n > 0$
-    if (one(n)) return partition_stable_singleton(f, p);
-    auto h = half_nonnegative(n);
-    auto x = partition_stable_n_nonempty(f, h, p);
-    auto y = partition_stable_n_nonempty(x.m1, n - h, p);
-    return combine_ranges(x, y);
-}
-
-template <typename I, typename P>
-auto partition_stable_n(I f, DistanceType<I> n, P p)
-    requires MutableForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<I> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_counted\_range}(f, n)$
-    if (zero(n)) return pair<I, I>{f, f};
-    return partition_stable_n_nonempty(f, n, p);
-}
-
-
-// Exercise 11.10: partition_stable_n_adaptive
-
-template <typename I, typename P>
-auto partition_stable(I f, I l, P p)
-    requires MutableForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<I> == Domain<decltype(p)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    return partition_stable_n(f, l - f, p).m0;
-}
-
-template <typename I, typename P>
-    requires ForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<I> == Domain<P>)
-struct partition_trivial
-{
-    P p;
-    partition_trivial(const P& p) : p{p} {}
-    auto operator()(I i) -> pair<I, I>
-    {
-        return partition_stable_singleton<I, P>(i, p);
-    }
-};
-
-template <typename I, typename P>
-    requires ForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<I> == Domain<P>)
-struct codomain_type< partition_trivial<I, P>>
-{
-    using type = pair<I, I>;
-};
-
-template <typename I, typename Op>
-auto add_to_counter(I f, I l, Op op, Domain<Op> x, const Domain<Op>& z) -> Domain<Op>
-    requires MutableForwardIterator<I> && BinaryOperation<Op>
-    __requires(ValueType<I> == Domain<Op>)
-{
-    if (x == z) return z;
-    while (f != l) {
-        if (source(f) == z) {
-            sink(f) = x;
-            return z;
-        }
-        x = op(source(f), x);
-        sink(f) = z;
-        f = successor(f);
-    }
-    return x;
-}
-
-template <typename Op>
-    requires BinaryOperation<Op>
-struct counter_machine
-{
-    using T = Domain<Op>;
-    Op op;
-    T z;
-    T f[64];
-    DistanceType<pointer(T)> n;
-    counter_machine(Op op, const Domain<Op>& z) : op{op}, z{z}, n{0} {}
-    void operator()(const T& x)
-    {
-        // Precondition: must not be called more than $2^{64}-1$ times
-        auto tmp = add_to_counter(f, f + n, op, x, z);
-        if (tmp != z) {
-            sink(f + n) = tmp;
-            n = successor(n);
-        }
-    }
-};
-
-template <typename Op>
-    requires BinaryOperation<Op>
-struct transpose_operation
-{
-    Op op;
-    transpose_operation(Op op) : op{op} {}
-    using T = Domain<Op>;
-    T operator()(const T& x, const T& y)
-    {
-        return op(y, x);
-    }
-};
-
-template <typename Op>
-    requires BinaryOperation<Op>
-struct input_type<transpose_operation<Op>, 0>
-{
-    using type = Domain<Op>;
-};
-
-template <typename I, typename Op, typename F>
-auto reduce_balanced(I f, I l, Op op, F fun, const Domain<Op>& z) -> Domain<Op>
-    requires Iterator<I> && BinaryOperation<Op> && UnaryFunction<F>
-    __requires(I == Domain<F> && Codomain<F> == Domain<Op>)
-{
-    // Precondition: $\property{bounded\_range}(f, l) \wedge l - f < 2^{64}$
-    // Precondition: $\property{partially\_associative}(op)$
-    // Precondition: $(\forall x \in [f, l))\,fun(x)$ is defined
-    counter_machine<Op> c{op, z};
-    while (f != l) {
-        c(fun(f));
-        f = successor(f);
-    }
-    transpose_operation<Op> t_op{op};
-    return reduce_nonzeroes(c.f, c.f + c.n, t_op, z);
-}
-
-template <typename I, typename Op>
-auto reduce_balanced(I f, I l, Op op, const Domain<Op>& z)
-    requires Iterator<I> && BinaryOperation<Op>
-    __requires(ValueType<I> == Domain<Op>)
-{
-    // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge l-f < 2^{33}$
-    // Precondition: $\property{partially\_associative}(op)$
-    counter_machine<Op> c{op, z};
-    while (f != l) {
-        c(source(f));
-        f = successor(f);
-    }
-    transpose_operation<Op> t_op{op};
-    return reduce_nonzeroes(c.f, c.f + c.n, t_op, z);
-}
-
-template <typename I, typename P>
-auto partition_stable_iterative(I f, I l, P p)
-    requires ForwardIterator<I> && UnaryPredicate<P>
-    __requires(ValueType<I> == Domain<P>)
-{
-    // Precondition: $\property{bounded\_range}(f, l) \wedge l - f < 2^{64}$
-    return reduce_balanced(
-        f, l,
-        combine_ranges<I>,
-        partition_trivial<I, P>(p),
-        pair<I, I>(f, f)
-      ).m0;
-}
-
-template <typename I, typename B, typename R>
-auto merge_n_with_buffer(I f0, DistanceType<I> n0, I f1, DistanceType<I> n1, B f_b, R r)
-    requires MutableForwardIterator<I> && MutableForwardIterator<B> && Relation<R>
-    __requires(ValueType<I> == ValueType<B> && ValueType<I> == Domain<decltype(r)>)
-{
-    // Precondition: $\func{mergeable}(f_0, n_0, f_1, n_1, r)$
-    // Precondition: $\property{mutable\_counted\_range}(f_b, n_0)$
-    copy_n(f0, n0, f_b);
-    return merge_copy_n(f_b, n0, f1, n1, f0, r).m2;
-}
-
-template <typename I, typename B, typename R>
-auto sort_n_with_buffer(I f, DistanceType<I> n, B f_b, R r)
-    requires MutableForwardIterator<I> && MutableForwardIterator<B> && Relation<R>
-    __requires(ValueType<I> == ValueType<B> && ValueType<I> == Domain<decltype(r)>)
-{
-    // Property:
-    // $\property{mutable\_counted\_range}(f, n) \wedge \property{weak\_ordering}(r)$
-    // Precondition: $\property{mutable\_counted\_range}(f_b, \lceil n/2 \rceil)$
-    auto h = half_nonnegative(n);
-    if (zero(h)) return f + n;
-    I m = sort_n_with_buffer(f, h, f_b, r);
-    sort_n_with_buffer(m, n - h, f_b, r);
-    return merge_n_with_buffer(f, h, m, n - h, f_b, r);
-}
-
-template <typename I, typename R>
-void merge_n_step_0(
-    I f0, DistanceType<I> n0,
-    I f1, DistanceType<I> n1, R r,
-    I& f0_0, DistanceType<I>& n0_0,
-    I& f0_1, DistanceType<I>& n0_1,
-    I& f1_0, DistanceType<I>& n1_0,
-    I& f1_1, DistanceType<I>& n1_1
-)
-    requires MutableForwardIterator<I> && Relation<R>
-    __requires(ValueType<I> == Domain<decltype(r)>)
-{
-    // Precondition: $\property{mergeable}(f_0, n_0, f_1, n_1, r)$
-    f0_0 = f0;
-    n0_0 = half_nonnegative(n0);
-    f0_1 = f0_0 + n0_0;
-    f1_1 = lower_bound_n(f1, n1, source(f0_1), r);
-    f1_0 = rotate(f0_1, f1, f1_1);
-    n0_1 = f1_0 - f0_1;
-    f1_0 = successor(f1_0);
-    n1_0 = predecessor(n0 - n0_0);
-    n1_1 = n1 - n0_1;
-}
-
-template <typename I, typename R>
-void merge_n_step_1(
-    I f0, DistanceType<I> n0,
-    I f1, DistanceType<I> n1, R r,
-    I& f0_0, DistanceType<I>& n0_0,
-    I& f0_1, DistanceType<I>& n0_1,
-    I& f1_0, DistanceType<I>& n1_0,
-    I& f1_1, DistanceType<I>& n1_1
-)
-    requires MutableForwardIterator<I> && Relation<R>
-    __requires(ValueType<I> == Domain<decltype(r)>)
-{
-    // Precondition: $\property{mergeable}(f_0, n_0, f_1, n_1, r)$
-    f0_0 = f0;
-    n0_1 = half_nonnegative(n1);
-    f1_1 = f1 + n0_1;
-    f0_1 = upper_bound_n(f0, n0, source(f1_1), r);
-    f1_1 = successor(f1_1);
-    f1_0 = rotate(f0_1, f1, f1_1);
-    n0_0 = f0_1 - f0_0;
-    n1_0 = n0 - n0_0;
-    n1_1 = predecessor(n1 - n0_1);
-}
-
-template <typename I, typename B, typename R>
-auto merge_n_adaptive(
-    I f0, DistanceType<I> n0,
-    I f1, DistanceType<I> n1,
-    B f_b, DistanceType<B> n_b, R r
-)
-    requires
-        MutableForwardIterator<I> &&
-        MutableForwardIterator<B> &&
-        Relation<R> &&
-        Same<ValueType<I>, ValueType<B>>
-    __requires(ValueType<I> == Domain<decltype(r)>)
-{
-    // Precondition: $\property{mergeable}(f_0, n_0, f_1, n_1, r)$
-    // Precondition: $\property{mutable\_counted\_range}(f_b, n_b)$
-    using N = DistanceType<I>;
-    if (zero(n0) || zero(n1)) return f0 + n0 + n1;
-    if (n0 <= N(n_b))
-        return merge_n_with_buffer(f0, n0, f1, n1, f_b, r);
-    I f0_0; I f0_1; I f1_0; I f1_1;
-    N n0_0; N n0_1; N n1_0; N n1_1;
-    if (n0 < n1)
-        merge_n_step_0(
-            f0, n0, f1, n1, r,
-            f0_0, n0_0, f0_1, n0_1,
-            f1_0, n1_0, f1_1, n1_1);
-    else
-        merge_n_step_1(
-            f0, n0, f1, n1, r,
-            f0_0, n0_0, f0_1, n0_1,
-            f1_0, n1_0, f1_1, n1_1);
-        merge_n_adaptive(
-            f0_0, n0_0, f0_1, n0_1,
-            f_b, n_b, r);
-    return
-        merge_n_adaptive(
-            f1_0, n1_0, f1_1, n1_1,
-            f_b, n_b, r);
-}
-
-template <typename I, typename B, typename R>
-auto sort_n_adaptive(I f, DistanceType<I> n, B f_b, DistanceType<B> n_b, R r)
-    requires
-        MutableForwardIterator<I> &&
-        MutableForwardIterator<B> &&
-        Relation<R>
-    __requires(ValueType<I> == ValueType<B> && ValueType<I> == Domain<decltype(r)>)
-{
-    // Precondition:
-    // $\property{mutable\_counted\_range}(f, n) \wedge \property{weak\_ordering}(r)$
-    // Precondition: $\property{mutable\_counted\_range}(f_b, n_b)$
-    auto h = half_nonnegative(n);
-    if (zero(h)) return f + n;
-    I m = sort_n_adaptive(f, h, f_b, n_b, r);
-    sort_n_adaptive(m, n - h, f_b, n_b, r);
-    return merge_n_adaptive(f, h, m, n - h, f_b, n_b, r);
-}
-
-template <typename I, typename R>
-auto sort_n(I f, DistanceType<I> n, R r) -> I
-    requires MutableForwardIterator<I> && Relation<R>
-    __requires(ValueType<I> == Domain<decltype(r)>)
-{
-    // Precondition:
-    // $\property{mutable\_counted\_range}(f, n) \wedge \property{weak\_ordering}(r)$
-    temporary_buffer<ValueType<I>> b{half_nonnegative(n)};
-    return sort_n_adaptive(f, n, begin(b), size(b), r);
-}
 
 
 
@@ -8542,17 +8007,17 @@ I rotate_nontrivial(I f, I m, I l, random_access_iterator_tag)
     return rotate_random_access_nontrivial(f, m, l);
 }
 
-
 //
 //  Chapter 11. Partition and merging
 //
 
-
 // Exercise 11.1:
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
 bool partitioned_at_point(I f, I m, I l, P p)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge m \in [f, l]$
@@ -8562,24 +8027,28 @@ bool partitioned_at_point(I f, I m, I l, P p)
 
 // Exercise 11.2:
 
-template<typename I, typename P>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I potential_partition_point(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        ReadableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto potential_partition_point(I f, I l, P p) -> I
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     return count_if_not(f, l, p, f);
 }
 
-template<typename I, typename P>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_semistable(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        MutableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_semistable(I f, I l, P p) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    I i = find_if(f, l, p);
+    auto i = find_if(f, l, p);
     if (i == l) return i;
-    I j = successor(i);
+    auto j = successor(i);
     while (true) {
         j = find_if_not(j, l, p);
         if (j == l) return i;
@@ -8590,18 +8059,19 @@ I partition_semistable(I f, I l, P p)
 // Exercise 11.3: rewrite partition_semistable, expanding find_if_not inline and
 // eliminating extra test against l
 
-
 // Exercise 11.4: substitute copy_step(j, i) for swap_step(i, j) in partition_semistable
 
-template<typename I, typename P>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I remove_if(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        MutableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto remove_if(I f, I l, P p) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    I i = find_if(f, l, p);
+    auto i = find_if(f, l, p);
     if (i == l) return i;
-    I j = successor(i);
+    auto j = successor(i);
     while (true) {
         j = find_if_not(j, l, p);
         if (j == l) return i;
@@ -8609,22 +8079,23 @@ I remove_if(I f, I l, P p)
     }
 }
 
-
 // Exercise 11.5:
 
-//template<typename I, typename P>
-//    __requires(Mutable(I) && ForwardIterator(I) &&
-//        UnaryPredicate(P) && ValueType<I> == Domain(P))
+//template <typename I, typename P>
+//   requires MutableForwardIterator<I> &&
+//        UnaryPredicate<P> && Same<ValueType<I>, Domain<P>>
 //void partition_semistable_omit_last_predicate_evaluation(I f, I l, P p)
 //{
 //    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
 //    ...
 //}
 
-template<typename I, typename P>
-    __requires(Mutable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_bidirectional(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        MutableBidirectionalIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_bidirectional(I f, I l, P p) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
     while (true) {
@@ -8637,14 +8108,16 @@ I partition_bidirectional(I f, I l, P p)
 
 // Exercise 11.6:
 
-template<typename I,  typename P>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_forward(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        MutableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_forward(I f, I l, P p) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    I i = count_if_not(f, l, p, f);
-    I j = i;
+    auto i = count_if_not(f, l, p, f);
+    auto j = i;
     while (true) {
         j = find_if_not(j, l, p);
         if (j == l) return i;
@@ -8655,17 +8128,19 @@ I partition_forward(I f, I l, P p)
 
 // Exercise 11.7: partition_single_cycle
 
-template<typename I, typename P>
-    __requires(Mutable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_single_cycle(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        MutableBidirectionalIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_single_cycle(I f, I l, P p) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
     f = find_if(f, l, p);
     l = find_backward_if_not(f, l, p);
     if (f == l) return f;
     l = predecessor(l);
-    ValueType<I> tmp = source(f);
+    auto tmp = source(f);
     while (true) {
         sink(f) = source(l);
         f = find_if(successor(f), l, p);
@@ -8678,13 +8153,14 @@ I partition_single_cycle(I f, I l, P p)
     }
 }
 
-
 // Exercise 11.8: partition_sentinel
 
-template<typename I, typename P>
-    __requires(Mutable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_bidirectional_unguarded(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        MutableBidirectionalIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_bidirectional_unguarded(I f, I l, P p) -> I
 {
     // Precondition:
     // $(\neg \func{all}(f, l, p) \wedge \func{some}(f, l, p)) \vee
@@ -8698,10 +8174,12 @@ I partition_bidirectional_unguarded(I f, I l, P p)
     }
 }
 
-template<typename I, typename P>
-    __requires(Mutable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_sentinel(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        MutableBidirectionalIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_sentinel(I f, I l, P p) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
     f = find_if(f, l, p);
@@ -8713,19 +8191,19 @@ I partition_sentinel(I f, I l, P p)
     return partition_bidirectional_unguarded(f, l, p);
 }
 
-
 // Exercise 11.9: partition_single_cycle_sentinel
 
-
-template<typename I, typename P>
-    __requires(Mutable(I) && IndexedIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_indexed(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        MutableIndexedIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_indexed(I f, I l, P p) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    typedef DistanceType<I> N;
-    N i(0);
-    N j = l - f;
+    using N = DistanceType<decltype(f)>;
+    N i{0};
+    auto j = l - f;
     while (true) {
         while (true) {
             if (i == j) return f + i;
@@ -8742,103 +8220,115 @@ I partition_indexed(I f, I l, P p)
     }
 }
 
-template<typename I, typename B, typename P>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Mutable(B) && ForwardIterator(B) &&
-        ValueType<I> == ValueType(B) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_stable_with_buffer(I f, I l, B f_b, P p)
+template <typename I, typename B, typename P>
+    requires
+        MutableForwardIterator<I> &&
+        MutableForwardIterator<B> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, ValueType<B>> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_stable_with_buffer(I f, I l, B f_b, P p) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
     // Precondition: $\property{mutable\_counted\_range}(f_b, l-f)$
-    pair<I, B> x = partition_copy(f, l, f, f_b, p);
+    auto x = partition_copy(f, l, f, f_b, p);
     copy(f_b, x.m1, x.m0);
     return x.m0;
 }
 
-template<typename I, typename P>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-pair<I, I> partition_stable_singleton(I f, P p)
+template <typename I, typename P>
+    requires
+        MutableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_stable_singleton(I f, P p) -> pair<I, I>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, \func{successor}(f))$
-    I l = successor(f);
+    auto l = successor(f);
     if (!p(source(f))) f = l;
-    return pair<I, I>(f, l);
+    return pair<decltype(f), decltype(l)>{f, l};
 }
 
-template<typename I>
-    __requires(Mutable(I) && ForwardIterator(I))
-pair<I, I> combine_ranges(const pair<I, I>& x,
-                          const pair<I, I>& y)
+template <typename I>
+    requires MutableForwardIterator<I>
+auto combine_ranges(const pair<I, I>& x, const pair<I, I>& y) -> pair<I, I>
 {
     // Precondition: $\property{mutable\_bounded\_range}(x.m0, y.m0)$
     // Precondition: $x.m1 \in [x.m0, y.m0]$
-    return pair<I, I>(rotate(x.m0, x.m1, y.m0), y.m1);
+    return pair<I, I>{rotate(x.m0, x.m1, y.m0), y.m1};
 }
 
-template<typename I, typename P>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-pair<I, I> partition_stable_n_nonempty(I f, DistanceType<I> n,
-                                       P p)
+template <typename I, typename P>
+    requires
+        MutableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_stable_n_nonempty(I f, DistanceType<I> n, P p) -> pair<I, I>
 {
     // Precondition: $\property{mutable\_counted\_range}(f, n) \wedge n > 0$
     if (one(n)) return partition_stable_singleton(f, p);
-    DistanceType<I> h = half_nonnegative(n);
-    pair<I, I> x = partition_stable_n_nonempty(f, h, p);
-    pair<I, I> y = partition_stable_n_nonempty(x.m1, n - h, p);
+    auto h = half_nonnegative(n);
+    auto x = partition_stable_n_nonempty(f, h, p);
+    auto y = partition_stable_n_nonempty(x.m1, n - h, p);
     return combine_ranges(x, y);
 }
 
-template<typename I, typename P>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-pair<I, I> partition_stable_n(I f, DistanceType<I> n, P p)
+template <typename I, typename P>
+    requires
+        MutableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_stable_n(I f, DistanceType<I> n, P p) -> pair<I, I>
 {
     // Precondition: $\property{mutable\_counted\_range}(f, n)$
-    if (zero(n)) return pair<I, I>(f, f);
+    if (zero(n)) return pair<I, I>{f, f};
     return partition_stable_n_nonempty(f, n, p);
 }
 
-
 // Exercise 11.10: partition_stable_n_adaptive
 
-
-template<typename I, typename P>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-       UnaryPredicate(P) && Domain(P) == ValueType<I>)
-I partition_stable(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        MutableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_stable(I f, I l, P p) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
     return partition_stable_n(f, l - f, p).m0;
 }
 
-template<typename I, typename P>
-    __requires(ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
+template <typename I, typename P>
+    requires
+        ForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
 struct partition_trivial
 {
     P p;
-    partition_trivial(const P & p) : p(p) {}
-    pair<I, I> operator()(I i)
+    partition_trivial(const P& p) : p{p} {}
+    auto operator()(I i) -> pair<I, I>
     {
         return partition_stable_singleton<I, P>(i, p);
     }
 };
 
-template<typename I, typename P>
-    __requires(ForwardIterator(I) && UnaryPredicate(P) && ValueType<I> == Domain(P))
-struct codomain_type< partition_trivial<I, P> >
+template <typename I, typename P>
+    requires
+        ForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+struct codomain_type< partition_trivial<I, P>>
 {
-    typedef pair<I, I> type;
+    using type = pair<I, I>;
 };
 
-template<typename I, typename Op>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        BinaryOperation(Op) && ValueType<I> == Domain<Op>)
-Domain<Op> add_to_counter(I f, I l, Op op, Domain<Op> x,
-                          const Domain<Op>& z)
+template <typename I, typename Op>
+    requires
+        MutableForwardIterator<I> &&
+        BinaryOperation<Op> &&
+        Same<ValueType<I>, Domain<Op>>
+auto add_to_counter(I f, I l, Op op, Domain<Op> x, const Domain<Op>& z) -> Domain<Op>
 {
     if (x == z) return z;
     while (f != l) {
@@ -8853,88 +8343,95 @@ Domain<Op> add_to_counter(I f, I l, Op op, Domain<Op> x,
     return x;
 }
 
-template<typename Op>
-    __requires(BinaryOperation(Op))
+template <typename Op>
+    requires BinaryOperation<Op>
 struct counter_machine
 {
-    typedef Domain<Op> T;
+    using T = Domain<Op>;
     Op op;
     T z;
     T f[64];
     DistanceType<pointer(T)> n;
-    counter_machine(Op op, const Domain<Op>& z) :
-    op(op), z(z), n(0) { }
+    counter_machine(Op op, const T& z)
+        : op{op}, z{z}, n{0}
+    {}
     void operator()(const T& x)
     {
         // Precondition: must not be called more than $2^{64}-1$ times
-         T tmp = add_to_counter(f, f + n, op, x, z);
-         if (tmp != z) {
-             sink(f + n) = tmp;
-             n = successor(n);
-         }
+        auto tmp = add_to_counter(f, f + n, op, x, z);
+        if (tmp != z) {
+            sink(f + n) = tmp;
+            n = successor(n);
+        }
     }
 };
 
-template<typename Op>
-    __requires(BinaryOperation(Op))
+template <typename Op>
+    requires BinaryOperation<Op>
 struct transpose_operation
 {
+    using T = Domain<Op>;
     Op op;
-    transpose_operation(Op op) : op(op) { }
-    typedef Domain<Op> T;
+    transpose_operation(Op op)
+        : op{op}
+    {}
     T operator()(const T& x, const T& y)
     {
         return op(y, x);
     }
 };
 
-template<typename Op>
-    __requires(BinaryOperation(Op))
-struct input_type< transpose_operation<Op>, 0 >
+template <typename Op>
+    requires BinaryOperation<Op>
+struct input_type<transpose_operation<Op>, 0>
 {
-    typedef Domain<Op> type;
+    using type = Domain<Op>;
 };
 
-template<typename I, typename Op, typename F>
-    __requires(Iterator(I) && BinaryOperation(Op) &&
-        UnaryFunction(F) && I == Domain<F> &&
-        CoDomain<F> == Domain<Op>)
-Domain<Op> reduce_balanced(I f, I l, Op op, F fun,
-                           const Domain<Op>& z)
+template <typename I, typename Op, typename F>
+    requires
+        Iterator<I> &&
+        BinaryOperation<Op> &&
+        UnaryFunction<F>
+    __requires(I == Domain<F> && Codomain<F> == Domain<Op>)
+auto reduce_balanced(I f, I l, Op op, F fun, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{bounded\_range}(f, l) \wedge l - f < 2^{64}$
     // Precondition: $\property{partially\_associative}(op)$
     // Precondition: $(\forall x \in [f, l))\,fun(x)$ is defined
-    counter_machine<Op> c(op, z);
+    counter_machine<Op> c{op, z};
     while (f != l) {
         c(fun(f));
         f = successor(f);
     }
-    transpose_operation<Op> t_op(op);
+    transpose_operation<Op> t_op{op};
     return reduce_nonzeroes(c.f, c.f + c.n, t_op, z);
 }
 
-template<typename I, typename Op>
-    __requires(ReadableIterator(I) && BinaryOperation(Op) &&
-        ValueType<I> == Domain<Op>)
-Domain<Op> reduce_balanced(I f, I l, Op op, const Domain<Op>& z)
+template <typename I, typename Op>
+    requires
+        Iterator<I> &&
+        BinaryOperation<Op> &&
+        Same<ValueType<I>, Domain<Op>>
+auto reduce_balanced(I f, I l, Op op, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge l-f < 2^{33}$
     // Precondition: $\property{partially\_associative}(op)$
-    counter_machine<Op> c(op, z);
+    counter_machine<Op> c{op, z};
     while (f != l) {
         c(source(f));
         f = successor(f);
     }
-    transpose_operation<Op> t_op(op);
+    transpose_operation<Op> t_op{op};
     return reduce_nonzeroes(c.f, c.f + c.n, t_op, z);
 }
 
-
-template<typename I, typename P>
-    __requires(ForwardIterator(I) && UnaryPredicate(P) &&
-        ValueType<I> == Domain(P))
-I partition_stable_iterative(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        ForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_stable_iterative(I f, I l, P p) -> I
 {
     // Precondition: $\property{bounded\_range}(f, l) \wedge l - f < 2^{64}$
     return reduce_balanced(
@@ -8945,13 +8442,14 @@ I partition_stable_iterative(I f, I l, P p)
       ).m0;
 }
 
-template<typename I, typename B, typename R>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Mutable(B) && ForwardIterator(B) &&
-        ValueType<I> == ValueType(B) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-I merge_n_with_buffer(I f0, DistanceType<I> n0,
-                      I f1, DistanceType<I> n1, B f_b, R r)
+template <typename I, typename B, typename R>
+    requires
+        MutableForwardIterator<I> &&
+        MutableForwardIterator<B> &&
+        Relation<R> &&
+        Same<ValueType<I>, ValueType<B>> &&
+        Same<ValueType<I>, Domain<R>>
+auto merge_n_with_buffer(I f0, DistanceType<I> n0, I f1, DistanceType<I> n1, B f_b, R r) -> I
 {
     // Precondition: $\func{mergeable}(f_0, n_0, f_1, n_1, r)$
     // Precondition: $\property{mutable\_counted\_range}(f_b, n_0)$
@@ -8959,32 +8457,38 @@ I merge_n_with_buffer(I f0, DistanceType<I> n0,
     return merge_copy_n(f_b, n0, f1, n1, f0, r).m2;
 }
 
-template<typename I, typename B, typename R>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Mutable(B) && ForwardIterator(B) &&
-        ValueType<I> == ValueType(B) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-I sort_n_with_buffer(I f, DistanceType<I> n, B f_b, R r)
+template <typename I, typename B, typename R>
+    requires
+        MutableForwardIterator<I> &&
+        MutableForwardIterator<B> &&
+        Relation<R> &&
+        Same<ValueType<I>, ValueType<B>> &&
+        Same<ValueType<I>, Domain<R>>
+auto sort_n_with_buffer(I f, DistanceType<I> n, B f_b, R r) -> I
 {
     // Property:
     // $\property{mutable\_counted\_range}(f, n) \wedge \property{weak\_ordering}(r)$
     // Precondition: $\property{mutable\_counted\_range}(f_b, \lceil n/2 \rceil)$
-    DistanceType<I> h = half_nonnegative(n);
+    auto h = half_nonnegative(n);
     if (zero(h)) return f + n;
-    I m = sort_n_with_buffer(f, h,     f_b, r);
-          sort_n_with_buffer(m, n - h, f_b, r);
+    I m = sort_n_with_buffer(f, h, f_b, r);
+    sort_n_with_buffer(m, n - h, f_b, r);
     return merge_n_with_buffer(f, h, m, n - h, f_b, r);
 }
 
-template<typename I, typename R>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-void merge_n_step_0(I f0, DistanceType<I> n0,
-                    I f1, DistanceType<I> n1, R r,
-                    I& f0_0, DistanceType<I>& n0_0,
-                    I& f0_1, DistanceType<I>& n0_1,
-                    I& f1_0, DistanceType<I>& n1_0,
-                    I& f1_1, DistanceType<I>& n1_1)
+template <typename I, typename R>
+    requires
+        MutableForwardIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+void merge_n_step_0(
+    I f0, DistanceType<I> n0,
+    I f1, DistanceType<I> n1, R r,
+    I& f0_0, DistanceType<I>& n0_0,
+    I& f0_1, DistanceType<I>& n0_1,
+    I& f1_0, DistanceType<I>& n1_0,
+    I& f1_1, DistanceType<I>& n1_1
+)
 {
     // Precondition: $\property{mergeable}(f_0, n_0, f_1, n_1, r)$
     f0_0 = f0;
@@ -8998,15 +8502,19 @@ void merge_n_step_0(I f0, DistanceType<I> n0,
     n1_1 = n1 - n0_1;
 }
 
-template<typename I, typename R>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-void merge_n_step_1(I f0, DistanceType<I> n0,
-                    I f1, DistanceType<I> n1, R r,
-                    I& f0_0, DistanceType<I>& n0_0,
-                    I& f0_1, DistanceType<I>& n0_1,
-                    I& f1_0, DistanceType<I>& n1_0,
-                    I& f1_1, DistanceType<I>& n1_1)
+template <typename I, typename R>
+    requires
+        MutableForwardIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+void merge_n_step_1(
+    I f0, DistanceType<I> n0,
+    I f1, DistanceType<I> n1, R r,
+    I& f0_0, DistanceType<I>& n0_0,
+    I& f0_1, DistanceType<I>& n0_1,
+    I& f1_0, DistanceType<I>& n1_0,
+    I& f1_1, DistanceType<I>& n1_1
+)
 {
     // Precondition: $\property{mergeable}(f_0, n_0, f_1, n_1, r)$
     f0_0 = f0;
@@ -9020,66 +8528,77 @@ void merge_n_step_1(I f0, DistanceType<I> n0,
     n1_1 = predecessor(n1 - n0_1);
 }
 
-template<typename I, typename B, typename R>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Mutable(B) && ForwardIterator(B) &&
-        ValueType<I> == ValueType(B) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-I merge_n_adaptive(I f0, DistanceType<I> n0,
-                   I f1, DistanceType<I> n1,
-                   B f_b, DistanceType<B> n_b, R r)
+template <typename I, typename B, typename R>
+    requires
+        MutableForwardIterator<I> &&
+        MutableForwardIterator<B> &&
+        Relation<R> &&
+        Same<ValueType<I>, ValueType<B>> &&
+        Same<ValueType<I>, Domain<R>>
+auto merge_n_adaptive(
+    I f0, DistanceType<I> n0,
+    I f1, DistanceType<I> n1,
+    B f_b, DistanceType<B> n_b, R r
+) -> I
 {
     // Precondition: $\property{mergeable}(f_0, n_0, f_1, n_1, r)$
     // Precondition: $\property{mutable\_counted\_range}(f_b, n_b)$
-    typedef DistanceType<I> N;
+    using N = DistanceType<I>;
     if (zero(n0) || zero(n1)) return f0 + n0 + n1;
     if (n0 <= N(n_b))
         return merge_n_with_buffer(f0, n0, f1, n1, f_b, r);
     I f0_0; I f0_1; I f1_0; I f1_1;
     N n0_0; N n0_1; N n1_0; N n1_1;
-    if (n0 < n1) merge_n_step_0(
-                            f0, n0, f1, n1, r,
-                            f0_0, n0_0, f0_1, n0_1,
-                            f1_0, n1_0, f1_1, n1_1);
-    else         merge_n_step_1(
-                            f0, n0, f1, n1, r,
-                            f0_0, n0_0, f0_1, n0_1,
-                            f1_0, n1_0, f1_1, n1_1);
-           merge_n_adaptive(f0_0, n0_0, f0_1, n0_1,
-                            f_b, n_b, r);
-    return merge_n_adaptive(f1_0, n1_0, f1_1, n1_1,
-                            f_b, n_b, r);
+    if (n0 < n1)
+        merge_n_step_0(
+            f0, n0, f1, n1, r,
+            f0_0, n0_0, f0_1, n0_1,
+            f1_0, n1_0, f1_1, n1_1);
+    else
+        merge_n_step_1(
+            f0, n0, f1, n1, r,
+            f0_0, n0_0, f0_1, n0_1,
+            f1_0, n1_0, f1_1, n1_1);
+        merge_n_adaptive(
+            f0_0, n0_0, f0_1, n0_1,
+            f_b, n_b, r);
+    return
+        merge_n_adaptive(
+            f1_0, n1_0, f1_1, n1_1,
+            f_b, n_b, r);
 }
 
-template<typename I, typename B, typename R>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Mutable(B) && ForwardIterator(B) &&
-        ValueType<I> == ValueType(B) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-I sort_n_adaptive(I f, DistanceType<I> n,
-                  B f_b, DistanceType<B> n_b, R r)
+template <typename I, typename B, typename R>
+    requires
+        MutableForwardIterator<I> &&
+        MutableForwardIterator<B> &&
+        Relation<R> &&
+        Same<ValueType<I>, ValueType<B>> &&
+        Same<ValueType<I>, Domain<R>>
+auto sort_n_adaptive(I f, DistanceType<I> n, B f_b, DistanceType<B> n_b, R r) -> I
 {
     // Precondition:
     // $\property{mutable\_counted\_range}(f, n) \wedge \property{weak\_ordering}(r)$
     // Precondition: $\property{mutable\_counted\_range}(f_b, n_b)$
-    DistanceType<I> h = half_nonnegative(n);
+    auto h = half_nonnegative(n);
     if (zero(h)) return f + n;
-    I m = sort_n_adaptive(f, h,     f_b, n_b, r);
-          sort_n_adaptive(m, n - h, f_b, n_b, r);
+    I m = sort_n_adaptive(f, h, f_b, n_b, r);
+    sort_n_adaptive(m, n - h, f_b, n_b, r);
     return merge_n_adaptive(f, h, m, n - h, f_b, n_b, r);
 }
 
-template<typename I, typename R>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-I sort_n(I f, DistanceType<I> n, R r)
+template <typename I, typename R>
+    requires
+        MutableForwardIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto sort_n(I f, DistanceType<I> n, R r) -> I
 {
     // Precondition:
     // $\property{mutable\_counted\_range}(f, n) \wedge \property{weak\_ordering}(r)$
-    temporary_buffer<ValueType<I>> b(half_nonnegative(n));
+    temporary_buffer<ValueType<I>> b{half_nonnegative(n)};
     return sort_n_adaptive(f, n, begin(b), size(b), r);
 }
-
 
 //
 //  Chapter 12. Composite objects
