@@ -203,9 +203,9 @@ concept Default_totally_ordered =
 
 template <typename T>
 concept Regular =
-    Equality_comparable<T> &&
-    Default_constructible<T> &&
-    Copyable<T>;
+    Equality_comparable<T>;
+    //Default_constructible<T>;
+    //Copyable<T>;
     // Default_totally_ordered<T>;
     // axiom partially_formed {
     //     // T x not necessarily well-formed

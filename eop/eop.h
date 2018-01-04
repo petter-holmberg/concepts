@@ -2913,647 +2913,6 @@ auto traverse_phased_rotating(C c, int phase, Proc proc) -> Proc
 }
 
 
-//
-//  Chapter 9. Copying
-//
-
-template <typename I, typename O>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>>
-void copy_step(I& f_i, O& f_o)
-{
-    // Precondition: $\func{source}(f_i)$ and $\func{sink}(f_o)$ are defined
-    sink(f_o) = source(f_i);
-    f_i = successor(f_i);
-    f_o = successor(f_o);
-}
-
-template <typename I, typename O>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>>
-auto copy(I f_i, I l_i, O f_o) -> O
-{
-    // Precondition:
-    // $\property{not\_overlapped\_forward}(f_i, l_i, f_o, f_o + (l_i - f_i))$
-    while (f_i != l_i) copy_step(f_i, f_o);
-    return f_o;
-}
-
-template <typename I>
-    requires WritableIterator<I>
-void fill_step(I& f_o, const ValueType<I>& x)
-{
-    sink(f_o) = x;
-    f_o = successor(f_o);
-}
-
-template <typename I>
-    requires WritableIterator<I>
-auto fill(I f, I l, const ValueType<I>& x) -> I
-{
-    while (f != l) fill_step(f, x);
-    return f;
-}
-
-template <typename O>
-    requires WritableIterator<O> && Integer<ValueType<O>>
-auto iota(ValueType<O> n, O o) -> O // like APL $\iota$
-{
-    // Precondition: $\property{writable\_counted\_range}(o, n) \wedge n \geq 0$
-    return copy(ValueType<O>{0}, n, o);
-}
-
-// Useful for testing in conjunction with iota
-template <typename I>
-    requires ReadableIterator<I> && Integer<ValueType<I>>
-bool equal_iota(I f, I l, ValueType<I> n = 0)
-{
-    // Precondition: $\property{readable\_bounded\_range}(f, l)$
-    while (f != l) {
-        if (source(f) != n) return false;
-        n = successor(n);
-        f = successor(f);
-    }
-    return true;
-}
-
-template <typename I, typename O>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O> &&
-        Same<ValueType<I>, ValueType<O>>
-auto copy_bounded(I f_i, I l_i, O f_o, O l_o) -> pair<I, O>
-{
-    // Precondition: $\property{not\_overlapped\_forward}(f_i, l_i, f_o, l_o)$
-    while (f_i != l_i && f_o != l_o) copy_step(f_i, f_o);
-    return pair<decltype(f_i), decltype(f_o)>{f_i, f_o};
-}
-
-template <typename I>
-    requires Integer<I>
-bool count_down(I& n)
-{
-    // Precondition: $n \geq 0$
-    if (zero(n)) return false;
-    n = predecessor(n);
-    return true;
-}
-
-template <typename I, typename O, typename N>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>> &&
-        Integer<N>
-auto copy_n(I f_i, N n, O f_o) -> pair<I, O>
-{
-    // Precondition: $\property{not\_overlapped\_forward}(f_i, f_i+n, f_o, f_o+n)$
-    while (count_down(n)) copy_step(f_i, f_o);
-    return pair<decltype(f_i), decltype(f_o)>{f_i, f_o};
-}
-
-template <typename I>
-    requires WritableIterator<I>
-auto fill_n(I f, DistanceType<I> n, const ValueType<I>& x) -> I
-{
-    while (count_down(n)) fill_step(f, x);
-    return f;
-}
-
-template <typename I, typename O>
-    requires
-        ReadableBidirectionalIterator<I> &&
-        WritableBidirectionalIterator<O> &&
-         Same_remove_cv<ValueType<I>, ValueType<O>>
-void copy_backward_step(I& l_i, O& l_o)
-{
-    // Precondition: $\func{source}(\property{predecessor}(l_i))$ and
-    //               $\func{sink}(\property{predecessor}(l_o))$
-    //               are defined
-    l_i = predecessor(l_i);
-    l_o = predecessor(l_o);
-    sink(l_o) = source(l_i);
-}
-
-
-template <typename I, typename O>
-    requires
-        ReadableBidirectionalIterator<I> &&
-        WritableBidirectionalIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>>
-auto copy_backward(I f_i, I l_i, O l_o) -> O
-{
-    // Precondition: $\property{not\_overlapped\_backward}(f_i, l_i, l_o-(l_i-f_i), l_o)$
-    while (f_i != l_i) copy_backward_step(l_i, l_o);
-    return l_o;
-}
-
-template <typename I, typename O>
-    requires
-        ReadableBidirectionalIterator<I> &&
-        WritableBidirectionalIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>>
-auto copy_backward_n(I l_i, DistanceType<I> n, O l_o) -> pair<I, O>
-    __requires(ValueType<I> == ValueType<decltype(l_o)>)
-{
-    while (count_down(n)) copy_backward_step(l_i, l_o);
-    return pair<I, decltype(l_o)>{l_i, l_o};
-}
-
-template<typename I, typename O>
-    requires
-        ReadableBidirectionalIterator<I> &&
-        WritableIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>>
-void reverse_copy_step(I& l_i, O& f_o)
-{
-    // Precondition: $\func{source}(\func{predecessor}(l_i))$ and
-    //               $\func{sink}(f_o)$ are defined
-    l_i = predecessor(l_i);
-    sink(f_o) = source(l_i);
-    f_o = successor(f_o);
-}
-
-template<typename I, typename O>
-    requires
-        ReadableIterator<I> &&
-        WritableBidirectionalIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>>
-void reverse_copy_backward_step(I& f_i, O& l_o)
-{
-    // Precondition: $\func{source}(f_i)$ and
-    //               $\func{sink}(\property{predecessor}(l_o))$ are defined
-    l_o = predecessor(l_o);
-    sink(l_o) = source(f_i);
-    f_i = successor(f_i);
-}
-
-template <typename I, typename O>
-    requires
-        ReadableBidirectionalIterator<I> &&
-        WritableIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>>
-auto reverse_copy(I f_i, I l_i, O f_o) -> O
-{
-    // Precondition: $\property{not\_overlapped}(f_i, l_i, f_o, f_o+(l_i-f_i))$
-    while (f_i != l_i) reverse_copy_step(l_i, f_o);
-    return f_o;
-}
-
-template<typename I, typename O>
-    requires
-        ReadableIterator<I> &&
-        WritableBidirectionalIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>>
-auto reverse_copy_backward(I f_i, I l_i, O l_o) -> O
-{
-    // Precondition: $\property{not\_overlapped}(f_i, l_i, l_o-(l_i-f_i), l_o)$
-    while (f_i != l_i) reverse_copy_backward_step(f_i, l_o);
-    return l_o;
-}
-
-template <typename I, typename O, typename P>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>> &&
-        UnaryPredicate<P>
-        __requires(Same<I, Domain<P>>)
-auto copy_select(I f_i, I l_i, O f_t, P p) -> O
-{
-    // Precondition: $\property{not\_overlapped\_forward}(f_i, l_i, f_t, f_t+n_t)$
-    // where $n_t$ is an upper bound for the number of iterators satisfying $p$
-    while (f_i != l_i)
-        if (p(f_i)) copy_step(f_i, f_t);
-        else f_i = successor(f_i);
-    return f_t;
-}
-
-template <typename I, typename O, typename P>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O> &&
-        Same_remove_cv<ValueType<I>, ValueType<O>> &&
-        UnaryPredicate<P>
-        __requires(ValueType<I> == Domain(P))
-auto copy_if(I f_i, I l_i, O f_t, P p) -> O
-{
-    // Precondition: same as for $\func{copy\_select}$
-    predicate_source<I, decltype(p)> ps{p};
-    return copy_select(f_i, l_i, f_t, ps);
-}
-
-template <typename I, typename O_f, typename O_t, typename P>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O_f> &&
-        WritableIterator<O_t> &&
-        Same_remove_cv<ValueType<I>, ValueType<O_f>> &&
-        Same_remove_cv<ValueType<I>, ValueType<O_t>> &&
-        UnaryPredicate<P>
-        __requires(Same<I, Domain<P>>)
-auto split_copy(I f_i, I l_i, O_f f_f, O_t f_t, P p) -> pair<O_f, O_t>
-{
-    // Precondition: see section 9.3 of Elements of Programming
-    while (f_i != l_i)
-        if (p(f_i))
-            copy_step(f_i, f_t);
-        else
-            copy_step(f_i, f_f);
-    return pair<O_f, O_t>{f_f, f_t};
-}
-
-template <typename I, typename O_f, typename O_t, typename P>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O_f> &&
-        WritableIterator<O_t> &&
-        Same_remove_cv<ValueType<I>, ValueType<O_f>> &&
-        Same_remove_cv<ValueType<I>, ValueType<O_t>> &&
-        UnaryPredicate<P>
-        __requires(Same<I, Domain<P>>)
-auto split_copy_n(I f_i, DistanceType<I> n_i, O_f f_f, O_t f_t, P p) -> pair<O_f, O_t>
-{
-    // Precondition: see exercise 9.2 of Elements of Programming
-    while (count_down(n_i))
-        if (p(f_i))
-            copy_step(f_i, f_t);
-        else
-            copy_step(f_i, f_f);
-    return pair<O_f, O_t>{f_f, f_t};
-}
-
-template <typename I, typename O_f, typename O_t, typename P>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O_f> &&
-        WritableIterator<O_t> &&
-        Same_remove_cv<ValueType<I>, ValueType<O_f>> &&
-        Same_remove_cv<ValueType<I>, ValueType<O_t>> &&
-        UnaryPredicate<P>
-        __requires(Same<ValueType<I>, Domain<P>>)
-auto partition_copy(I f_i, I l_i, O_f f_f, O_t f_t, P p) -> pair<O_f, O_t>
-{
-    // Precondition: same as $\func{split\_copy}$
-    predicate_source<I, decltype(p)> ps{p};
-    return split_copy(f_i, l_i, f_f, f_t, ps);
-}
-
-template <typename I, typename O_f, typename O_t, typename P>
-    requires
-        ReadableIterator<I> &&
-        WritableIterator<O_f> &&
-        WritableIterator<O_t> &&
-        Same_remove_cv<ValueType<I>, ValueType<O_f>> &&
-        Same_remove_cv<ValueType<I>, ValueType<O_t>> &&
-        UnaryPredicate<P>
-        __requires(Same<ValueType<I>, Domain<P>>)
-auto partition_copy_n(I f_i, DistanceType<I> n, O_f f_f, O_t f_t, P p) -> pair<O_f, O_t>
-{
-    // Precondition: see $\func{partition_copy}$
-    predicate_source<I, decltype(p)> ps{p};
-    return split_copy_n(f_i, n, f_f, f_t, ps);
-}
-
-
-template <typename I0, typename I1, typename O, typename R>
-    requires
-        ReadableIterator<I0> &&
-        ReadableIterator<I1> &&
-        WritableIterator<O> &&
-        BinaryPredicate<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
-        Same_remove_cv<ValueType<I1>, ValueType<O>>
-        __requires(Same<I0, InputType<R, 1>>)
-        __requires(Same<I1, InputType<R, 0>>)
-auto combine_copy(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O f_o, R r) -> O
-{
-    // Precondition: see section 9.3 of Elements of Programming
-    while (f_i0 != l_i0 && f_i1 != l_i1)
-        if (r(f_i1, f_i0))
-            copy_step(f_i1, f_o);
-        else
-            copy_step(f_i0, f_o);
-    return copy(f_i1, l_i1, copy(f_i0, l_i0, f_o));
-}
-
-template <typename I0, typename I1, typename O, typename R>
-    requires
-        ReadableIterator<I0> &&
-        ReadableIterator<I1> &&
-        WritableIterator<O> &&
-        BinaryPredicate<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
-        Same_remove_cv<ValueType<I1>, ValueType<O>>
-        __requires(Same<I0, InputType<R, 1>>)
-        __requires(Same<I1, InputType<R, 0>>)
-auto combine_copy_n(
-    I0 f_i0, DistanceType<I0> n_i0, I1 f_i1, DistanceType<I1> n_i1, O f_o, R r
-) -> triple<I0, I1, O>
-{
-    // Precondition: see $\func{combine_copy}$
-    using Triple = triple<I0, I1, decltype(f_o)>;
-    while (true) {
-        if (zero(n_i0)) {
-            auto p = copy_n(f_i1, n_i1, f_o);
-            return Triple(f_i0, p.m0, p.m1);
-        }
-        if (zero(n_i1)) {
-            auto p = copy_n(f_i0, n_i0, f_o);
-            return Triple(p.m0, f_i1, p.m1);
-        }
-        if (r(f_i1, f_i0)) {
-            copy_step(f_i1, f_o);
-            n_i1 = predecessor(n_i1);
-        } else             {
-            copy_step(f_i0, f_o);
-            n_i0 = predecessor(n_i0);
-        }
-    }
-}
-
-template <typename I0, typename I1, typename O, typename R>
-    requires
-        ReadableBidirectionalIterator<I0> &&
-        ReadableBidirectionalIterator<I1> &&
-        WritableBidirectionalIterator<O> &&
-        BinaryPredicate<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
-        Same_remove_cv<ValueType<I1>, ValueType<O>>
-        __requires(Same<I0, InputType<R, 1>>)
-        __requires(Same<I1, InputType<R, 0>>)
-auto combine_copy_backward(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O l_o, R r) -> O
-{
-    // Precondition: see section 9.3 of Elements of Programming
-    while (f_i0 != l_i0 && f_i1 != l_i1) {
-        if (r(predecessor(l_i1), predecessor(l_i0)))
-            copy_backward_step(l_i0, l_o);
-        else
-            copy_backward_step(l_i1, l_o);
-    }
-    return copy_backward(f_i0, l_i0, copy_backward(f_i1, l_i1, l_o));
-}
-
-template <typename I0, typename I1, typename O, typename R>
-    requires
-        ReadableBidirectionalIterator<I0> &&
-        ReadableBidirectionalIterator<I1> &&
-        WritableBidirectionalIterator<O> &&
-        BinaryPredicate<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
-        Same_remove_cv<ValueType<I1>, ValueType<O>>
-        __requires(Same<I0, InputType<R, 1>>)
-        __requires(Same<I1, InputType<R, 0>>)
-auto combine_copy_backward_n(
-    I0 l_i0, DistanceType<I0> n_i0, I1 l_i1, DistanceType<I1> n_i1, O l_o, R r
-) -> triple<I0, I1, O>
-{
-    // Precondition: see $\func{combine\_copy\_backward}$
-    using Triple = triple<I0, I1, decltype(l_o)>;
-    while (true) {
-        if (zero(n_i0)) {
-            auto p = copy_backward_n(l_i1, n_i1, l_o);
-            return Triple(l_i0, p.m0, p.m1);
-        }
-        if (zero(n_i1)) {
-            auto p = copy_backward_n(l_i0, n_i0, l_o);
-            return Triple(p.m0, l_i1, p.m1);
-        }
-        if (r(predecessor(l_i1), predecessor(l_i0))) {
-            copy_backward_step(l_i0, l_o);
-            n_i0 = predecessor(n_i0);
-        } else {
-            copy_backward_step(l_i1, l_o);
-            n_i1 = predecessor(n_i1);
-        }
-    }
-}
-
-template <typename I0, typename I1, typename O, typename R>
-    requires
-        ReadableIterator<I0> &&
-        ReadableIterator<I1> &&
-        WritableIterator<O> &&
-        Relation<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
-        Same_remove_cv<ValueType<I1>, ValueType<O>> &&
-        Same<ValueType<I0>, Domain<R>>
-auto merge_copy(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O f_o, R r) -> O
-{
-    // Precondition: in addition to that for $\func{combine\_copy}$:
-    // \hspace*{1em} $\property{weak\_ordering}(r) \wedge {}$
-    // \hspace*{1em} $\func{increasing\_range}(f_{i_0}, l_{i_0}, r) \wedge
-    //                \property{increasing\_range}(f_{i_1}, l_{i_1}, r)$
-    relation_source<I1, I0, decltype(r)> rs{r};
-    return combine_copy(f_i0, l_i0, f_i1, l_i1, f_o, rs);
-}
-
-
-template <typename I0, typename I1, typename O, typename R>
-    requires
-        ReadableIterator<I0> &&
-        ReadableIterator<I1> &&
-        WritableIterator<O> &&
-        Relation<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
-        Same_remove_cv<ValueType<I1>, ValueType<O>> &&
-        Same<ValueType<I0>, Domain<R>>
-auto merge_copy_n(
-    I0 f_i0, DistanceType<I0> n_i0, I1 f_i1, DistanceType<I1> n_i1, O o, R r
-) -> triple<I0, I1, O>
-{
-    // Precondition: see $\func{merge\_copy}$
-    relation_source<I1, I0, decltype(r)> rs{r};
-    return combine_copy_n(f_i0, n_i0, f_i1, n_i1, o, rs);
-}
-
-template <typename I0, typename I1, typename O, typename R>
-    requires
-        ReadableBidirectionalIterator<I0> &&
-        ReadableBidirectionalIterator<I1> &&
-        WritableBidirectionalIterator<O> &&
-        Relation<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
-        Same_remove_cv<ValueType<I1>, ValueType<O>> &&
-        Same<ValueType<I0>, Domain<R>>
-auto merge_copy_backward(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O l_o, R r) -> O
-{
-    // Precondition: in addition to that for $\func{combine\_copy\_backward}$:
-    //               $\property{weak\_ordering}(r) \wedge {}$
-    //               $\func{increasing\_range}(f_{i_0}, l_{i_0}, r) \wedge
-    //                \property{increasing\_range}(f_{i_1}, l_{i_1}, r)$
-    relation_source<I1, I0, decltype(r)> rs{r};
-    return combine_copy_backward(f_i0, l_i0, f_i1, l_i1, l_o, rs);
-}
-
-template <typename I0, typename I1, typename O, typename R>
-    requires
-        ReadableBidirectionalIterator<I0> &&
-        ReadableBidirectionalIterator<I1> &&
-        WritableBidirectionalIterator<O> &&
-        Relation<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
-        Same_remove_cv<ValueType<I1>, ValueType<O>> &&
-        Same<ValueType<I0>, Domain<R>>
-auto merge_copy_backward_n(
-    I0 l_i0, DistanceType<I0> n_i0, I1 l_i1, DistanceType<I1> n_i1, O l_o, R r
-) -> triple<I0, I1, O>
-{
-    // Precondition: see $\func{merge\_copy\_backward}$
-    relation_source<I1, I0, decltype(r)> rs{r};
-    return combine_copy_backward_n(l_i0, n_i0, l_i1, n_i1, l_o, rs);
-}
-
-template <typename I0, typename I1>
-    requires
-        Mutable<I0> &&
-        Mutable<I1> &&
-        Same_remove_cv<ValueType<I0>, ValueType<I1>>
-void exchange_values(I0 x, I1 y)
-{
-    // Precondition: $\func{deref}(x)$ and $\func{deref}(y)$ are defined
-    auto t = source(x);
-    sink(x) = source(y);
-    sink(y) = t;
-}
-
-template <typename I0, typename I1>
-    requires
-        MutableForwardIterator<I0> &&
-        MutableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-void swap_step(I0& f0, I1& f1)
-{
-    // Precondition: $\func{deref}(f_0)$ and $\func{deref}(f_1)$ are defined
-    exchange_values(f0, f1);
-    f0 = successor(f0);
-    f1 = successor(f1);
-}
-
-template <typename I0, typename I1>
-    requires
-        MutableForwardIterator<I0> &&
-        MutableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-auto swap_ranges(I0 f0, I0 l0, I1 f1) -> I1
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f_0, l_0)$
-    // Precondition: $\property{mutable\_counted\_range}(f_1, l_0-f_0)$
-    while (f0 != l0) swap_step(f0, f1);
-    return f1;
-}
-
-
-template <typename I0, typename I1>
-    requires
-        MutableForwardIterator<I0> &&
-        MutableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-auto swap_ranges_bounded(I0 f0, I0 l0, I1 f1, I1 l1) -> pair<I0, I1>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f_0, l_0)$
-    // Precondition: $\property{mutable\_bounded\_range}(f_1, l_1)$
-    while (f0 != l0 && f1 != l1) swap_step(f0, f1);
-    return pair<I0, I1>{f0, f1};
-}
-
-template <typename I0, typename I1, typename N>
-    requires
-        MutableForwardIterator<I0> &&
-        MutableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>> &&
-        Integer<N>
-auto swap_ranges_n(I0 f0, I1 f1, N n) -> pair<I0, I1>
-{
-    // Precondition: $\property{mutable\_counted\_range}(f_0, n)$
-    // Precondition: $\property{mutable\_counted\_range}(f_1, n)$
-    while (count_down(n)) swap_step(f0, f1);
-    return pair<I0, I1>{f0, f1};
-}
-
-template <typename I0, typename I1>
-    requires
-        MutableBidirectionalIterator<I0> &&
-        MutableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-void reverse_swap_step(I0& l0, I1& f1)
-{
-    // Precondition: $\func{deref}(\func{predecessor}(l_0))$ and
-    //               $\func{deref}(f_1)$ are defined
-    l0 = predecessor(l0);
-    exchange_values(l0, f1);
-    f1 = successor(f1);
-}
-
-template <typename I0, typename I1>
-    requires
-        MutableBidirectionalIterator<I0> &&
-        MutableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-auto reverse_swap_ranges(I0 f0, I0 l0, I1 f1) -> I1
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f_0, l_0)$
-    // Precondition: $\property{mutable\_counted\_range}(f_1, l_0-f_0)$
-    while (f0 != l0) reverse_swap_step(l0, f1);
-    return f1;
-}
-
-template <typename I0, typename I1>
-    requires
-        MutableBidirectionalIterator<I0> &&
-        MutableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-auto reverse_swap_ranges_bounded(I0 f0, I0 l0, I1 f1, I1 l1) -> pair<I0, I1>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f_0, l_0)$
-    // Precondition:  $\property{mutable\_bounded\_range}(f_1, l_1)$
-    while (f0 != l0 && f1 != l1)
-        reverse_swap_step(l0, f1);
-    return pair<decltype(l0), decltype(f1)>{l0, f1};
-}
-
-template <typename I0, typename I1, typename N>
-    requires
-        MutableBidirectionalIterator<I0> &&
-        MutableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>> &&
-        Integer<N>
-auto reverse_swap_ranges_n(I0 l0, I1 f1, N n) -> pair<I0, I1>
-{
-    // Precondition: $\property{mutable\_counted\_range}(l_0-n, n)$
-    // Precondition: $\property{mutable\_counted\_range}(f_1, n)$
-    while (count_down(n)) reverse_swap_step(l0, f1);
-    return pair<decltype(l0), decltype(f1)>{l0, f1};
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6488,11 +5847,11 @@ Proc traverse_phased_rotating(C c, int phase, Proc proc)
 //  Chapter 9. Copying
 //
 
-
-template<typename I, typename O>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O) && Iterator(O) &&
-        ValueType<I> == ValueType(O))
+template <typename I, typename O>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>>
 void copy_step(I& f_i, O& f_o)
 {
     // Precondition: $\func{source}(f_i)$ and $\func{sink}(f_o)$ are defined
@@ -6501,11 +5860,12 @@ void copy_step(I& f_i, O& f_o)
     f_o = successor(f_o);
 }
 
-template<typename I, typename O>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O) && Iterator(O) &&
-        ValueType<I> == ValueType(O))
-O copy(I f_i, I l_i, O f_o)
+template <typename I, typename O>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>>
+auto copy(I f_i, I l_i, O f_o) -> O
 {
     // Precondition:
     // $\property{not\_overlapped\_forward}(f_i, l_i, f_o, f_o + (l_i - f_i))$
@@ -6513,35 +5873,33 @@ O copy(I f_i, I l_i, O f_o)
     return f_o;
 }
 
-template<typename I>
-    __requires(Writable(I) && Iterator(I))
+template <typename I>
+    requires WritableIterator<I>
 void fill_step(I& f_o, const ValueType<I>& x)
 {
     sink(f_o) = x;
     f_o = successor(f_o);
 }
 
-template<typename I>
-    __requires(Writable(I) && Iterator(I))
-I fill(I f, I l, const ValueType<I>& x)
+template <typename I>
+    requires WritableIterator<I>
+auto fill(I f, I l, const ValueType<I>& x) -> I
 {
     while (f != l) fill_step(f, x);
     return f;
 }
 
-template<typename O>
-    __requires(Writable(O) && Iterator(O) &&
-        Integer(ValueType(O)))
-O iota(ValueType<O> n, O o) // like APL $\iota$
+template <typename O>
+    requires WritableIterator<O> && Integer<ValueType<O>>
+auto iota(ValueType<O> n, O o) -> O // like APL $\iota$
 {
     // Precondition: $\property{writable\_counted\_range}(o, n) \wedge n \geq 0$
-    return copy(ValueType<O>(0), n, o);
+    return copy(ValueType<O>{0}, n, o);
 }
 
 // Useful for testing in conjunction with iota
-template<typename I>
-    __requires(Readable(I) && Iterator(I) &&
-        Integer(ValueType<I>))
+template <typename I>
+    requires ReadableIterator<I> && Integer<ValueType<I>>
 bool equal_iota(I f, I l, ValueType<I> n = 0)
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
@@ -6553,20 +5911,21 @@ bool equal_iota(I f, I l, ValueType<I> n = 0)
     return true;
 }
 
-template<typename I, typename O>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O) && Iterator(O) &&
-        ValueType<I> == ValueType(O))
-pair<I, O> copy_bounded(I f_i, I l_i, O f_o, O l_o)
+template <typename I, typename O>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O> &&
+        Same<ValueType<I>, ValueType<O>>
+auto copy_bounded(I f_i, I l_i, O f_o, O l_o) -> pair<I, O>
 {
     // Precondition: $\property{not\_overlapped\_forward}(f_i, l_i, f_o, l_o)$
     while (f_i != l_i && f_o != l_o) copy_step(f_i, f_o);
-    return pair<I, O>(f_i, f_o);
+    return pair<decltype(f_i), decltype(f_o)>{f_i, f_o};
 }
 
-template<typename N>
-    __requires(Integer(N))
-bool count_down(N& n)
+template <typename I>
+    requires Integer<I>
+bool count_down(I& n)
 {
     // Precondition: $n \geq 0$
     if (zero(n)) return false;
@@ -6574,30 +5933,32 @@ bool count_down(N& n)
     return true;
 }
 
-template<typename I, typename O, typename N>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O) && Iterator(O) &&
-        ValueType<I> == ValueType(O) &&
-        Integer(N))
-pair<I, O> copy_n(I f_i, N n, O f_o)
+template <typename I, typename O, typename N>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>> &&
+        Integer<N>
+auto copy_n(I f_i, N n, O f_o) -> pair<I, O>
 {
     // Precondition: $\property{not\_overlapped\_forward}(f_i, f_i+n, f_o, f_o+n)$
     while (count_down(n)) copy_step(f_i, f_o);
-    return pair<I, O>(f_i, f_o);
+    return pair<decltype(f_i), decltype(f_o)>{f_i, f_o};
 }
 
-template<typename I>
-    __requires(Writable(I) && Iterator(I))
-I fill_n(I f, DistanceType<I> n, const ValueType<I>& x)
+template <typename I>
+    requires WritableIterator<I>
+auto fill_n(I f, DistanceType<I> n, const ValueType<I>& x) -> I
 {
     while (count_down(n)) fill_step(f, x);
     return f;
 }
 
-template<typename I, typename O>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        Writable(O) && BidirectionalIterator(O) &&
-        ValueType<I> == ValueType(O))
+template <typename I, typename O>
+    requires
+        ReadableBidirectionalIterator<I> &&
+        WritableBidirectionalIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>>
 void copy_backward_step(I& l_i, O& l_o)
 {
     // Precondition: $\func{source}(\property{predecessor}(l_i))$ and
@@ -6608,31 +5969,36 @@ void copy_backward_step(I& l_i, O& l_o)
     sink(l_o) = source(l_i);
 }
 
-template<typename I, typename O>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        Writable(O) && BidirectionalIterator(O) &&
-        ValueType<I> == ValueType(O))
-O copy_backward(I f_i, I l_i, O l_o)
+
+template <typename I, typename O>
+    requires
+        ReadableBidirectionalIterator<I> &&
+        WritableBidirectionalIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>>
+auto copy_backward(I f_i, I l_i, O l_o) -> O
 {
     // Precondition: $\property{not\_overlapped\_backward}(f_i, l_i, l_o-(l_i-f_i), l_o)$
     while (f_i != l_i) copy_backward_step(l_i, l_o);
     return l_o;
 }
 
-template<typename I, typename O>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        Writable(O) && BidirectionalIterator(O) &&
-        ValueType<I> == ValueType(O))
-pair<I, O> copy_backward_n(I l_i, DistanceType<I> n, O l_o)
+template <typename I, typename O>
+    requires
+        ReadableBidirectionalIterator<I> &&
+        WritableBidirectionalIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>> &&
+        Same<ValueType<I>, ValueType<O>>
+auto copy_backward_n(I l_i, DistanceType<I> n, O l_o) -> pair<I, O>
 {
     while (count_down(n)) copy_backward_step(l_i, l_o);
-    return pair<I, O>(l_i, l_o);
+    return pair<I, decltype(l_o)>{l_i, l_o};
 }
 
 template<typename I, typename O>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        Writable(O) && Iterator(O) &&
-        ValueType<I> == ValueType(O))
+    requires
+        ReadableBidirectionalIterator<I> &&
+        WritableIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>>
 void reverse_copy_step(I& l_i, O& f_o)
 {
     // Precondition: $\func{source}(\func{predecessor}(l_i))$ and
@@ -6643,9 +6009,10 @@ void reverse_copy_step(I& l_i, O& f_o)
 }
 
 template<typename I, typename O>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O) && BidirectionalIterator(O) &&
-        ValueType<I> == ValueType(O))
+    requires
+        ReadableIterator<I> &&
+        WritableBidirectionalIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>>
 void reverse_copy_backward_step(I& f_i, O& l_o)
 {
     // Precondition: $\func{source}(f_i)$ and
@@ -6655,11 +6022,12 @@ void reverse_copy_backward_step(I& f_i, O& l_o)
     f_i = successor(f_i);
 }
 
-template<typename I, typename O>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        Writable(O) && Iterator(O) &&
-        ValueType<I> == ValueType(O))
-O reverse_copy(I f_i, I l_i, O f_o)
+template <typename I, typename O>
+    requires
+        ReadableBidirectionalIterator<I> &&
+        WritableIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>>
+auto reverse_copy(I f_i, I l_i, O f_o) -> O
 {
     // Precondition: $\property{not\_overlapped}(f_i, l_i, f_o, f_o+(l_i-f_i))$
     while (f_i != l_i) reverse_copy_step(l_i, f_o);
@@ -6667,144 +6035,168 @@ O reverse_copy(I f_i, I l_i, O f_o)
 }
 
 template<typename I, typename O>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O) && BidirectionalIterator(O) &&
-        ValueType<I> == ValueType(O))
-O reverse_copy_backward(I f_i, I l_i, O l_o)
+    requires
+        ReadableIterator<I> &&
+        WritableBidirectionalIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>>
+auto reverse_copy_backward(I f_i, I l_i, O l_o) -> O
 {
     // Precondition: $\property{not\_overlapped}(f_i, l_i, l_o-(l_i-f_i), l_o)$
     while (f_i != l_i) reverse_copy_backward_step(f_i, l_o);
     return l_o;
 }
 
-template<typename I, typename O, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O) && Iterator(O) &&
-        ValueType<I> == ValueType(O) &&
-        UnaryPredicate(P) && I == Domain(P))
-O copy_select(I f_i, I l_i, O f_t, P p)
+template <typename I, typename O, typename P>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>> &&
+        UnaryPredicate<P>
+        __requires(Same<I, Domain<P>>)
+auto copy_select(I f_i, I l_i, O f_t, P p) -> O
 {
     // Precondition: $\property{not\_overlapped\_forward}(f_i, l_i, f_t, f_t+n_t)$
     // where $n_t$ is an upper bound for the number of iterators satisfying $p$
-    while (f_i != l_i)
+    while (f_i != l_i) {
         if (p(f_i)) copy_step(f_i, f_t);
         else f_i = successor(f_i);
+    }
     return f_t;
 }
 
-template<typename I, typename O, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O) && Iterator(O) &&
-        ValueType<I> == ValueType(O) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-O copy_if(I f_i, I l_i, O f_t, P p)
+template <typename I, typename O, typename P>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O> &&
+        Same_remove_cv<ValueType<I>, ValueType<O>> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto copy_if(I f_i, I l_i, O f_t, P p) -> O
 {
     // Precondition: same as for $\func{copy\_select}$
-    predicate_source<I, P> ps(p);
+    predicate_source<I, decltype(p)> ps{p};
     return copy_select(f_i, l_i, f_t, ps);
 }
 
-template<typename I, typename O_f, typename O_t, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O_f) && Iterator(O_f) &&
-        Writable(O_t) && Iterator(O_t) &&
-        ValueType<I> == ValueType(O_f) &&
-        ValueType<I> == ValueType(O_t) &&
-        UnaryPredicate(P) && I == Domain(P))
-pair<O_f, O_t> split_copy(I f_i, I l_i, O_f f_f, O_t f_t,
-                          P p)
+template <typename I, typename O_f, typename O_t, typename P>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O_f> &&
+        WritableIterator<O_t> &&
+        Same_remove_cv<ValueType<I>, ValueType<O_f>> &&
+        Same_remove_cv<ValueType<I>, ValueType<O_t>> &&
+        UnaryPredicate<P>
+    __requires(Same<I, Domain<P>>)
+auto split_copy(I f_i, I l_i, O_f f_f, O_t f_t, P p) -> pair<O_f, O_t>
 {
     // Precondition: see section 9.3 of Elements of Programming
-    while (f_i != l_i)
-        if (p(f_i)) copy_step(f_i, f_t);
-        else        copy_step(f_i, f_f);
-    return pair<O_f, O_t>(f_f, f_t);
+    while (f_i != l_i) {
+        if (p(f_i))
+            copy_step(f_i, f_t);
+        else
+            copy_step(f_i, f_f);
+    }
+    return pair<O_f, O_t>{f_f, f_t};
 }
 
-template<typename I, typename O_f, typename O_t, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O_f) && Iterator(O_f) &&
-        Writable(O_t) && Iterator(O_t) &&
-        ValueType<I> == ValueType(O_f) &&
-        ValueType<I> == ValueType(O_t) &&
-        UnaryPredicate(P) && I == Domain(P))
-pair<O_f, O_t> split_copy_n(I f_i, DistanceType<I> n_i, O_f f_f, O_t f_t, P p)
+template <typename I, typename O_f, typename O_t, typename P>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O_f> &&
+        WritableIterator<O_t> &&
+        Same_remove_cv<ValueType<I>, ValueType<O_f>> &&
+        Same_remove_cv<ValueType<I>, ValueType<O_t>> &&
+        UnaryPredicate<P>
+    __requires(Same<I, Domain<P>>)
+auto split_copy_n(I f_i, DistanceType<I> n_i, O_f f_f, O_t f_t, P p) -> pair<O_f, O_t>
 {
     // Precondition: see exercise 9.2 of Elements of Programming
-    while (count_down(n_i))
-        if (p(f_i)) copy_step(f_i, f_t);
-        else        copy_step(f_i, f_f);
-    return pair<O_f, O_t>(f_f, f_t);
+    while (count_down(n_i)) {
+        if (p(f_i))
+            copy_step(f_i, f_t);
+        else
+            copy_step(f_i, f_f);
+    }
+    return pair<O_f, O_t>{f_f, f_t};
 }
 
-template<typename I, typename O_f, typename O_t, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O_f) && Iterator(O_f) &&
-        Writable(O_t) && Iterator(O_t) &&
-        ValueType<I> == ValueType(O_f) &&
-        ValueType<I> == ValueType(O_t) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-pair<O_f, O_t> partition_copy(I f_i, I l_i, O_f f_f, O_t f_t,
-                              P p)
+template <typename I, typename O_f, typename O_t, typename P>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O_f> &&
+        WritableIterator<O_t> &&
+        Same_remove_cv<ValueType<I>, ValueType<O_f>> &&
+        Same_remove_cv<ValueType<I>, ValueType<O_t>> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_copy(I f_i, I l_i, O_f f_f, O_t f_t, P p) -> pair<O_f, O_t>
 {
     // Precondition: same as $\func{split\_copy}$
-    predicate_source<I, P> ps(p);
+    predicate_source<I, decltype(p)> ps{p};
     return split_copy(f_i, l_i, f_f, f_t, ps);
 }
 
-template<typename I, typename O_f, typename O_t, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        Writable(O_f) && Iterator(O_f) &&
-        Writable(O_t) && Iterator(O_t) &&
-        ValueType<I> == ValueType(O_f) &&
-        ValueType<I> == ValueType(O_t) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-pair<O_f, O_t> partition_copy_n(I f_i, DistanceType<I> n,
-                                O_f f_f, O_t f_t,
-                                P p)
+template <typename I, typename O_f, typename O_t, typename P>
+    requires
+        ReadableIterator<I> &&
+        WritableIterator<O_f> &&
+        WritableIterator<O_t> &&
+        Same_remove_cv<ValueType<I>, ValueType<O_f>> &&
+        Same_remove_cv<ValueType<I>, ValueType<O_t>> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_copy_n(I f_i, DistanceType<I> n, O_f f_f, O_t f_t, P p) -> pair<O_f, O_t>
 {
     // Precondition: see $\func{partition_copy}$
-    predicate_source<I, P> ps(p);
+    predicate_source<I, decltype(p)> ps{p};
     return split_copy_n(f_i, n, f_f, f_t, ps);
 }
 
-template<typename I0, typename I1, typename O, typename R>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) &&
-        Writable(O) && Iterator(O) &&
-        BinaryPredicate(R) &&
-        ValueType(I0) == ValueType(O) &&
-        ValueType(I1) == ValueType(O) &&
-        I0 == InputType(R, 1) && I1 == InputType(R, 0))
-O combine_copy(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O f_o, R r)
+template <typename I0, typename I1, typename O, typename R>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        WritableIterator<O> &&
+        BinaryPredicate<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
+        Same_remove_cv<ValueType<I1>, ValueType<O>>
+    __requires(Same<I0, InputType<R, 1>>)
+    __requires(Same<I1, InputType<R, 0>>)
+auto combine_copy(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O f_o, R r) -> O
 {
     // Precondition: see section 9.3 of Elements of Programming
-    while (f_i0 != l_i0 && f_i1 != l_i1)
-        if (r(f_i1, f_i0)) copy_step(f_i1, f_o);
-        else               copy_step(f_i0, f_o);
+    while (f_i0 != l_i0 && f_i1 != l_i1) {
+        if (r(f_i1, f_i0))
+            copy_step(f_i1, f_o);
+        else
+            copy_step(f_i0, f_o);
+    }
     return copy(f_i1, l_i1, copy(f_i0, l_i0, f_o));
 }
 
-template<typename I0, typename I1, typename O, typename R>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) &&
-        Writable(O) && Iterator(O) &&
-        BinaryPredicate(R) &&
-        ValueType(I0) == ValueType(O) &&
-        ValueType(I1) == ValueType(O) &&
-        I0 == InputType(R, 1) && I1 = InputType(R, 0))
-triple<I0, I1, O> combine_copy_n(I0 f_i0, DistanceType<I0> n_i0,
-                                 I1 f_i1, DistanceType<I1> n_i1,
-                                 O f_o, R r) {
+template <typename I0, typename I1, typename O, typename R>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        WritableIterator<O> &&
+        BinaryPredicate<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
+        Same_remove_cv<ValueType<I1>, ValueType<O>>
+    __requires(Same<I0, InputType<R, 1>>)
+    __requires(Same<I1, InputType<R, 0>>)
+auto combine_copy_n(
+    I0 f_i0, DistanceType<I0> n_i0, I1 f_i1, DistanceType<I1> n_i1, O f_o, R r
+) -> triple<I0, I1, O>
+{
     // Precondition: see $\func{combine_copy}$
-    typedef triple<I0, I1, O> Triple;
+    using Triple = triple<I0, I1, decltype(f_o)>;
     while (true) {
         if (zero(n_i0)) {
-            pair<I1, O> p = copy_n(f_i1, n_i1, f_o);
+            auto p = copy_n(f_i1, n_i1, f_o);
             return Triple(f_i0, p.m0, p.m1);
         }
         if (zero(n_i1)) {
-            pair<I0, O> p = copy_n(f_i0, n_i0, f_o);
+            auto p = copy_n(f_i0, n_i0, f_o);
             return Triple(p.m0, f_i1, p.m1);
         }
         if (r(f_i1, f_i0)) {
@@ -6817,16 +6209,17 @@ triple<I0, I1, O> combine_copy_n(I0 f_i0, DistanceType<I0> n_i0,
     }
 }
 
-template<typename I0, typename I1, typename O, typename R>
-    __requires(Readable(I0) && BidirectionalIterator(I0) &&
-        Readable(I1) && BidirectionalIterator(I1) &&
-        Writable(O) && BidirectionalIterator(O) &&
-        BinaryPredicate(R) &&
-        ValueType(I0) == ValueType(O) &&
-        ValueType(I1) == ValueType(O) &&
-        I0 == InputType(R, 1) && I1 == InputType(R, 0))
-O combine_copy_backward(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1,
-                        O l_o, R r)
+template <typename I0, typename I1, typename O, typename R>
+    requires
+        ReadableBidirectionalIterator<I0> &&
+        ReadableBidirectionalIterator<I1> &&
+        WritableBidirectionalIterator<O> &&
+        BinaryPredicate<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
+        Same_remove_cv<ValueType<I1>, ValueType<O>>
+        __requires(Same<I0, InputType<R, 1>>)
+        __requires(Same<I1, InputType<R, 0>>)
+auto combine_copy_backward(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O l_o, R r) -> O
 {
     // Precondition: see section 9.3 of Elements of Programming
     while (f_i0 != l_i0 && f_i1 != l_i1) {
@@ -6835,28 +6228,32 @@ O combine_copy_backward(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1,
         else
             copy_backward_step(l_i1, l_o);
     }
-    return copy_backward(f_i0, l_i0,
-                         copy_backward(f_i1, l_i1, l_o));
+    return copy_backward(f_i0, l_i0, copy_backward(f_i1, l_i1, l_o));
 }
 
-template<typename I0, typename I1, typename O, typename R>
-    __requires(Readable(I0) && BidirectionalIterator(I0) &&
-        Readable(I1) && BidirectionalIterator(I1) &&
-        Writable(O) && BidirectionalIterator(O) &&
-        BinaryPredicate(R) &&
-        ValueType(I0) == ValueType(O) && ValueType(I1) == ValueType(O) &&
-        I0 == InputType(R, 1) && I1 = InputType(R, 0))
-triple<I0, I1, O> combine_copy_backward_n(I0 l_i0, DistanceType<I0> n_i0,
-                           I1 l_i1, DistanceType<I1> n_i1, O l_o, R r) {
+template <typename I0, typename I1, typename O, typename R>
+    requires
+        ReadableBidirectionalIterator<I0> &&
+        ReadableBidirectionalIterator<I1> &&
+        WritableBidirectionalIterator<O> &&
+        BinaryPredicate<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
+        Same_remove_cv<ValueType<I1>, ValueType<O>>
+    __requires(Same<I0, InputType<R, 1>>)
+    __requires(Same<I1, InputType<R, 0>>)
+auto combine_copy_backward_n(
+    I0 l_i0, DistanceType<I0> n_i0, I1 l_i1, DistanceType<I1> n_i1, O l_o, R r
+) -> triple<I0, I1, O>
+{
     // Precondition: see $\func{combine\_copy\_backward}$
-    typedef triple<I0, I1, O> Triple;
+    using Triple = triple<I0, I1, decltype(l_o)>;
     while (true) {
         if (zero(n_i0)) {
-            pair<I1, O> p = copy_backward_n(l_i1, n_i1, l_o);
+            auto p = copy_backward_n(l_i1, n_i1, l_o);
             return Triple(l_i0, p.m0, p.m1);
         }
         if (zero(n_i1)) {
-            pair<I0, O> p = copy_backward_n(l_i0, n_i0, l_o);
+            auto p = copy_backward_n(l_i0, n_i0, l_o);
             return Triple(p.m0, l_i1, p.m1);
         }
         if (r(predecessor(l_i1), predecessor(l_i0))) {
@@ -6869,90 +6266,98 @@ triple<I0, I1, O> combine_copy_backward_n(I0 l_i0, DistanceType<I0> n_i0,
     }
 }
 
-template<typename I0, typename I1, typename O, typename R>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) &&
-        Writable(O) && Iterator(O) &&
-        Relation(R) &&
-        ValueType(I0) == ValueType(O) &&
-        ValueType(I1) == ValueType(O) &&
-        ValueType(I0) == Domain<R>)
-O merge_copy(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O f_o, R r)
+template <typename I0, typename I1, typename O, typename R>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        WritableIterator<O> &&
+        Relation<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
+        Same_remove_cv<ValueType<I1>, ValueType<O>> &&
+        Same<ValueType<I0>, Domain<R>>
+auto merge_copy(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O f_o, R r) -> O
 {
     // Precondition: in addition to that for $\func{combine\_copy}$:
     // \hspace*{1em} $\property{weak\_ordering}(r) \wedge {}$
     // \hspace*{1em} $\func{increasing\_range}(f_{i_0}, l_{i_0}, r) \wedge
     //                \property{increasing\_range}(f_{i_1}, l_{i_1}, r)$
-    relation_source<I1, I0, R> rs(r);
+    relation_source<I1, I0, decltype(r)> rs{r};
     return combine_copy(f_i0, l_i0, f_i1, l_i1, f_o, rs);
 }
 
-template<typename I0, typename I1, typename O, typename R>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) &&
-        Writable(O) && Iterator(O) &&
-        Relation(R) &&
-        ValueType(I0) == ValueType(O) &&
-        ValueType(I1) == ValueType(O) &&
-        ValueType(I0) == Domain<R>)
-triple<I0, I1, O> merge_copy_n(I0 f_i0, DistanceType<I0> n_i0,
-                               I1 f_i1, DistanceType<I1> n_i1,
-                               O o, R r)
+template <typename I0, typename I1, typename O, typename R>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        WritableIterator<O> &&
+        Relation<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
+        Same_remove_cv<ValueType<I1>, ValueType<O>> &&
+        Same<ValueType<I0>, Domain<R>>
+auto merge_copy_n(
+    I0 f_i0, DistanceType<I0> n_i0, I1 f_i1, DistanceType<I1> n_i1, O o, R r
+) -> triple<I0, I1, O>
 {
     // Precondition: see $\func{merge\_copy}$
-    relation_source<I1, I0, R> rs(r);
+    relation_source<I1, I0, decltype(r)> rs{r};
     return combine_copy_n(f_i0, n_i0, f_i1, n_i1, o, rs);
 }
 
-template<typename I0, typename I1, typename O, typename R>
-    __requires(Readable(I0) && BidirectionalIterator(I0) &&
-        Readable(I1) && BidirectionalIterator(I1) &&
-        Writable(O) && BidirectionalIterator(O) &&
-        Relation(R) &&
-        ValueType(I0) == ValueType(O) &&
-        ValueType(I1) == ValueType(O) &&
-        ValueType(I0) == Domain<R>)
-O merge_copy_backward(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O l_o,
-                      R r)
+template <typename I0, typename I1, typename O, typename R>
+    requires
+        ReadableBidirectionalIterator<I0> &&
+        ReadableBidirectionalIterator<I1> &&
+        WritableBidirectionalIterator<O> &&
+        Relation<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
+        Same_remove_cv<ValueType<I1>, ValueType<O>> &&
+        Same<ValueType<I0>, Domain<R>>
+auto merge_copy_backward(I0 f_i0, I0 l_i0, I1 f_i1, I1 l_i1, O l_o, R r) -> O
 {
     // Precondition: in addition to that for $\func{combine\_copy\_backward}$:
     //               $\property{weak\_ordering}(r) \wedge {}$
     //               $\func{increasing\_range}(f_{i_0}, l_{i_0}, r) \wedge
     //                \property{increasing\_range}(f_{i_1}, l_{i_1}, r)$
-    relation_source<I1, I0, R> rs(r);
-    return combine_copy_backward(f_i0, l_i0, f_i1, l_i1, l_o,
-                                 rs);
+    relation_source<I1, I0, decltype(r)> rs{r};
+    return combine_copy_backward(f_i0, l_i0, f_i1, l_i1, l_o, rs);
 }
 
-template<typename I0, typename I1, typename O, typename R>
-    __requires(Readable(I0) && BidirectionalIterator(I0) &&
-        Readable(I1) && BidirectionalIterator(I1) &&
-        Writable(O) && BidirectionalIterator(O) &&
-        Relation(R) &&
-        ValueType(I0) == ValueType(O) && ValueType(I1) == ValueType(O) &&
-        ValueType(I0) == Domain<R>)
-triple<I0, I1, O> merge_copy_backward_n(I0 l_i0, DistanceType<I0> n_i0,
-                           I1 l_i1, DistanceType<I1> n_i1, O l_o, R r) {
+template <typename I0, typename I1, typename O, typename R>
+    requires
+        ReadableBidirectionalIterator<I0> &&
+        ReadableBidirectionalIterator<I1> &&
+        WritableBidirectionalIterator<O> &&
+        Relation<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<O>> &&
+        Same_remove_cv<ValueType<I1>, ValueType<O>> &&
+        Same<ValueType<I0>, Domain<R>>
+auto merge_copy_backward_n(
+    I0 l_i0, DistanceType<I0> n_i0, I1 l_i1, DistanceType<I1> n_i1, O l_o, R r
+) -> triple<I0, I1, O>
+{
     // Precondition: see $\func{merge\_copy\_backward}$
-    relation_source<I1, I0, R> rs(r);
+    relation_source<I1, I0, decltype(r)> rs{r};
     return combine_copy_backward_n(l_i0, n_i0, l_i1, n_i1, l_o, rs);
 }
 
-template<typename I0, typename I1>
-    __requires(Mutable(I0) && Mutable(I1) &&
-        ValueType(I0) == ValueType(I1))
+template <typename I0, typename I1>
+    requires
+        Mutable<I0> &&
+        Mutable<I1> &&
+        Same_remove_cv<ValueType<I0>, ValueType<I1>>
 void exchange_values(I0 x, I1 y)
 {
     // Precondition: $\func{deref}(x)$ and $\func{deref}(y)$ are defined
-    ValueType<I0> t = source(x);
-            sink(x) = source(y);
-            sink(y) = t;
+    auto t = source(x);
+    sink(x) = source(y);
+    sink(y) = t;
 }
 
-template<typename I0, typename I1>
-    __requires(Mutable(I0) && ForwardIterator(I0) &&
-        Mutable(I1) && ForwardIterator(I1) &&
-        ValueType(I0) == ValueType(I1))
+template <typename I0, typename I1>
+    requires
+        MutableForwardIterator<I0> &&
+        MutableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 void swap_step(I0& f0, I1& f1)
 {
     // Precondition: $\func{deref}(f_0)$ and $\func{deref}(f_1)$ are defined
@@ -6961,11 +6366,12 @@ void swap_step(I0& f0, I1& f1)
     f1 = successor(f1);
 }
 
-template<typename I0, typename I1>
-    __requires(Mutable(I0) && ForwardIterator(I0) &&
-        Mutable(I1) && ForwardIterator(I1) &&
-        ValueType(I0) == ValueType(I1))
-I1 swap_ranges(I0 f0, I0 l0, I1 f1)
+template <typename I0, typename I1>
+    requires
+        MutableForwardIterator<I0> &&
+        MutableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
+auto swap_ranges(I0 f0, I0 l0, I1 f1) -> I1
 {
     // Precondition: $\property{mutable\_bounded\_range}(f_0, l_0)$
     // Precondition: $\property{mutable\_counted\_range}(f_1, l_0-f_0)$
@@ -6973,35 +6379,39 @@ I1 swap_ranges(I0 f0, I0 l0, I1 f1)
     return f1;
 }
 
-template<typename I0, typename I1>
-    __requires(Mutable(I0) && ForwardIterator(I0) &&
-        Mutable(I1) && ForwardIterator(I1) &&
-        ValueType(I0) == ValueType(I1))
-pair<I0, I1> swap_ranges_bounded(I0 f0, I0 l0, I1 f1, I1 l1)
+
+template <typename I0, typename I1>
+    requires
+        MutableForwardIterator<I0> &&
+        MutableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
+auto swap_ranges_bounded(I0 f0, I0 l0, I1 f1, I1 l1) -> pair<I0, I1>
 {
     // Precondition: $\property{mutable\_bounded\_range}(f_0, l_0)$
     // Precondition: $\property{mutable\_bounded\_range}(f_1, l_1)$
     while (f0 != l0 && f1 != l1) swap_step(f0, f1);
-    return pair<I0, I1>(f0, f1);
+    return pair<I0, I1>{f0, f1};
 }
 
-template<typename I0, typename I1, typename N>
-    __requires(Mutable(I0) && ForwardIterator(I0) &&
-        Mutable(I1) && ForwardIterator(I1) &&
-        ValueType(I0) == ValueType(I1) &&
-        Integer(N))
-pair<I0, I1> swap_ranges_n(I0 f0, I1 f1, N n)
+template <typename I0, typename I1, typename N>
+    requires
+        MutableForwardIterator<I0> &&
+        MutableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>> &&
+        Integer<N>
+auto swap_ranges_n(I0 f0, I1 f1, N n) -> pair<I0, I1>
 {
     // Precondition: $\property{mutable\_counted\_range}(f_0, n)$
     // Precondition: $\property{mutable\_counted\_range}(f_1, n)$
     while (count_down(n)) swap_step(f0, f1);
-    return pair<I0, I1>(f0, f1);
+    return pair<I0, I1>{f0, f1};
 }
 
-template<typename I0, typename I1>
-    __requires(Mutable(I0) && BidirectionalIterator(I0) &&
-        Mutable(I1) && ForwardIterator(I1) &&
-        ValueType(I0) == ValueType(I1))
+template <typename I0, typename I1>
+    requires
+        MutableBidirectionalIterator<I0> &&
+        MutableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 void reverse_swap_step(I0& l0, I1& f1)
 {
     // Precondition: $\func{deref}(\func{predecessor}(l_0))$ and
@@ -7011,11 +6421,12 @@ void reverse_swap_step(I0& l0, I1& f1)
     f1 = successor(f1);
 }
 
-template<typename I0, typename I1>
-    __requires(Mutable(I0) && BidirectionalIterator(I0) &&
-        Mutable(I1) && ForwardIterator(I1) &&
-        ValueType(I0) == ValueType(I1))
-I1 reverse_swap_ranges(I0 f0, I0 l0, I1 f1)
+template <typename I0, typename I1>
+    requires
+        MutableBidirectionalIterator<I0> &&
+        MutableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
+auto reverse_swap_ranges(I0 f0, I0 l0, I1 f1) -> I1
 {
     // Precondition: $\property{mutable\_bounded\_range}(f_0, l_0)$
     // Precondition: $\property{mutable\_counted\_range}(f_1, l_0-f_0)$
@@ -7023,31 +6434,32 @@ I1 reverse_swap_ranges(I0 f0, I0 l0, I1 f1)
     return f1;
 }
 
-template<typename I0, typename I1>
-    __requires(Mutable(I0) && BidirectionalIterator(I0) &&
-        Mutable(I1) && ForwardIterator(I1) &&
-        ValueType(I0) == ValueType(I1))
-pair<I0, I1>reverse_swap_ranges_bounded(I0 f0, I0 l0,
-                                        I1 f1, I1 l1)
+template <typename I0, typename I1>
+    requires
+        MutableBidirectionalIterator<I0> &&
+        MutableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
+auto reverse_swap_ranges_bounded(I0 f0, I0 l0, I1 f1, I1 l1) -> pair<I0, I1>
 {
     // Precondition: $\property{mutable\_bounded\_range}(f_0, l_0)$
     // Precondition:  $\property{mutable\_bounded\_range}(f_1, l_1)$
     while (f0 != l0 && f1 != l1)
         reverse_swap_step(l0, f1);
-    return pair<I0, I1>(l0, f1);
+    return pair<decltype(l0), decltype(f1)>{l0, f1};
 }
 
-template<typename I0, typename I1, typename N>
-    __requires(Mutable(I0) && BidirectionalIterator(I0) &&
-        Mutable(I1) && ForwardIterator(I1) &&
-        ValueType(I0) == ValueType(I1) &&
-        Integer(N))
-pair<I0, I1> reverse_swap_ranges_n(I0 l0, I1 f1, N n)
+template <typename I0, typename I1, typename N>
+    requires
+        MutableBidirectionalIterator<I0> &&
+        MutableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>> &&
+        Integer<N>
+auto reverse_swap_ranges_n(I0 l0, I1 f1, N n) -> pair<I0, I1>
 {
     // Precondition: $\property{mutable\_counted\_range}(l_0-n, n)$
     // Precondition: $\property{mutable\_counted\_range}(f_1, n)$
     while (count_down(n)) reverse_swap_step(l0, f1);
-    return pair<I0, I1>(l0, f1);
+    return pair<decltype(l0), decltype(f1)>{l0, f1};
 }
 
 //
