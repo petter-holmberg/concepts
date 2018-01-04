@@ -2723,7 +2723,9 @@ struct linker_to_tail
 {
     using I = IteratorType<S>;
     S set_link;
-    linker_to_tail(const S& set_link) : set_link{set_link} {}
+    linker_to_tail(const S& set_link)
+        : set_link{set_link}
+    {}
     void operator()(I& t, I& f)
     {
         // Precondition: $\func{successor}(f)\text{ is defined}$
@@ -3178,7 +3180,7 @@ auto copy_backward_n(I l_i, DistanceType<I> n, O l_o) -> pair<I, O>
     return pair<I, decltype(l_o)>{l_i, l_o};
 }
 
-template<typename I, typename O>
+template <typename I, typename O>
     requires
         ReadableBidirectionalIterator<I> &&
         WritableIterator<O> &&
@@ -3192,7 +3194,7 @@ void reverse_copy_step(I& l_i, O& f_o)
     f_o = successor(f_o);
 }
 
-template<typename I, typename O>
+template <typename I, typename O>
     requires
         ReadableIterator<I> &&
         WritableBidirectionalIterator<O> &&
@@ -3218,7 +3220,7 @@ auto reverse_copy(I f_i, I l_i, O f_o) -> O
     return f_o;
 }
 
-template<typename I, typename O>
+template <typename I, typename O>
     requires
         ReadableIterator<I> &&
         WritableBidirectionalIterator<O> &&
@@ -4424,7 +4426,9 @@ template <typename I, typename P>
 struct partition_trivial
 {
     P p;
-    partition_trivial(const P& p) : p{p} {}
+    partition_trivial(const P& p)
+        : p{p}
+    {}
     auto operator()(I i) -> pair<I, I>
     {
         return partition_stable_singleton<I, P>(i, p);
@@ -4738,7 +4742,9 @@ auto sort_n(I f, DistanceType<I> n, R r) -> I
 // array_k type
 
 template <int k, typename T>
-    requires Regular<T> && (0 < k && k <= std::numeric_limits<int>::max() / sizeof(T))
+    requires
+        Regular<T> &&
+        (0 < k && k <= std::numeric_limits<int>::max() / sizeof(T))
 struct array_k
 {
     T a[k];
@@ -5159,7 +5165,9 @@ struct after
     using I = IteratorType<S>;
     pointer(S) s;
     I i;
-    after(S& s, I i) : s{&s}, i{i} {}
+    after(S& s, I i)
+        : s{&s}, i{i}
+    {}
 };
 
 template <typename S>
@@ -5357,7 +5365,9 @@ struct at
     using I = IteratorType<S>;
     pointer(S) s;
     I i;
-    at(S& s, I i) : s{&s}, i{i} {}
+    at(S& s, I i)
+        : s{&s}, i{i}
+    {}
 };
 
 template <typename S>
@@ -5460,14 +5470,18 @@ auto successor(const insert_iterator<P>& x) -> insert_iterator<P>
 }
 
 template <typename P, typename W>
-    requires InsertPosition<P> && Linearizable<W>
+    requires
+        InsertPosition<P> &&
+        Linearizable<W>
 auto insert_range(P p, const W& w) -> P
 {
     return copy(begin(w), end(w), insert_iterator<P>(p)).p;
 }
 
 template <typename P, typename I>
-    requires InsertPosition<P> && ReadableIterator<I>
+    requires
+        InsertPosition<P> &&
+        ReadableIterator<I>
 auto insert_range(P p, counted_range<I> w) -> pair<P, I>
 {
     auto io = copy_n(begin(w), size(w), insert_iterator<P>(p));
@@ -5475,7 +5489,9 @@ auto insert_range(P p, counted_range<I> w) -> pair<P, I>
 }
 
 template <typename S, typename W>
-    requires DynamicSequence<S> && Linearizable<W>
+    requires
+        DynamicSequence<S> &&
+        Linearizable<W>
 void dynamic_sequence_construction(S& s, const W& w)
 {
     construct(s);
@@ -5598,7 +5614,9 @@ auto erase_first(slist_iterator<T> i) -> slist_iterator<T>
 }
 
 template <typename T, typename U>
-    requires Regular<T> && Destroyable<T, U>
+    requires
+        Regular<T> &&
+        Destroyable<T, U>
 auto erase_first(slist_iterator<T> i, U& u) -> slist_iterator<T>
 {
     auto j = successor(i);
@@ -5616,7 +5634,9 @@ void erase_after(slist_iterator<T> i)
 }
 
 template <typename T, typename U>
-    requires Regular<T> && Destroyable<T, U>
+    requires
+        Regular<T> &&
+        Destroyable<T, U>
 void erase_after(slist_iterator<T> i, U& u)
 {
     set_successor(i, erase_first(successor(i), u));
@@ -5720,7 +5740,9 @@ auto operator<(const slist<T>& x, const slist<T>& y) -> bool
 }
 
 template <typename T, typename U>
-    requires Regular<T> && Constructible<T, U>
+    requires
+        Regular<T> &&
+        Constructible<T, U>
 auto insert(after<slist<T>> p, const U& u) -> after<slist<T>>
 {
     slist_node_count = successor(slist_node_count);
@@ -5745,7 +5767,10 @@ void reverse(slist<T>& x)
 }
 
 template <typename T, typename P>
-    requires Regular<T> && UnaryPredicate<P> && Same<Domain<P>, T>
+    requires
+        Regular<T> &&
+        UnaryPredicate<P> &&
+        Same<Domain<P>, T>
 void partition(slist<T>& x, slist<T>& y, P p)
 {
     using I = IteratorType<slist<T>>;
@@ -5761,7 +5786,10 @@ void partition(slist<T>& x, slist<T>& y, P p)
 }
 
 template <typename T, typename R>
-    requires Regular<T> && Regular<R> && Same<Domain<R>, T>
+    requires
+        Regular<T> &&
+        Regular<R> &&
+        Same<Domain<R>, T>
 void merge(slist<T>& x, slist<T>& y, R r)
 {
     // Precondition: $\func{weak\_ordering}(r)$
@@ -5775,7 +5803,10 @@ void merge(slist<T>& x, slist<T>& y, R r)
 }
 
 template <typename T, typename R>
-    requires Regular<T> && Relation<R> && Same<Domain<R>, T>
+    requires
+        Regular<T> &&
+        Relation<R> &&
+        Same<Domain<R>, T>
 void sort(slist<T>& x, R r)
 {
     // Precondition: $\func{weak\_ordering}(r)$
@@ -5912,7 +5943,9 @@ void erase(list_iterator<T> i)
 }
 
 template <typename T, typename U>
-    requires Regular<T> && Destroyable<T, U>
+    requires
+        Regular<T> &&
+        Destroyable<T, U>
 void erase(list_iterator<T> i, U& u)
 {
     set_link_bidirectional(predecessor(i), successor(i));
@@ -6022,7 +6055,9 @@ auto operator<(const list<T>& x, const list<T>& y) -> bool
 }
 
 template <typename T, typename U>
-    requires Regular<T> && Constructible<T, U>
+    requires
+        Regular<T> &&
+        Constructible<T, U>
 auto insert(list_iterator<T> j, const U& u)
 {
     list_node_count = successor(list_node_count);
@@ -6034,7 +6069,9 @@ auto insert(list_iterator<T> j, const U& u)
 }
 
 template <typename T, typename U>
-    requires Regular<T> && Constructible<T, U>
+    requires
+        Regular<T> &&
+        Constructible<T, U>
 auto insert(after<list<T>> p, const U& u)
 {
     return after<list<T>>(base(p), insert(successor(current(p)), u));
@@ -6050,7 +6087,10 @@ void reverse(list<T>& x)
 }
 
 template <typename T, typename P>
-    requires Regular<T> && UnaryPredicate<P> && Same<Domain<P>, T>
+    requires
+        Regular<T> &&
+        UnaryPredicate<P> &&
+        Same<Domain<P>, T>
 void partition(list<T>& x, list<T>& y, P p)
 {
     using I = IteratorType<list<T>>;
@@ -6065,7 +6105,10 @@ void partition(list<T>& x, list<T>& y, P p)
 }
 
 template <typename T, typename R>
-    requires Regular<T> && Regular<R> && Same<Domain<R>, T>
+    requires
+        Regular<T> &&
+        Regular<R> &&
+        Same<Domain<R>, T>
 void merge(list<T>& x, list<T>& y, R r)
 {
     // Precondition: $\func{weak\_ordering}(r)$
@@ -6080,7 +6123,10 @@ void merge(list<T>& x, list<T>& y, R r)
 }
 
 template <typename T, typename R>
-    requires Regular<T> && Relation<R> && Same<Domain<R>, T>
+    requires
+        Regular<T> &&
+        Relation<R> &&
+        Same<Domain<R>, T>
 void sort(list<T>& x, R r)
 {
     // Precondition: $\func{weak\_ordering}(r)$
@@ -6123,8 +6169,12 @@ template <typename T>
 struct stree_coordinate
 {
     pointer(stree_node<T>) ptr;
-    stree_coordinate() : ptr{0} {}
-    stree_coordinate(pointer(stree_node<T>) ptr) : ptr{ptr} {}
+    stree_coordinate()
+        : ptr{0}
+    {}
+    stree_coordinate(pointer(stree_node<T>) ptr)
+        : ptr{ptr}
+    {}
 };
 
 template <typename T>
@@ -6248,7 +6298,9 @@ struct stree_node_destroy
 };
 
 template <typename C, typename ND>
-    requires BifurcateCoordinate<C> && TreeNodeDeleter<ND>
+    requires
+        BifurcateCoordinate<C> &&
+        TreeNodeDeleter<ND>
 void bifurcate_erase(C c, ND node_delete)
 {
     if (empty(c)) return;
@@ -6290,8 +6342,10 @@ void bifurcate_erase(C c, ND node_delete)
 */
 
 template <typename C, typename Cons>
-    requires EmptyLinkedBifurcateCoordinate<C> && TreeNodeConstructor<Cons>
-    // && Same<NodeType<C>, NodeType<Cons>>
+    requires
+        EmptyLinkedBifurcateCoordinate<C> &&
+        TreeNodeConstructor<Cons>
+    __requires(Same<NodeType<C>, NodeType<Cons>>)
 auto bifurcate_copy(C c) -> C
 {
     Cons construct_node;
@@ -6343,7 +6397,9 @@ struct stree
         set_left_successor(root, bifurcate_copy<C, Cons>(left.root));
         set_right_successor(root, bifurcate_copy<C, Cons>(right.root));
     }
-    stree(const stree& x) : root(bifurcate_copy<C, Cons>(x.root)) {}
+    stree(const stree& x)
+        : root(bifurcate_copy<C, Cons>(x.root))
+    {}
     ~stree() { bifurcate_erase(root, stree_node_destroy<T>()); }
     void operator=(stree x) { swap(root, x.root); }
 };
@@ -6405,7 +6461,9 @@ auto operator<(const stree<T>& x, const stree<T>& y) -> bool
 }
 
 template <typename T, typename Proc>
-    requires Regular<T> && Procedure<Proc, visit, CoordinateType<stree<T>>>
+    requires
+        Regular<T> &&
+        Procedure<Proc, visit, CoordinateType<stree<T>>>
 void traverse(stree<T>& x, Proc proc)
 {
     traverse_nonempty(begin(x), proc);
@@ -6436,8 +6494,12 @@ template <typename T>
 struct tree_coordinate
 {
     pointer(tree_node<T>) ptr;
-    tree_coordinate() : ptr{0} {}
-    tree_coordinate(pointer(tree_node<T>) ptr) : ptr{ptr} {}
+    tree_coordinate()
+        : ptr{0}
+    {}
+    tree_coordinate(pointer(tree_node<T>) ptr)
+        : ptr{ptr}
+    {}
 };
 
 template <typename T>
@@ -6601,7 +6663,9 @@ struct tree
         set_left_successor(root, bifurcate_copy<C, Cons>(left.root));
         set_right_successor(root, bifurcate_copy<C, Cons>(right.root));
     }
-    tree(const tree& x) : root{bifurcate_copy<C, Cons>(x.root)} {}
+    tree(const tree& x)
+        : root{bifurcate_copy<C, Cons>(x.root)}
+    {}
     ~tree()
     {
         bifurcate_erase(root, tree_node_destroy<T>());
@@ -6662,7 +6726,9 @@ auto operator<(const tree<T>& x, const tree<T>& y) -> bool
 }
 
 template <typename T, typename Proc>
-    requires Regular<T> && Procedure<Proc, visit, CoordinateType<tree<T>>>
+    requires
+        Regular<T> &&
+        Procedure<Proc, visit, CoordinateType<tree<T>>>
 void traverse(tree<T>& x, Proc proc)
 {
     traverse(begin(x), proc);
@@ -6844,7 +6910,10 @@ auto operator<(const array<T>& x, const array<T>& y) -> bool
 }
 
 template <typename T, typename U>
-    requires Regular<T> && Regular<U> && Constructible<T, U>
+    requires
+        Regular<T> &&
+        Regular<U> &&
+        Constructible<T, U>
 auto insert(back<array<T>> p, const U& y)
 {
     using N = DistanceType<IteratorType<array<T>>>;
@@ -6856,7 +6925,10 @@ auto insert(back<array<T>> p, const U& y)
 }
 
 template <typename T, typename W>
-    requires Regular<T> && Linearizable<W> && Constructible<T, ValueType<W>>
+    requires
+        Regular<T> &&
+        Linearizable<W> &&
+        Constructible<T, ValueType<W>>
 auto insert_range(before<array<T>> p, const W& w)
 {
     using I = IteratorType<array<T>>;
@@ -6929,7 +7001,9 @@ struct underlying_iterator
 {
     I i;
     underlying_iterator() {}
-    underlying_iterator(const I& x) : i{x} {}
+    underlying_iterator(const I& x)
+        : i{x}
+    {}
 };
 
 template <typename I>
@@ -7073,7 +7147,9 @@ struct underlying_predicate
 {
     using U = UnderlyingType<Domain<P>>;
     P p;
-    underlying_predicate(P p) : p{p} {}
+    underlying_predicate(P p)
+        : p{p}
+    {}
     auto operator()(const U& x) -> bool
     {
         return p(original_ref<Domain<P>>(x));
@@ -7093,7 +7169,9 @@ struct underlying_relation
 {
     using U = UnderlyingType<Domain<R>>;
     R r;
-    underlying_relation(R r) : r{r} {}
+    underlying_relation(R r)
+        : r{r}
+    {}
     auto operator()(const U& x, const U& y) -> bool
     {
         return r(original_ref<Domain<R>>(x), original_ref<Domain<R>>(y));
@@ -7109,7 +7187,10 @@ struct input_type<underlying_relation<R>, 0>
 
 template <typename I, typename P>
 auto advanced_partition_stable_n(I f, DistanceType<I> n, P p) -> pair<I, I>
-    requires MutableForwardIterator<I> && UnaryPredicate<P> && Same<ValueType<I>, Domain<P>>
+    requires
+        MutableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
 {
     using U = underlying_iterator<I>;
     auto tmp = partition_stable_n(U{f}, n, underlying_predicate<decltype(p)>(p));
@@ -7117,7 +7198,10 @@ auto advanced_partition_stable_n(I f, DistanceType<I> n, P p) -> pair<I, I>
 }
 
 template <typename I, typename R>
-    requires MutableForwardIterator<I> && Relation<R> && Same<ValueType<I>, Domain<R>>
+    requires
+        MutableForwardIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
 auto advanced_sort_n(I f, DistanceType<I> n, R r) -> I
 {
     // Precondition: $\property{mutable\_counted\_range}(f, n) \wedge \property{weak\_ordering}(r)$
@@ -7130,7 +7214,10 @@ auto advanced_sort_n(I f, DistanceType<I> n, R r) -> I
 }
 
 template <typename T, typename R>
-    requires Regular<T> && Relation<R> && Same<Domain<R>, T>
+    requires
+        Regular<T> &&
+        Relation<R> &&
+        Same<Domain<R>, T>
 void sort(array<T>& x, R r)
 {
     // Precondition: $\func{weak\_ordering}(r)$
