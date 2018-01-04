@@ -202,10 +202,10 @@ concept Default_totally_ordered =
 // Chapter 1: Foundations
 
 template <typename T>
-concept Regular = true;
-    // Equality_comparable<T> &&
-    // Default_constructible<T> &&
-    // Copyable<T>;
+concept Regular =
+    Equality_comparable<T> &&
+    Default_constructible<T> &&
+    Copyable<T>;
     // Default_totally_ordered<T>;
     // axiom partially_formed {
     //     // T x not necessarily well-formed

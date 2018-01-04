@@ -3531,482 +3531,6 @@ auto reverse_swap_ranges_n(I0 l0, I1 f1, N n) -> pair<I0, I1>
 }
 
 
-//
-//  Chapter 10. Rearrangements
-//
-
-
-template <typename I, typename F>
-    requires
-        Mutable<I> &&
-        Transformation<F>
-        __requires(Same<I, Domain<F>>)
-void cycle_to(I i, F f)
-{
-    // Precondition: The orbit of $i$ under $f$ is circular
-    // Precondition: $(\forall n \in \mathbb{N})\,\func{deref}(f^n(i))$ is defined
-    auto k = f(i);
-    while (k != i) {
-        exchange_values(i, k);
-        k = f(k);
-    }
-}
-
-// Exercise 10.3: cycle_to variant doing 2n-1 assignments
-
-
-template <typename I, typename F>
-    requires
-        Mutable<I> &&
-        Transformation<F>
-        __requires(Same<I, Domain<F>>)
-void cycle_from(I i, F f)
-{
-    // Precondition: The orbit of $i$ under $f$ is circular
-    // Precondition: $(\forall n \in \mathbb{N})\,\func{deref}(f^n(i))$ is defined
-    auto tmp = source(i);
-    auto j = i;
-    auto k = f(i);
-    while (k != i) {
-        sink(j) = source(k);
-        j = k;
-        k = f(k);
-    }
-    sink(j) = tmp;
-}
-
-
-// Exercise 10.4: arbitrary rearrangement using array of n boolean values
-// Exercise 10.5: arbitrary rearrangement using total ordering on iterators
-
-
-template <typename I>
-void reverse_n_indexed(I f, DistanceType<I> n)
-    requires MutableIndexedIterator<I>
-{
-    // Precondition: $\property{mutable\_counted\_range}(f, n)$
-    decltype(n) i{0};
-    n = predecessor(n);
-    while (i < n) {
-        // $n = (n_\text{original} - 1) - i$
-        exchange_values(f + i, f + n);
-        i = successor(i);
-        n = predecessor(n);
-    }
-}
-
-template <typename I>
-void reverse_bidirectional(I f, I l)
-    requires MutableBidirectionalIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    while (true) {
-        if (f == l) return;
-        l = predecessor(l);
-        if (f == l) return;
-        exchange_values(f, l);
-        f = successor(f);
-    }
-}
-
-template <typename I>
-void reverse_n_bidirectional(I f, I l, DistanceType<I> n)
-    requires MutableBidirectionalIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge 0 \leq n \leq l - f$
-    reverse_swap_ranges_n(l, f, half_nonnegative(n));
-}
-
-template <typename I, typename B>
-auto reverse_n_with_buffer(I f_i, DistanceType<I> n, B f_b)
-    requires MutableForwardIterator<I> && MutableBidirectionalIterator<B>
-    __requires(ValueType<I> == ValueType<B>)
-{
-    // Precondition: $\property{mutable\_counted\_range}(f_i, n)$
-    // Precondition: $\property{mutable\_counted\_range}(f_b, n)$
-    return reverse_copy(f_b, copy_n(f_i, n, f_b).m1, f_i);
-}
-
-template <typename I>
-auto reverse_n_forward(I f, DistanceType<I> n)
-    requires MutableForwardIterator<I>
-{
-    // Precondition: $\property{mutable\_counted\_range}(f, n)$
-    using N = DistanceType<I>;
-    if (n < N(2)) return f + n;
-    N h = half_nonnegative(n);
-    N n_mod_2 = n - twice(h);
-    I m = reverse_n_forward(f, h) + n_mod_2;
-    I l = reverse_n_forward(m, h);
-    swap_ranges_n(f, m, h);
-    return l;
-}
-
-template <typename I, typename B>
-auto reverse_n_adaptive(I f_i, DistanceType<I> n_i, B f_b, DistanceType<I> n_b)
-    requires MutableForwardIterator<I> && MutableBidirectionalIterator<B>
-    __requires(ValueType<I> == ValueType<B>)
-{
-    // Precondition: $\property{mutable\_counted\_range}(f_i, n_i)$
-    // Precondition: $\property{mutable\_counted\_range}(f_b, n_b)$
-    using N = DistanceType<I>;
-    if (n_i < N(2))
-        return f_i + n_i;
-    if (n_i <= n_b)
-        return reverse_n_with_buffer(f_i, n_i, f_b);
-    N h_i = half_nonnegative(n_i);
-    N n_mod_2 = n_i - twice(h_i);
-    I m_i = reverse_n_adaptive(f_i, h_i, f_b, n_b) + n_mod_2;
-    I l_i = reverse_n_adaptive(m_i, h_i, f_b, n_b);
-    swap_ranges_n(f_i, m_i, h_i);
-    return l_i;
-}
-
-template <typename I>
-    requires RandomAccessIterator<I>
-struct k_rotate_from_permutation_random_access
-{
-    DistanceType<I> k;
-    DistanceType<I> n_minus_k;
-    I m_prime;
-    k_rotate_from_permutation_random_access(I f, I m, I l)
-        : k{l - m}, n_minus_k{m - f}, m_prime{f + (l - m)}
-    {
-        // Precondition: $\property{bounded\_range}(f, l) \wedge m \in [f, l)$
-    }
-    I operator()(I x)
-    {
-        // Precondition: $x \in [f, l)$
-        if (x < m_prime) return x + n_minus_k;
-        return x - k;
-    }
-};
-
-template <typename I>
-    requires IndexedIterator<I>
-struct k_rotate_from_permutation_indexed
-{
-    DistanceType<I> k;
-    DistanceType<I> n_minus_k;
-    I f;
-    k_rotate_from_permutation_indexed(I f, I m, I l)
-        : k{l - m}, n_minus_k{m - f}, f{f}
-    {
-        // Precondition: $\property{bounded\_range}(f, l) \wedge m \in [f, l)$
-    }
-    I operator()(I x)
-    {
-        // Precondition: $x \in [f, l)$
-        DistanceType<I> i = x - f;
-        if (i < k) return x + n_minus_k;
-        return f + (i - k);
-    }
-};
-
-template <typename I, typename F>
-auto rotate_cycles(I f, I m, I l, F from)
-    requires MutableIndexedIterator<I> && Transformation<F>
-    __requires(I == Domain<decltype(from)>)
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge m \in [f, l]$
-    // Precondition: $from$ is a from-permutation on $[f, l)$
-    using N = DistanceType<I>;
-    N d = gcd<N, N>(m - f, l - m);
-    while (count_down(d)) cycle_from(f + d, from);
-    return f + (l - m);
-}
-
-template <typename I>
-auto rotate_indexed_nontrivial(I f, I m, I l)
-    requires MutableIndexedIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    k_rotate_from_permutation_indexed<I> p(f, m, l);
-    return rotate_cycles(f, m, l, p);
-}
-
-template <typename I>
-auto rotate_random_access_nontrivial(I f, I m, I l)
-    requires MutableRandomAccessIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    k_rotate_from_permutation_random_access<I> p(f, m, l);
-    return rotate_cycles(f, m, l, p);
-}
-
-template <typename I>
-auto rotate_bidirectional_nontrivial(I f, I m, I l)
-    requires MutableBidirectionalIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    reverse_bidirectional(f, m);
-    reverse_bidirectional(m, l);
-    auto p = reverse_swap_ranges_bounded(m, l, f, m);
-    reverse_bidirectional(p.m1, p.m0);
-    if (m == p.m0) return p.m1;
-    return p.m0;
-}
-
-template <typename I>
-void rotate_forward_annotated(I f, I m, I l)
-    requires MutableForwardIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    auto a = m - f;
-    auto b = l - m;
-    while (true) {
-        auto p = swap_ranges_bounded(f, m, m, l);
-        if (p.m0 == m && p.m1 == l) { Assert(a == b);
-            return;
-        }
-        f = p.m0;
-        if (f == m) {                 Assert(b > a);
-            m = p.m1;                 b = b - a;
-        } else {                      Assert(a > b);
-                                      a = a - b;
-        }
-    }
-}
-
-template <typename I>
-void rotate_forward_step(I& f, I& m, I l)
-    requires MutableForwardIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    auto c = m;
-    do {
-        swap_step(f, c);
-        if (f == m) m = c;
-    } while (c != l);
-}
-
-template <typename I>
-auto rotate_forward_nontrivial(I f, I m, I l)
-    requires MutableForwardIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    rotate_forward_step(f, m, l);
-    auto m_prime = f;
-    while (m != l) rotate_forward_step(f, m, l);
-    return m_prime;
-}
-
-template <typename I>
-auto rotate_partial_nontrivial(I f, I m, I l)
-    requires MutableForwardIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    return swap_ranges(m, l, f);
-}
-
-// swap_ranges_backward
-// rotate_partial_backward_nontrivial
-
-template <typename I, typename B>
-auto rotate_with_buffer_nontrivial(I f, I m, I l, B f_b)
-    requires MutableForwardIterator<I> && MutableForwardIterator<B>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    // Precondition: $\property{mutable\_counted\_range}(f_b, l-f)$
-    auto l_b = copy(f, m, f_b);
-    auto m_prime = copy(m, l, f);
-    copy(f_b, l_b, m_prime);
-    return m_prime;
-}
-
-template <typename I, typename B>
-auto rotate_with_buffer_backward_nontrivial(I f, I m, I l, B f_b)
-    requires MutableBidirectionalIterator<I> && MutableForwardIterator<B>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    // Precondition: $\property{mutable\_counted\_range}(f_b, l-f)$
-    auto l_b = copy(m, l, f_b);
-    copy_backward(f, m, l);
-    return copy(f_b, l_b, f);
-}
-
-
-// Section 10.5. Algorithm selection
-
-template <typename I>
-void reverse_indexed(I f, I l)
-    requires MutableIndexedIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l)$
-    reverse_n_indexed(f, l - f);
-}
-
-
-// temporary_buffer type
-
-template <typename I>
-void construct_all(I f, I l)
-    requires WritableForwardIterator<I>
-{
-    // Precondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{refers to raw memory, not an object}$
-    // Postcondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a default-constructed state}$
-    // We assume if an iterator is writable, its value can be constructed
-    construct_all(f, l, NeedsConstruction<ValueType<decltype(f)>>());
-}
-
-template <typename I>
-void construct_all(I f, I l, true_type)
-    requires WritableForwardIterator<I>
-{
-    // Precondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{refers to raw memory, not an object}$
-    // Postcondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
-    // We assume if an iterator is writable, its value can be constructed
-    while (f != l) {
-        construct(sink(f));
-        f = successor(f);
-    }
-}
-
-template <typename I>
-void construct_all(I /*f, I /*l, false_type)
-    requires WritableForwardIterator<I>
-    __requires(NeedsConstruction<ValueType<I>> == false_type)
-{
-    // Precondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
-    // Postcondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
-}
-
-template <typename I>
-void destroy_all(I f, I l)
-    requires WritableForwardIterator<I>
-{
-    // Precondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
-    // Postcondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{refers to raw memory, not an object}$
-    // We assume if an iterator is writable, its value can be destroyed
-    destroy_all(f, l, NeedsDestruction<ValueType<decltype(f)>>());
-}
-
-template <typename I>
-void destroy_all(I f, I l, true_type)
-    requires WritableForwardIterator<I>
-{
-    // Precondition: $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
-    // Postcondition: $(\forall i \in [f, l)) \func{sink}(i) \text{refers to raw memory, not an object}$
-    // We assume if an iterator is writable, its value can be destroyed
-    while (f != l) {
-        destroy(sink(f));
-        f = successor(f);
-    }
-}
-
-template <typename I>
-void destroy_all(I /*f, I /*l, false_type)
-    requires WritableForwardIterator<I>
-{
-    // Precondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
-    // Postcondition:
-    // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
-}
-
-// NeedsConstruction and NeedsDestruction should be overloaded for every POD type
-
-template <typename T>
-    //requires Regular<T>
-struct temporary_buffer
-{
-    using P = pointer(T);
-    using N = DistanceType<P>;
-    P p;
-    N n;
-    temporary_buffer(N n_) : n{n_}
-    {
-        while (true) {
-            p = P(malloc(n * sizeof(T)));
-            if (p != P(0)) {
-                construct_all(p, p + n);
-                return;
-            }
-            n = half_nonnegative(n);
-        }
-    }
-    ~temporary_buffer()
-    {
-        destroy_all(p, p + n);
-        free(p);
-    }
-    temporary_buffer(const temporary_buffer&) = delete;
-    void operator=(const temporary_buffer&) = delete;
-};
-
-template <typename T>
-    //requires Regular<T>
-auto size(const temporary_buffer<T>& b)
-{
-    return b.n;
-}
-
-template <typename T>
-    //requires Regular<T>
-auto begin(temporary_buffer<T>& b)
-{
-    return b.p;
-}
-
-template <typename I>
-void reverse_n_with_temporary_buffer(I f, DistanceType<I> n)
-    requires MutableForwardIterator<I>
-{
-    // Precondition: $\property{mutable\_counted\_range}(f, n)$
-    temporary_buffer<ValueType<I>> b(n);
-    reverse_n_adaptive(f, n, begin(b), size(b));
-}
-
-template <typename I>
-auto rotate(I f, I m, I l)
-    requires MutableForwardIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge m \in [f, l]$
-    if (m == f) return l;
-    if (m == l) return f;
-    return rotate_nontrivial(f, m, l, IteratorConcept(I){});
-}
-
-template <typename I>
-auto rotate_nontrivial(I f, I m, I l, forward_iterator_tag)
-    requires MutableForwardIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    return rotate_forward_nontrivial(f, m, l);
-}
-
-template <typename I>
-auto rotate_nontrivial(I f, I m, I l, bidirectional_iterator_tag)
-    requires MutableBidirectionalIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    return rotate_bidirectional_nontrivial(f, m, l);
-}
-
-template <typename I>
-auto rotate_nontrivial(I f, I m, I l, indexed_iterator_tag)
-    requires MutableIndexedIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    return rotate_indexed_nontrivial(f, m, l);
-}
-
-template <typename I>
-auto rotate_nontrivial(I f, I m, I l, random_access_iterator_tag)
-    requires MutableRandomAccessIterator<I>
-{
-    // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    return rotate_random_access_nontrivial(f, m, l);
-}
-
 
 
 
@@ -7526,19 +7050,20 @@ pair<I0, I1> reverse_swap_ranges_n(I0 l0, I1 f1, N n)
     return pair<I0, I1>(l0, f1);
 }
 
-
 //
 //  Chapter 10. Rearrangements
 //
 
-
-template<typename I, typename F>
-    __requires(Mutable(I) && Transformation<F> && I == Domain<F>)
+template <typename I, typename F>
+    requires
+        Mutable<I> &&
+        Transformation<F>
+    __requires(Same<I, Domain<F>>)
 void cycle_to(I i, F f)
 {
     // Precondition: The orbit of $i$ under $f$ is circular
     // Precondition: $(\forall n \in \mathbb{N})\,\func{deref}(f^n(i))$ is defined
-    I k = f(i);
+    auto k = f(i);
     while (k != i) {
         exchange_values(i, k);
         k = f(k);
@@ -7547,16 +7072,18 @@ void cycle_to(I i, F f)
 
 // Exercise 10.3: cycle_to variant doing 2n-1 assignments
 
-
-template<typename I, typename F>
-    __requires(Mutable(I) && Transformation<F> && I == Domain<F>)
+template <typename I, typename F>
+    requires
+        Mutable<I> &&
+        Transformation<F>
+    __requires(Same<I, Domain<F>>)
 void cycle_from(I i, F f)
 {
     // Precondition: The orbit of $i$ under $f$ is circular
     // Precondition: $(\forall n \in \mathbb{N})\,\func{deref}(f^n(i))$ is defined
-    ValueType<I> tmp = source(i);
-    I j = i;
-    I k = f(i);
+    auto tmp = source(i);
+    auto j = i;
+    auto k = f(i);
     while (k != i) {
         sink(j) = source(k);
         j = k;
@@ -7565,17 +7092,15 @@ void cycle_from(I i, F f)
     sink(j) = tmp;
 }
 
-
 // Exercise 10.4: arbitrary rearrangement using array of n boolean values
 // Exercise 10.5: arbitrary rearrangement using total ordering on iterators
 
-
-template<typename I>
-    __requires(Mutable(I) && IndexedIterator(I))
+template <typename I>
+    requires MutableIndexedIterator<I>
 void reverse_n_indexed(I f, DistanceType<I> n)
 {
     // Precondition: $\property{mutable\_counted\_range}(f, n)$
-    DistanceType<I> i(0);
+    decltype(n) i{0};
     n = predecessor(n);
     while (i < n) {
         // $n = (n_\text{original} - 1) - i$
@@ -7585,8 +7110,8 @@ void reverse_n_indexed(I f, DistanceType<I> n)
     }
 }
 
-template<typename I>
-    __requires(Mutable(I) && BidirectionalIterator(I))
+template <typename I>
+    requires MutableBidirectionalIterator<I>
 void reverse_bidirectional(I f, I l)
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
@@ -7599,31 +7124,32 @@ void reverse_bidirectional(I f, I l)
     }
 }
 
-template<typename I>
-    __requires(Mutable(I) && BidirectionalIterator(I))
+template <typename I>
+    requires MutableBidirectionalIterator<I>
 void reverse_n_bidirectional(I f, I l, DistanceType<I> n)
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge 0 \leq n \leq l - f$
     reverse_swap_ranges_n(l, f, half_nonnegative(n));
 }
 
-template<typename I, typename B>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Mutable(B) && BidirectionalIterator(B) &&
-        ValueType<I> == ValueType(B))
-I reverse_n_with_buffer(I f_i, DistanceType<I> n, B f_b)
+template <typename I, typename B>
+    requires
+        MutableForwardIterator<I> &&
+        MutableBidirectionalIterator<B> &&
+        Same<ValueType<I>, ValueType<B>>
+auto reverse_n_with_buffer(I f_i, DistanceType<I> n, B f_b) -> I
 {
     // Precondition: $\property{mutable\_counted\_range}(f_i, n)$
     // Precondition: $\property{mutable\_counted\_range}(f_b, n)$
     return reverse_copy(f_b, copy_n(f_i, n, f_b).m1, f_i);
 }
 
-template<typename I>
-    __requires(Mutable(I) && ForwardIterator(I))
-I reverse_n_forward(I f, DistanceType<I> n)
+template <typename I>
+    requires MutableForwardIterator<I>
+auto reverse_n_forward(I f, DistanceType<I> n) -> I
 {
     // Precondition: $\property{mutable\_counted\_range}(f, n)$
-    typedef DistanceType<I> N;
+    using N = DistanceType<I>;
     if (n < N(2)) return f + n;
     N h = half_nonnegative(n);
     N n_mod_2 = n - twice(h);
@@ -7633,16 +7159,16 @@ I reverse_n_forward(I f, DistanceType<I> n)
     return l;
 }
 
-template<typename I, typename B>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Mutable(B) && BidirectionalIterator(B) &&
-        ValueType<I> == ValueType(B))
-I reverse_n_adaptive(I f_i, DistanceType<I> n_i,
-                     B f_b, DistanceType<I> n_b)
+template <typename I, typename B>
+    requires
+        MutableForwardIterator<I> &&
+        MutableBidirectionalIterator<B> &&
+        Same<ValueType<I>, ValueType<B>>
+auto reverse_n_adaptive(I f_i, DistanceType<I> n_i, B f_b, DistanceType<I> n_b) -> I
 {
     // Precondition: $\property{mutable\_counted\_range}(f_i, n_i)$
     // Precondition: $\property{mutable\_counted\_range}(f_b, n_b)$
-    typedef DistanceType<I> N;
+    using N = DistanceType<I>;
     if (n_i < N(2))
         return f_i + n_i;
     if (n_i <= n_b)
@@ -7655,15 +7181,16 @@ I reverse_n_adaptive(I f_i, DistanceType<I> n_i,
     return l_i;
 }
 
-template<typename I>
-    __requires(RandomAccessIterator(I))
+template <typename I>
+    requires RandomAccessIterator<I>
 struct k_rotate_from_permutation_random_access
 {
-    DistanceType<I> k;
-    DistanceType<I> n_minus_k;
+    using N = DistanceType<I>;
+    N k;
+    N n_minus_k;
     I m_prime;
-    k_rotate_from_permutation_random_access(I f, I m, I l) :
-        k(l - m), n_minus_k(m - f), m_prime(f + (l - m))
+    k_rotate_from_permutation_random_access(I f, I m, I l)
+        : k{l - m}, n_minus_k{m - f}, m_prime{f + (l - m)}
     {
         // Precondition: $\property{bounded\_range}(f, l) \wedge m \in [f, l)$
     }
@@ -7671,85 +7198,87 @@ struct k_rotate_from_permutation_random_access
     {
         // Precondition: $x \in [f, l)$
         if (x < m_prime) return x + n_minus_k;
-        else             return x - k;
+        return x - k;
     }
 };
 
-template<typename I>
-    __requires(IndexedIterator(I))
+template <typename I>
+    requires IndexedIterator<I>
 struct k_rotate_from_permutation_indexed
 {
-    DistanceType<I> k;
-    DistanceType<I> n_minus_k;
+    using N = DistanceType<I>;
+    N k;
+    N n_minus_k;
     I f;
-    k_rotate_from_permutation_indexed(I f, I m, I l) :
-        k(l - m), n_minus_k(m - f), f(f)
+    k_rotate_from_permutation_indexed(I f, I m, I l)
+        : k{l - m}, n_minus_k{m - f}, f{f}
     {
         // Precondition: $\property{bounded\_range}(f, l) \wedge m \in [f, l)$
     }
     I operator()(I x)
     {
         // Precondition: $x \in [f, l)$
-        DistanceType<I> i = x - f;
+        auto i = x - f;
         if (i < k) return x + n_minus_k;
-        else       return f + (i - k);
+        return f + (i - k);
     }
 };
 
-template<typename I, typename F>
-    __requires(Mutable(I) && IndexedIterator(I) &&
-        Transformation<F> && I == Domain<F>)
-I rotate_cycles(I f, I m, I l, F from)
+template <typename I, typename F>
+auto rotate_cycles(I f, I m, I l, F from) -> I
+    requires
+        MutableIndexedIterator<I> &&
+        Transformation<F>
+        __requires(Same<I, Domain<F>>)
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge m \in [f, l]$
     // Precondition: $from$ is a from-permutation on $[f, l)$
-    typedef DistanceType<I> N;
-    N d = gcd<N, N>(m - f, l - m);
+    using N = DistanceType<I>;
+    auto d = gcd<N, N>(m - f, l - m);
     while (count_down(d)) cycle_from(f + d, from);
     return f + (l - m);
 }
 
-template<typename I>
-    __requires(Mutable(I) && IndexedIterator(I))
-I rotate_indexed_nontrivial(I f, I m, I l)
+template <typename I>
+    requires MutableIndexedIterator<I>
+auto rotate_indexed_nontrivial(I f, I m, I l) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     k_rotate_from_permutation_indexed<I> p(f, m, l);
     return rotate_cycles(f, m, l, p);
 }
 
-template<typename I>
-    __requires(Mutable(I) && RandomAccessIterator(I))
-I rotate_random_access_nontrivial(I f, I m, I l)
+template <typename I>
+    requires MutableRandomAccessIterator<I>
+auto rotate_random_access_nontrivial(I f, I m, I l) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     k_rotate_from_permutation_random_access<I> p(f, m, l);
     return rotate_cycles(f, m, l, p);
 }
 
-
-template<typename I>
-    __requires(Mutable(I) && BidirectionalIterator(I))
-I rotate_bidirectional_nontrivial(I f, I m, I l)
+template <typename I>
+    requires MutableBidirectionalIterator<I>
+auto rotate_bidirectional_nontrivial(I f, I m, I l) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     reverse_bidirectional(f, m);
     reverse_bidirectional(m, l);
-    pair<I, I> p = reverse_swap_ranges_bounded(m, l, f, m);
+    auto p = reverse_swap_ranges_bounded(m, l, f, m);
     reverse_bidirectional(p.m1, p.m0);
     if (m == p.m0) return p.m1;
-    else           return p.m0;
+    return p.m0;
 }
 
-template<typename I>
-    __requires(Mutable(I) && ForwardIterator(I))
+template <typename I>
+    requires MutableForwardIterator<I>
 void rotate_forward_annotated(I f, I m, I l)
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-                                      DistanceType<I> a = m - f;
-                                      DistanceType<I> b = l - m;
+    auto a = m - f;
+    auto b = l - m;
     while (true) {
-        pair<I, I> p = swap_ranges_bounded(f, m, m, l);
+        auto p = swap_ranges_bounded(f, m, m, l);
         if (p.m0 == m && p.m1 == l) { Assert(a == b);
             return;
         }
@@ -7762,32 +7291,32 @@ void rotate_forward_annotated(I f, I m, I l)
     }
 }
 
-template<typename I>
-    __requires(Mutable(I) && ForwardIterator(I))
+template <typename I>
+    requires MutableForwardIterator<I>
 void rotate_forward_step(I& f, I& m, I l)
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
-    I c = m;
+    auto c = m;
     do {
         swap_step(f, c);
         if (f == m) m = c;
     } while (c != l);
 }
 
-template<typename I>
-    __requires(Mutable(I) && ForwardIterator(I))
-I rotate_forward_nontrivial(I f, I m, I l)
+template <typename I>
+    requires MutableForwardIterator<I>
+auto rotate_forward_nontrivial(I f, I m, I l) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     rotate_forward_step(f, m, l);
-    I m_prime = f;
+    auto m_prime = f;
     while (m != l) rotate_forward_step(f, m, l);
     return m_prime;
 }
 
-template<typename I>
-    __requires(Mutable(I) && ForwardIterator(I))
-I rotate_partial_nontrivial(I f, I m, I l)
+template <typename I>
+    requires MutableForwardIterator<I>
+auto rotate_partial_nontrivial(I f, I m, I l) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     return swap_ranges(m, l, f);
@@ -7796,76 +7325,72 @@ I rotate_partial_nontrivial(I f, I m, I l)
 // swap_ranges_backward
 // rotate_partial_backward_nontrivial
 
-template<typename I, typename B>
-    __requires(Mutable(I) && ForwardIterator(I) &&
-        Mutable(B) && ForwardIterator(B))
-I rotate_with_buffer_nontrivial(I f, I m, I l, B f_b)
+template <typename I, typename B>
+    requires MutableForwardIterator<I> && MutableForwardIterator<B>
+auto rotate_with_buffer_nontrivial(I f, I m, I l, B f_b) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     // Precondition: $\property{mutable\_counted\_range}(f_b, l-f)$
-    B l_b = copy(f, m, f_b);
-    I m_prime = copy(m, l, f);
+    auto l_b = copy(f, m, f_b);
+    auto m_prime = copy(m, l, f);
     copy(f_b, l_b, m_prime);
     return m_prime;
 }
 
-template<typename I, typename B>
-    __requires(Mutable(I) && BidirectionalIterator(I) &&
-        Mutable(B) && ForwardIterator(B))
-I rotate_with_buffer_backward_nontrivial(I f, I m, I l, B f_b)
+template <typename I, typename B>
+    requires MutableBidirectionalIterator<I> && MutableForwardIterator<B>
+auto rotate_with_buffer_backward_nontrivial(I f, I m, I l, B f_b) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     // Precondition: $\property{mutable\_counted\_range}(f_b, l-f)$
-    B l_b = copy(m, l, f_b);
+    auto l_b = copy(m, l, f_b);
     copy_backward(f, m, l);
     return copy(f_b, l_b, f);
 }
 
-
 // Section 10.5. Algorithm selection
 
-
-template<typename I>
-    __requires(Mutable(I) && IndexedIterator(I))
+template <typename I>
+    requires MutableIndexedIterator<I>
 void reverse_indexed(I f, I l)
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l)$
     reverse_n_indexed(f, l - f);
 }
 
-
 // temporary_buffer type
 
-template<typename I>
-    __requires(Writeable(I) && ForwardIterator(I))
+template <typename I>
+    requires WritableForwardIterator<I>
 void construct_all(I f, I l)
 {
     // Precondition:
     // $(\forall i \in [f, l)) \func{sink}(i) \text{refers to raw memory, not an object}$
     // Postcondition:
     // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a default-constructed state}$
-    // We assume if an iterator is writeable, its value can be constructed
-    construct_all(f, l, NeedsConstruction<ValueType<I>>());
+    // We assume if an iterator is writable, its value can be constructed
+    construct_all(f, l, NeedsConstruction<ValueType<decltype(f)>>());
 }
 
-template<typename I>
-    __requires(Writeable(I) && ForwardIterator(I))
+template <typename I>
+    requires WritableForwardIterator<I>
 void construct_all(I f, I l, true_type)
 {
     // Precondition:
     // $(\forall i \in [f, l)) \func{sink}(i) \text{refers to raw memory, not an object}$
     // Postcondition:
     // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
-    // We assume if an iterator is writeable, its value can be constructed
+    // We assume if an iterator is writable, its value can be constructed
     while (f != l) {
         construct(sink(f));
         f = successor(f);
     }
 }
 
-template<typename I>
-    __requires(Writeable(I) && ForwardIterator(I) &&
-        NeedsConstruction(ValueType<I>) == false_type)
+template <typename I>
+    requires
+        WritableForwardIterator<I> &&
+        Same<NeedsConstruction<ValueType<I>>, false_type>
 void construct_all(I /*f*/, I /*l*/, false_type)
 {
     // Precondition:
@@ -7874,34 +7399,33 @@ void construct_all(I /*f*/, I /*l*/, false_type)
     // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
 }
 
-template<typename I>
-    __requires(Writeable(I) && ForwardIterator(I))
+template <typename I>
+    requires WritableForwardIterator<I>
 void destroy_all(I f, I l)
 {
     // Precondition:
     // $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
     // Postcondition:
     // $(\forall i \in [f, l)) \func{sink}(i) \text{refers to raw memory, not an object}$
-    // We assume if an iterator is writeable, its value can be destroyed
-    destroy_all(f, l, NeedsDestruction<ValueType<I>>());
+    // We assume if an iterator is writable, its value can be destroyed
+    destroy_all(f, l, NeedsDestruction<ValueType<decltype(f)>>());
 }
 
-template<typename I>
-    __requires(Writeable(I) && ForwardIterator(I))
+template <typename I>
+    requires WritableForwardIterator<I>
 void destroy_all(I f, I l, true_type)
 {
     // Precondition: $(\forall i \in [f, l)) \func{sink}(i) \text{is in a partially-formed state}$
     // Postcondition: $(\forall i \in [f, l)) \func{sink}(i) \text{refers to raw memory, not an object}$
-    // We assume if an iterator is writeable, its value can be destroyed
+    // We assume if an iterator is writable, its value can be destroyed
     while (f != l) {
         destroy(sink(f));
         f = successor(f);
     }
 }
 
-template<typename I>
-    __requires(Writeable(I) && ForwardIterator(I) &&
-        NeedsDestruction(ValueType<I>) == false_type)
+template <typename I>
+    requires WritableForwardIterator<I>
 void destroy_all(I /*f*/, I /*l*/, false_type)
 {
     // Precondition:
@@ -7912,15 +7436,16 @@ void destroy_all(I /*f*/, I /*l*/, false_type)
 
 // NeedsConstruction and NeedsDestruction should be overloaded for every POD type
 
-template<typename T>
-    __requires(Regular(T))
+template <typename T>
+    //requires Regular<T>
 struct temporary_buffer
 {
-    typedef pointer(T) P;
-    typedef DistanceType<P> N;
+    using P = pointer(T);
+    using N = DistanceType<P>;
     P p;
     N n;
-    temporary_buffer(N n_) : n(n_)
+    temporary_buffer(N n_)
+        : n{n_}
     {
         while (true) {
             p = P(malloc(n * sizeof(T)));
@@ -7936,28 +7461,26 @@ struct temporary_buffer
         destroy_all(p, p + n);
         free(p);
     }
-private:
-    // We use private only to signal lack of regularity of a type
-    temporary_buffer(const temporary_buffer&) { }
-    void operator=(const temporary_buffer&) { }
+    temporary_buffer(const temporary_buffer&) = delete;
+    void operator=(const temporary_buffer&) = delete;
 };
 
-template<typename T>
-    __requires(Regular(T))
-DistanceType<pointer(T)> size(const temporary_buffer<T>& b)
+template <typename T>
+    requires Regular<T>
+auto size(const temporary_buffer<T>& b) -> DistanceType<pointer(T)>
 {
     return b.n;
 }
 
-template<typename T>
-    __requires(Regular(T))
-pointer(T) begin(temporary_buffer<T>& b)
+template <typename T>
+    requires Regular<T>
+auto begin(temporary_buffer<T>& b) -> pointer(T)
 {
     return b.p;
 }
 
-template<typename I>
-    __requires(Mutable(I) && ForwardIterator(I))
+template <typename I>
+    requires MutableForwardIterator<I>
 void reverse_n_with_temporary_buffer(I f, DistanceType<I> n)
 {
     // Precondition: $\property{mutable\_counted\_range}(f, n)$
@@ -7965,43 +7488,43 @@ void reverse_n_with_temporary_buffer(I f, DistanceType<I> n)
     reverse_n_adaptive(f, n, begin(b), size(b));
 }
 
-template<typename I>
-    __requires(Mutable(I) && ForwardIterator(I))
-I rotate(I f, I m, I l)
+template <typename I>
+    requires MutableForwardIterator<I>
+auto rotate(I f, I m, I l) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge m \in [f, l]$
     if (m == f) return l;
     if (m == l) return f;
-    return rotate_nontrivial(f, m, l, IteratorConcept(I)());
+    return rotate_nontrivial(f, m, l, IteratorConcept(I){});
 }
 
-template<typename I>
-    __requires(Mutable(I) && ForwardIterator(I))
-I rotate_nontrivial(I f, I m, I l, forward_iterator_tag)
+template <typename I>
+    requires MutableForwardIterator<I>
+auto rotate_nontrivial(I f, I m, I l, forward_iterator_tag) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     return rotate_forward_nontrivial(f, m, l);
 }
 
-template<typename I>
-    __requires(Mutable(I) && BidirectionalIterator(I))
-I rotate_nontrivial(I f, I m, I l, bidirectional_iterator_tag)
+template <typename I>
+    requires MutableBidirectionalIterator<I>
+auto rotate_nontrivial(I f, I m, I l, bidirectional_iterator_tag) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     return rotate_bidirectional_nontrivial(f, m, l);
 }
 
-template<typename I>
-    __requires(Mutable(I) && IndexedIterator(I))
-I rotate_nontrivial(I f, I m, I l, indexed_iterator_tag)
+template <typename I>
+    requires MutableIndexedIterator<I>
+auto rotate_nontrivial(I f, I m, I l, indexed_iterator_tag) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     return rotate_indexed_nontrivial(f, m, l);
 }
 
-template<typename I>
-    __requires(Mutable(I) && RandomAccessIterator(I))
-I rotate_nontrivial(I f, I m, I l, random_access_iterator_tag)
+template <typename I>
+    requires MutableRandomAccessIterator<I>
+auto rotate_nontrivial(I f, I m, I l, random_access_iterator_tag) -> I
 {
     // Precondition: $\property{mutable\_bounded\_range}(f, l) \wedge f \prec m \prec l$
     return rotate_random_access_nontrivial(f, m, l);
@@ -8023,7 +7546,6 @@ bool partitioned_at_point(I f, I m, I l, P p)
     // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge m \in [f, l]$
     return none(f, m, p) && all(m, l, p);
 }
-
 
 // Exercise 11.2:
 
