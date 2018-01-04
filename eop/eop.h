@@ -2537,384 +2537,6 @@ bool bifurcate_shape_compare(C0 c0, C1 c1)
 }
 
 
-//
-//  Chapter 8. Coordinates with mutable successors
-//
-
-
-// Models of ForwardLinker, BackwardLinker, and BidirectionalLinker
-// assuming a particular representation of links
-
-template <typename I>
-    requires LinkedForwardIterator<I>
-struct forward_linker
-{
-    void operator()(I x, I y)
-    {
-        sink(x.p).forward_link = y.p;
-    }
-};
-
-template <typename I>
-    requires LinkedForwardIterator<I>
-struct iterator_type<forward_linker<I>>
-{
-    using type = I;
-};
-
-template <typename I>
-    requires LinkedBidirectionalIterator<I>
-struct backward_linker
-{
-    void operator()(I x, I y)
-    {
-        sink(y.p).backward_link = x.p;
-    }
-};
-
-template <typename I>
-    requires LinkedBidirectionalIterator<I>
-struct iterator_type<backward_linker<I>>
-{
-    using type = I;
-};
-
-template <typename I>
-    requires LinkedBidirectionalIterator<I>
-struct bidirectional_linker
-{
-    void operator()(I x, I y)
-    {
-        sink(x.p).forward_link = y.p;
-        sink(y.p).backward_link = x.p;
-    }
-};
-
-template <typename I>
-    requires LinkedBidirectionalIterator<I>
-struct iterator_type<bidirectional_linker<I>>
-{
-    using type = I;
-};
-
-template <typename I>
-    requires ForwardIterator<I>
-void advance_tail(I& t, I& f)
-{
-    // Precondition: $\func{successor}(f)\text{ is defined}$
-    t = f;
-    f = successor(f);
-}
-
-template <typename S>
-    requires ForwardLinker<S>
-struct linker_to_tail
-{
-    using I = IteratorType<S>;
-    S set_link;
-    linker_to_tail(const S& set_link) : set_link{set_link} {}
-    void operator()(I& t, I& f)
-    {
-        // Precondition: $\func{successor}(f)\text{ is defined}$
-        set_link(t, f);
-        advance_tail(t, f);
-    }
-};
-
-template <typename I>
-    requires ForwardIterator<I>
-auto find_last(I f, I l) -> I
-{
-    // Precondition: $\property{bounded\_range}(f, l) \wedge f \neq l$
-    decltype(f) t;
-    do
-        advance_tail(t, f);
-    while (f != l);
-    return t;
-}
-
-template <typename I, typename S, typename Pred>
-    requires
-        ForwardLinker<S> &&
-        Same<I, IteratorType<S>> &&
-        UnaryPseudoPredicate<Pred>
-        __requires(Same<I, Domain<Pred>>)
-auto split_linked(I f, I l, Pred p, S set_link) -> pair<pair<I, I>, pair<I, I>>
-{
-    // Precondition: $\property{bounded\_range}(f, l)$
-    using P = pair<I, I>;
-    linker_to_tail<decltype(set_link)> link_to_tail{set_link};
-    I h0 = l; I t0 = l;
-    I h1 = l; I t1 = l;
-    if (f == l)                              goto s4;
-    if (p(f)) { h1 = f; advance_tail(t1, f); goto s1; }
-    else      { h0 = f; advance_tail(t0, f); goto s0; }
-s0: if (f == l)                              goto s4;
-    if (p(f)) { h1 = f; advance_tail(t1, f); goto s3; }
-    else      {         advance_tail(t0, f); goto s0; }
-s1: if (f == l)                              goto s4;
-    if (p(f)) {         advance_tail(t1, f); goto s1; }
-    else      { h0 = f; advance_tail(t0, f); goto s2; }
-s2: if (f == l)                              goto s4;
-    if (p(f)) {         link_to_tail(t1, f); goto s3; }
-    else      {         advance_tail(t0, f); goto s2; }
-s3: if (f == l)                              goto s4;
-    if (p(f)) {         advance_tail(t1, f); goto s3; }
-    else      {         link_to_tail(t0, f); goto s2; }
-s4: return pair<P, P>{P(h0, t0), P(h1, t1)};
-}
-
-// Exercise 8.1: Explain the postcondition of split_linked
-
-
-template <typename I, typename S, typename R>
-    requires
-        ForwardLinker<S> &&
-        Same<I, IteratorType<S>> &&
-        PseudoRelation<R>
-        __requires(Same<I, Domain<R>>)
-auto combine_linked_nonempty(I f0, I l0, I f1, I l1, R r, S set_link) -> triple<I, I, I>
-{
-    // Precondition: $\property{bounded\_range}(f0, l0) \wedge
-    //                \property{bounded\_range}(f1, l1)$
-    // Precondition: $f0 \neq l0 \wedge f1 \neq l1 \wedge
-    //                \property{disjoint}(f0, l0, f1, l1)$
-    using T = triple<I, I, I>;
-    linker_to_tail<decltype(set_link)> link_to_tail{set_link};
-    I h; I t;
-    if (r(f1, f0)) { h = f1; advance_tail(t, f1); goto s1; }
-    else           { h = f0; advance_tail(t, f0); goto s0; }
-s0: if (f0 == l0)                                 goto s2;
-    if (r(f1, f0)) {         link_to_tail(t, f1); goto s1; }
-    else           {         advance_tail(t, f0); goto s0; }
-s1: if (f1 == l1)                                 goto s3;
-    if (r(f1, f0)) {         advance_tail(t, f1); goto s1; }
-    else           {         link_to_tail(t, f0); goto s0; }
-s2: set_link(t, f1); return T{h, t, l1};
-s3: set_link(t, f0); return T{h, t, l0};
-}
-
-// Exercise 8.2: combine_linked
-
-
-template<typename I, typename S>
-    requires ForwardLinker<S> && Same<I, IteratorType<S>>
-struct linker_to_head
-{
-    S set_link;
-    linker_to_head(const S& set_link) : set_link{set_link} {}
-    void operator()(I& h, I& f)
-    {
-        // Precondition: $\func{successor}(f)$ is defined
-        auto tmp = successor(f);
-        set_link(f, h);
-        h = f;
-        f = tmp;
-    }
-};
-
-template <typename I, typename S>
-    requires ForwardLinker<S> && Same<I, IteratorType<S>>
-auto reverse_append(I f, I l, I h, S set_link) -> I
-{
-    // Precondition: $\property{bounded\_range}(f, l) \wedge h \notin [f, l)$
-    linker_to_head<I, decltype(set_link)> link_to_head{set_link};
-    while (f != l) link_to_head(h, f);
-    return h;
-}
-
-template <typename I, typename P>
-    requires
-        Readable<I> &&
-        Predicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-struct predicate_source
-{
-    P p;
-    predicate_source(const P& p) : p{p} {}
-    bool operator()(I i)
-    {
-        return p(source(i));
-    }
-};
-
-template <typename I, typename S, typename P>
-    requires
-        ForwardLinker<S> &&
-        Same<I, IteratorType<S>> &&
-        UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto partition_linked(I f, I l, P p, S set_link) -> pair<pair<I, I>, pair<I, I>>
-{
-    // Precondition: $\property{bounded\_range}(f, l)$
-    predicate_source<I, P> ps(p);
-    return split_linked(f, l, ps, set_link);
-}
-
-template<typename I0, typename I1, typename R>
-    requires
-        Readable<I0> && Readable<I1> &&
-        Same<ValueType<I0>, ValueType<I1>> &&
-        Relation<R> &&
-        Same<ValueType<I0>, Domain<R>>
-struct relation_source
-{
-    R r;
-    relation_source(const R& r) : r{r} {}
-    bool operator()(I0 i0, I1 i1)
-    {
-        return r(source(i0), source(i1));
-    }
-};
-
-template<typename I, typename S, typename R>
-    requires
-        Readable<I> &&
-        ForwardLinker<S> &&
-        Same<I, IteratorType<S>> &&
-        Relation<R> &&
-        Same<ValueType<I>, Domain<R>>
-auto merge_linked_nonempty(I f0, I l0, I f1, I l1, R r, S set_link) -> pair<I, I>
-    requires Same<I, IteratorType<decltype(set_link)>>
-        && Same<ValueType<I>, Domain<decltype(r)>>
-{
-    // Precondition: $f0 \neq l0 \wedge f1 \neq l1$
-    // Precondition: $\property{increasing\_range}(f0, l0, r)$
-    // Precondition: $\property{increasing\_range}(f1, l1, r)$
-    relation_source<I, I, decltype(r)> rs{r};
-    auto t = combine_linked_nonempty(f0, l0, f1, l1, rs, set_link);
-    set_link(find_last(t.m1, t.m2), l1);
-    return pair<I, I>{t.m0, l1};
-}
-
-template <typename I, typename S, typename R>
-    requires
-        Readable<I> &&
-        ForwardLinker<S> &&
-        Same<I, IteratorType<S>> &&
-        Relation<R> &&
-        Same<ValueType<I>, Domain<R>>
-auto sort_linked_nonempty_n(I f, DistanceType<I> n, R r, S set_link) -> pair<I, I>
-{
-    // Precondition: $\property{counted\_range}(f, n) \wedge
-    //                n > 0 \wedge \func{weak\_ordering}(r)$
-    using N = decltype(n);
-    using P = pair<I, I>;
-    if (n == N{1}) return P{f, successor(f)};
-    auto h = half_nonnegative(n);
-    auto p0 = sort_linked_nonempty_n(f, h, r, set_link);
-    auto p1 = sort_linked_nonempty_n(p0.m1, n - h, r, set_link);
-    return merge_linked_nonempty(p0.m0, p0.m1, p1.m0, p1.m1, r, set_link);
-}
-
-// Exercise 8.3: Complexity of sort_linked_nonempty_n
-
-
-// Exercise 8.4: unique
-
-
-template <typename C>
-    requires EmptyLinkedBifurcateCoordinate<C>
-void tree_rotate(C& curr, C& prev)
-{
-    // Precondition: $\neg \func{empty}(curr)$
-    auto tmp = left_successor(curr);
-    set_left_successor(curr, right_successor(curr));
-    set_right_successor(curr, prev);
-    if (empty(tmp)) { prev = tmp; return; }
-    prev = curr;
-    curr = tmp;
-}
-
-template <typename C, typename Proc>
-    requires
-        EmptyLinkedBifurcateCoordinate<C> &&
-        __requires(Procedure<Proc>)
-        Arity<Proc> == 1
-        __requires(Same<C, InputType<Proc, 0>>)
-auto traverse_rotating(C c, Proc proc) -> Proc
-{
-    // Precondition: $\property{tree}(c)$
-    if (empty(c)) return proc;
-    auto curr = c;
-    decltype(c) prev;
-    do {
-        proc(curr);
-        tree_rotate(curr, prev);
-    } while (curr != c);
-    do {
-        proc(curr);
-        tree_rotate(curr, prev);
-    } while (curr != c);
-    proc(curr);
-    tree_rotate(curr, prev);
-    return proc;
-}
-
-// Exercise 8.5: Diagram each state of traverse_rotating
-// for a complete binary tree with 7 nodes
-
-template <typename T, typename N>
-    requires Integer<N>
-struct counter
-{
-    N n;
-    counter() : n{0} {}
-    counter(N n) : n{n} {}
-    void operator()(const T&)
-    {
-        n = successor(n);
-    }
-};
-
-template <typename C>
-    requires EmptyLinkedBifurcateCoordinate<C>
-auto weight_rotating(C c) -> WeightType<C>
-{
-    // Precondition: $\property{tree}(c)$
-    using N = WeightType<C>;
-    return traverse_rotating(c, counter<C, N>{}).n / N{3};
-}
-
-template <typename N, typename Proc>
-    requires
-        Integer<N> &&
-        Arity<Proc> == 1
-        __requires(Procedure(Proc))
-struct phased_applicator
-{
-    N period;
-    N phase;
-    N n;
-    // Invariant: $n, phase \in [0, period)$
-    Proc proc;
-    phased_applicator(N period, N phase, N n, Proc proc) :
-        period{period}, phase{phase}, n{n}, proc{proc}
-    {}
-    void operator()(InputType<Proc, 0> x)
-    {
-        if (n == phase) proc(x);
-        n = successor(n);
-        if (n == period) n = 0;
-    }
-};
-
-template <typename C, typename Proc>
-    requires
-        EmptyLinkedBifurcateCoordinate<C> &&
-        __requires(Procedure<Proc>)
-        Arity<Proc> == 1 &&
-        Same<C, InputType<Proc, 0>>
-auto traverse_phased_rotating(C c, int phase, Proc proc) -> Proc
-{
-    // Precondition: $\property{tree}(c) \wedge 0 \leq phase < 3$
-    phased_applicator<int, Proc> applicator{3, phase, 0, proc};
-    return traverse_rotating(c, applicator).proc;
-}
-
-
-
-
 
 
 
@@ -5489,17 +5111,15 @@ bool bifurcate_shape_compare(C0 c0, C1 c1)
     return bifurcate_compare(c0, c1, always_false<ValueType<C0>>());
 }
 
-
 //
 //  Chapter 8. Coordinates with mutable successors
 //
 
-
 // Models of ForwardLinker, BackwardLinker, and BidirectionalLinker
 // assuming a particular representation of links
 
-template<typename I>
-    __requires(LinkedForwardIterator(I))
+template <typename I>
+    requires LinkedForwardIterator<I>
 struct forward_linker
 {
     void operator()(I x, I y)
@@ -5508,15 +5128,15 @@ struct forward_linker
     }
 };
 
-template<typename I>
-    __requires(LinkableForwardIterator(I))
-struct iterator_type< forward_linker<I> >
+template <typename I>
+    requires LinkedForwardIterator<I>
+struct iterator_type<forward_linker<I>>
 {
-    typedef I type;
+    using type = I;
 };
 
-template<typename I>
-    __requires(LinkedBidirectionalIterator(I))
+template <typename I>
+    requires LinkedBidirectionalIterator<I>
 struct backward_linker
 {
     void operator()(I x, I y)
@@ -5525,15 +5145,15 @@ struct backward_linker
     }
 };
 
-template<typename I>
-    __requires(LinkedBidirectionalIterator(I))
-struct iterator_type< backward_linker<I> >
+template <typename I>
+    requires LinkedBidirectionalIterator<I>
+struct iterator_type<backward_linker<I>>
 {
-    typedef I type;
+    using type = I;
 };
 
-template<typename I>
-    __requires(LinkedBidirectionalIterator(I))
+template <typename I>
+    requires LinkedBidirectionalIterator<I>
 struct bidirectional_linker
 {
     void operator()(I x, I y)
@@ -5543,15 +5163,15 @@ struct bidirectional_linker
     }
 };
 
-template<typename I>
-    __requires(LinkedBidirectionalIterator(I))
-struct iterator_type< bidirectional_linker<I> >
+template <typename I>
+    requires LinkedBidirectionalIterator<I>
+struct iterator_type<bidirectional_linker<I>>
 {
-    typedef I type;
+    using type = I;
 };
 
-template<typename I>
-    __requires(ForwardIterator(I))
+template <typename I>
+    requires ForwardIterator<I>
 void advance_tail(I& t, I& f)
 {
     // Precondition: $\func{successor}(f)\text{ is defined}$
@@ -5559,13 +5179,13 @@ void advance_tail(I& t, I& f)
     f = successor(f);
 }
 
-template<typename S>
-    __requires(ForwardLinker(S))
+template <typename S>
+    requires ForwardLinker<S>
 struct linker_to_tail
 {
-    typedef IteratorType<S> I;
+    using I = IteratorType<S>;
     S set_link;
-    linker_to_tail(const S& set_link) : set_link(set_link) { }
+    linker_to_tail(const S& set_link) : set_link{set_link} {}
     void operator()(I& t, I& f)
     {
         // Precondition: $\func{successor}(f)\text{ is defined}$
@@ -5574,27 +5194,29 @@ struct linker_to_tail
     }
 };
 
-template<typename I>
-    __requires(ForwardIterator(I))
-I find_last(I f, I l)
+template <typename I>
+    requires ForwardIterator<I>
+auto find_last(I f, I l) -> I
 {
     // Precondition: $\property{bounded\_range}(f, l) \wedge f \neq l$
-    I t;
+    decltype(f) t;
     do
         advance_tail(t, f);
     while (f != l);
     return t;
 }
 
-template<typename I, typename S, typename Pred>
-    __requires(ForwardLinker(S) && I == IteratorType<S> &&
-        UnaryPseudoPredicate(Pred) && I == Domain(Pred))
-pair< pair<I, I>, pair<I, I> >
-split_linked(I f, I l, Pred p, S set_link)
+template <typename I, typename S, typename Pred>
+    requires
+        ForwardLinker<S> &&
+        Same<I, IteratorType<S>> &&
+        UnaryPseudoPredicate<Pred>
+    __requires(Same<I, Domain<Pred>>)
+auto split_linked(I f, I l, Pred p, S set_link) -> pair<pair<I, I>, pair<I, I>>
 {
     // Precondition: $\property{bounded\_range}(f, l)$
-    typedef pair<I, I> P;
-    linker_to_tail<S> link_to_tail(set_link);
+    using P = pair<I, I>;
+    linker_to_tail<decltype(set_link)> link_to_tail{set_link};
     I h0 = l; I t0 = l;
     I h1 = l; I t1 = l;
     if (f == l)                              goto s4;
@@ -5612,24 +5234,25 @@ s2: if (f == l)                              goto s4;
 s3: if (f == l)                              goto s4;
     if (p(f)) {         advance_tail(t1, f); goto s3; }
     else      {         link_to_tail(t0, f); goto s2; }
-s4: return pair<P, P>(P(h0, t0), P(h1, t1));
+s4: return pair<P, P>{P(h0, t0), P(h1, t1)};
 }
 
 // Exercise 8.1: Explain the postcondition of split_linked
 
-
-template<typename I, typename S, typename R>
-    __requires(ForwardLinker(S) && I == IteratorType<S> &&
-        PseudoRelation(R) && I == Domain<R>)
-triple<I, I, I>
-combine_linked_nonempty(I f0, I l0, I f1, I l1, R r, S set_link)
+template <typename I, typename S, typename R>
+    requires
+        ForwardLinker<S> &&
+        Same<I, IteratorType<S>> &&
+        PseudoRelation<R>
+    __requires(Same<I, Domain<R>>)
+auto combine_linked_nonempty(I f0, I l0, I f1, I l1, R r, S set_link) -> triple<I, I, I>
 {
     // Precondition: $\property{bounded\_range}(f0, l0) \wedge
     //                \property{bounded\_range}(f1, l1)$
     // Precondition: $f0 \neq l0 \wedge f1 \neq l1 \wedge
     //                \property{disjoint}(f0, l0, f1, l1)$
-    typedef triple<I, I, I> T;
-    linker_to_tail<S> link_to_tail(set_link);
+    using T = triple<I, I, I>;
+    linker_to_tail<decltype(set_link)> link_to_tail{set_link};
     I h; I t;
     if (r(f1, f0)) { h = f1; advance_tail(t, f1); goto s1; }
     else           { h = f0; advance_tail(t, f0); goto s0; }
@@ -5639,125 +5262,136 @@ s0: if (f0 == l0)                                 goto s2;
 s1: if (f1 == l1)                                 goto s3;
     if (r(f1, f0)) {         advance_tail(t, f1); goto s1; }
     else           {         link_to_tail(t, f0); goto s0; }
-s2: set_link(t, f1); return T(h, t, l1);
-s3: set_link(t, f0); return T(h, t, l0);
+s2: set_link(t, f1); return T{h, t, l1};
+s3: set_link(t, f0); return T{h, t, l0};
 }
 
 // Exercise 8.2: combine_linked
 
-
-template<typename I, typename S>
-    __requires(ForwardLinker(S) && I == IteratorType<S>)
+template <typename I, typename S>
+    requires ForwardLinker<S> && Same<I, IteratorType<S>>
 struct linker_to_head
 {
     S set_link;
-    linker_to_head(const S& set_link) : set_link(set_link) { }
+    linker_to_head(const S& set_link)
+        : set_link{set_link}
+    {}
     void operator()(I& h, I& f)
     {
         // Precondition: $\func{successor}(f)$ is defined
-        IteratorType<S> tmp = successor(f);
+        auto tmp = successor(f);
         set_link(f, h);
         h = f;
         f = tmp;
     }
 };
 
-template<typename I, typename S>
-    __requires(ForwardLinker(S) && I == IteratorType<S>)
-I reverse_append(I f, I l, I h, S set_link)
+template <typename I, typename S>
+    requires ForwardLinker<S> && Same<I, IteratorType<S>>
+auto reverse_append(I f, I l, I h, S set_link) -> I
 {
     // Precondition: $\property{bounded\_range}(f, l) \wedge h \notin [f, l)$
-    linker_to_head<I, S> link_to_head(set_link);
+    linker_to_head<I, decltype(set_link)> link_to_head{set_link};
     while (f != l) link_to_head(h, f);
     return h;
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) &&
-        Predicate(P) && ValueType<I> == Domain(P))
+template <typename I, typename P>
+    requires
+        Readable<I> &&
+        Predicate<P> &&
+        Same<ValueType<I>, Domain<P>>
 struct predicate_source
 {
     P p;
-    predicate_source(const P& p) : p(p) { }
+    predicate_source(const P& p)
+        : p{p}
+    {}
     bool operator()(I i)
     {
         return p(source(i));
     }
 };
 
-template<typename I, typename S, typename P>
-    __requires(ForwardLinker(S) && I == IteratorType<S> &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-pair< pair<I, I>, pair<I, I> >
-partition_linked(I f, I l, P p, S set_link)
+template <typename I, typename S, typename P>
+    requires
+        ForwardLinker<S> &&
+        Same<I, IteratorType<S>> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_linked(I f, I l, P p, S set_link) -> pair<pair<I, I>, pair<I, I>>
 {
     // Precondition: $\property{bounded\_range}(f, l)$
-    predicate_source<I, P> ps(p);
+    predicate_source<I, P> ps{p};
     return split_linked(f, l, ps, set_link);
 }
 
-template<typename I0, typename I1, typename R>
-    __requires(Readable(I0) && Readable(I1) &&
-        ValueType(I0) == ValueType(I1) &&
-        Relation(R) && ValueType(I0) == Domain<R>)
+template <typename I0, typename I1, typename R>
+    requires
+        Readable<I0> && Readable<I1> &&
+        Same<ValueType<I0>, ValueType<I1>> &&
+        Relation<R> &&
+        Same<ValueType<I0>, Domain<R>>
 struct relation_source
 {
     R r;
-    relation_source(const R& r) : r(r) { }
+    relation_source(const R& r)
+        : r{r}
+    {}
     bool operator()(I0 i0, I1 i1)
     {
         return r(source(i0), source(i1));
     }
 };
 
-template<typename I, typename S, typename R>
-    __requires(Readable(I) &&
-        ForwardLinker(S) && I == IteratorType<S> &&
-        Relation(R) && ValueType<I> == Domain<R>)
-pair<I, I> merge_linked_nonempty(I f0, I l0, I f1, I l1,
-                                 R r, S set_link)
+template <typename I, typename S, typename R>
+    requires
+        Readable<I> &&
+        ForwardLinker<S> &&
+        Same<I, IteratorType<S>> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto merge_linked_nonempty(I f0, I l0, I f1, I l1, R r, S set_link) -> pair<I, I>
 {
     // Precondition: $f0 \neq l0 \wedge f1 \neq l1$
     // Precondition: $\property{increasing\_range}(f0, l0, r)$
     // Precondition: $\property{increasing\_range}(f1, l1, r)$
-    relation_source<I, I, R> rs(r);
-    triple<I, I, I> t = combine_linked_nonempty(f0, l0, f1, l1,
-                                                rs, set_link);
+    relation_source<I, I, decltype(r)> rs{r};
+    auto t = combine_linked_nonempty(f0, l0, f1, l1, rs, set_link);
     set_link(find_last(t.m1, t.m2), l1);
-    return pair<I, I>(t.m0, l1);
+    return pair<I, I>{t.m0, l1};
 }
 
-template<typename I, typename S, typename R>
-    __requires(Readable(I) &&
-        ForwardLinker(S) && I == IteratorType<S> &&
-        Relation(R) && ValueType<I> == Domain<R>)
-pair<I, I> sort_linked_nonempty_n(I f, DistanceType<I> n,
-                                  R r, S set_link)
+template <typename I, typename S, typename R>
+    requires
+        Readable<I> &&
+        ForwardLinker<S> &&
+        Same<I, IteratorType<S>> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto sort_linked_nonempty_n(I f, DistanceType<I> n, R r, S set_link) -> pair<I, I>
 {
     // Precondition: $\property{counted\_range}(f, n) \wedge
     //                n > 0 \wedge \func{weak\_ordering}(r)$
-    typedef DistanceType<I> N;
-    typedef pair<I, I> P;
-    if (n == N(1)) return P(f, successor(f));
-    N h = half_nonnegative(n);
-    P p0 = sort_linked_nonempty_n(f, h, r, set_link);
-    P p1 = sort_linked_nonempty_n(p0.m1, n - h, r, set_link);
-    return merge_linked_nonempty(p0.m0, p0.m1,
-                                 p1.m0, p1.m1, r, set_link);
+    using N = decltype(n);
+    using P = pair<I, I>;
+    if (n == N{1}) return P{f, successor(f)};
+    auto h = half_nonnegative(n);
+    auto p0 = sort_linked_nonempty_n(f, h, r, set_link);
+    auto p1 = sort_linked_nonempty_n(p0.m1, n - h, r, set_link);
+    return merge_linked_nonempty(p0.m0, p0.m1, p1.m0, p1.m1, r, set_link);
 }
 
 // Exercise 8.3: Complexity of sort_linked_nonempty_n
 
-
 // Exercise 8.4: unique
 
-
-template<typename C>
-     __requires(EmptyLinkedBifurcateCoordinate(C))
+template <typename C>
+    requires EmptyLinkedBifurcateCoordinate<C>
 void tree_rotate(C& curr, C& prev)
 {
     // Precondition: $\neg \func{empty}(curr)$
-    C tmp = left_successor(curr);
+    auto tmp = left_successor(curr);
     set_left_successor(curr, right_successor(curr));
     set_right_successor(curr, prev);
     if (empty(tmp)) { prev = tmp; return; }
@@ -5765,16 +5399,18 @@ void tree_rotate(C& curr, C& prev)
     curr = tmp;
 }
 
-template<typename C, typename Proc>
-    __requires(EmptyLinkedBifurcateCoordinate(C) &&
-        Procedure(Proc) && Arity(Proc) == 1 &&
-        C == InputType(Proc, 0))
-Proc traverse_rotating(C c, Proc proc)
+template <typename C, typename Proc>
+    requires
+        EmptyLinkedBifurcateCoordinate<C> &&
+    __requires(Procedure<Proc>)
+        Arity<Proc> == 1
+    __requires(Same<C, InputType<Proc, 0>>)
+auto traverse_rotating(C c, Proc proc) -> Proc
 {
     // Precondition: $\property{tree}(c)$
     if (empty(c)) return proc;
-    C curr = c;
-    C prev;
+    auto curr = c;
+    decltype(c) prev;
     do {
         proc(curr);
         tree_rotate(curr, prev);
@@ -5791,29 +5427,37 @@ Proc traverse_rotating(C c, Proc proc)
 // Exercise 8.5: Diagram each state of traverse_rotating
 // for a complete binary tree with 7 nodes
 
-
-template<typename T, typename N>
-    __requires(Integer(N))
+template <typename T, typename N>
+    requires Integer<N>
 struct counter
 {
     N n;
-    counter() : n(0) { }
-    counter(N n) : n(n) { }
-    void operator()(const T&) { n = successor(n); }
+    counter()
+        : n{0}
+    {}
+    counter(N n)
+        : n{n}
+    {}
+    void operator()(const T&)
+    {
+        n = successor(n);
+    }
 };
 
-template<typename C>
-    __requires(EmptyLinkedBifurcateCoordinate(C))
-WeightType<C> weight_rotating(C c)
+template <typename C>
+    requires EmptyLinkedBifurcateCoordinate<C>
+auto weight_rotating(C c) -> WeightType<C>
 {
     // Precondition: $\property{tree}(c)$
-    typedef WeightType<C> N;
-    return traverse_rotating(c, counter<C, N>()).n / N(3);
+    using N = WeightType<C>;
+    return traverse_rotating(c, counter<C, N>{}).n / N{3};
 }
 
-template<typename N, typename Proc>
-    __requires(Integer(N) &&
-        Procedure(Proc) && Arity(Proc) == 1)
+template <typename N, typename Proc>
+    requires
+        Integer<N> &&
+        Arity<Proc> == 1
+    __requires(Procedure(Proc))
 struct phased_applicator
 {
     N period;
@@ -5821,8 +5465,9 @@ struct phased_applicator
     N n;
     // Invariant: $n, phase \in [0, period)$
     Proc proc;
-    phased_applicator(N period, N phase, N n, Proc proc) :
-        period(period), phase(phase), n(n), proc(proc) { }
+    phased_applicator(N period, N phase, N n, Proc proc)
+        : period{period}, phase{phase}, n{n}, proc{proc}
+    {}
     void operator()(InputType<Proc, 0> x)
     {
         if (n == phase) proc(x);
@@ -5831,17 +5476,18 @@ struct phased_applicator
     }
 };
 
-template<typename C, typename Proc>
-    __requires(EmptyLinkedBifurcateCoordinate(C) &&
-        Procedure(Proc) && Arity(Proc) == 1 &&
-        C == InputType(Proc, 0))
-Proc traverse_phased_rotating(C c, int phase, Proc proc)
+template <typename C, typename Proc>
+    requires
+        EmptyLinkedBifurcateCoordinate<C> &&
+    __requires(Procedure<Proc>)
+        Arity<Proc> == 1 &&
+        Same<C, InputType<Proc, 0>>
+auto traverse_phased_rotating(C c, int phase, Proc proc) -> Proc
 {
     // Precondition: $\property{tree}(c) \wedge 0 \leq phase < 3$
-    phased_applicator<int, Proc> applicator(3, phase, 0, proc);
+    phased_applicator<int, Proc> applicator{3, phase, 0, proc};
     return traverse_rotating(c, applicator).proc;
 }
-
 
 //
 //  Chapter 9. Copying
@@ -6856,8 +6502,8 @@ struct temporary_buffer
     using N = DistanceType<P>;
     P p;
     N n;
-    temporary_buffer(N n_)
-        : n{n_}
+    temporary_buffer(N n)
+        : n{n}
     {
         while (true) {
             p = P(malloc(n * sizeof(T)));
