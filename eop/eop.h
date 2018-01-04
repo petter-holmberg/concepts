@@ -1374,668 +1374,6 @@ auto quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem) ->
 }
 
 
-//
-//  Chapter 6. Iterators
-//
-
-
-template <typename I>
-    requires Iterator<I>
-void increment(I& x)
-{
-    // Precondition: $\func{successor}(x)$ is defined
-    x = successor(x);
-}
-
-
-template <typename I>
-    requires Iterator<I>
-auto operator+(I f, DistanceType<I> n) -> I
-{
-    // Precondition: $n \geq 0 \wedge \property{weak\_range}(f, n)$
-    while (!zero(n)) {
-        n = predecessor(n);
-        f = successor(f);
-    }
-    return f;
-}
-
-
-template <typename I>
-    requires Iterator<I>
-auto operator-(I l, I f) -> DistanceType<I>
-{
-    // Precondition: $\property{bounded\_range}(f, l)$
-    DistanceType<I> n{0};
-    while (f != l) {
-        n = successor(n);
-        f = successor(f);
-    }
-    return n;
-}
-
-template <typename I, typename Proc>
-    requires ReadableIterator<I> && Procedure<Proc, ValueType<I>>
-auto for_each(I f, I l, Proc proc) -> Proc
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l) {
-        proc(source(f));
-        f = successor(f);
-    }
-    return proc;
-}
-
-template <typename I>
-    requires Iterator<I>
-auto find(I f, I l, const ValueType<I>& x) -> I
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l && source(f) != x) f = successor(f);
-    return f;
-}
-
-template <typename I>
-    requires ReadableIterator<I>
-auto find_not(I f, I l, const ValueType<I>& x) -> I
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l && source(f) == x) f = successor(f);
-    return f;
-}
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto find_if(I f, I l, P p) -> I
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l && !p(source(f))) f = successor(f);
-    return f;
-}
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto find_if_not(I f, I l, P p) -> I
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l && p(source(f))) f = successor(f);
-    return f;
-}
-
-// Exercise 6.1: quantifier functions
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-bool all(I f, I l, P p)
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return l == find_if_not(f, l, p);
-}
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-bool none(I f, I l, P p)
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return l == find_if(f, l, p);
-}
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-bool not_all(I f, I l, P p)
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return !all(f, l, p);
-}
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-bool some(I f, I l, P p)
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return !none(f, l, p);
-}
-
-template <typename I, typename P, typename J>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> && Iterator<J> &&
-        Same<ValueType<I>, Domain<P>>
-auto count_if(I f, I l, P p, J j) -> J
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l) {
-        if (p(source(f))) j = successor(j);
-        f = successor(f);
-    }
-    return j;
-}
-
-// Exercise 6.2: implement count_if using for_each
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto count_if(I f, I l, P p) -> DistanceType<I>
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count_if(f, l, p, DistanceType<decltype(f)>{0});
-}
-
-template <typename I, typename J>
-    requires ReadableIterator<I> && Iterator<J>
-auto count(I f, I l, const ValueType<I>& x, J j) -> J
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l) {
-        if (source(f) == x) j = successor(j);
-        f = successor(f);
-    }
-    return j;
-}
-
-template <typename I>
-    requires ReadableIterator<I>
-auto count(I f, I l, const ValueType<I>& x) -> DistanceType<I>
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count(f, l, x, DistanceType<I>{0});
-}
-
-template <typename I, typename J>
-    requires ReadableIterator<I> && Iterator<J>
-auto count_not(I f, I l, const ValueType<I>& x, J j) -> J
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l) {
-        if (source(f) != x) j = successor(j);
-        f = successor(f);
-    }
-    return j;
-}
-
-template <typename I>
-    requires ReadableIterator<I>
-auto count_not(I f, I l, const ValueType<I>& x) -> DistanceType<I>
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count_not(f, l, x, DistanceType<I>{0});
-}
-
-template <typename I, typename P, typename J>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<Domain<P>, ValueType<I>> && Iterator<J>
-auto count_if_not(I f, I l, P p, J j) -> J
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l) {
-        if (!p(source(f))) j = successor(j);
-        f = successor(f);
-    }
-    return j;
-}
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<Domain<P>, ValueType<I>>
-auto count_if_not(I f, I l, P p) -> DistanceType<I>
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count_if_not(f, l, p, DistanceType<decltype(f)>{0});
-}
-
-template <typename I, typename Op, typename F>
-    requires
-        Iterator<I> && BinaryOperation<Op> && UnaryFunction<F> &&
-        Same<I, Domain<F>> && Same<Codomain<F>, Domain<Op>>
-auto reduce_nonempty(I f, I l, Op op, F fun) -> Domain<Op>
-{
-    // Precondition: $\property{bounded\_range}(f, l) \wedge f \neq l$
-    // Precondition: $\property{partially\_associative}(op)$
-    // Precondition: $(\forall x \in [f, l))\,fun(x)$ is defined
-    auto r = fun(f);
-    f = successor(f);
-    while (f != l) {
-        r = op(r, fun(f));
-        f = successor(f);
-    }
-    return r;
-}
-
-template <typename I, typename Op>
-    requires
-        ReadableIterator<I> && BinaryOperation<Op> &&
-        Same<ValueType<I>, Domain<Op>>
-auto reduce_nonempty(I f, I l, Op op) -> Domain<Op>
-{
-    // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge f \neq l$
-    // Precondition: $\property{partially\_associative}(op)$
-    auto r = source(f);
-    f = successor(f);
-    while (f != l) {
-        r = op(r, source(f));
-        f = successor(f);
-    }
-    return r;
-}
-
-template <typename I, typename Op, typename F>
-    requires
-        Iterator<I> && BinaryOperation<Op> && UnaryFunction<F> &&
-        Same<I, Domain<F>> && Same<Codomain<F>, Domain<Op>>
-auto reduce(I f, I l, Op op, F fun, const Domain<Op>& z) -> Domain<Op>
-{
-    // Precondition: $\property{bounded\_range}(f, l)$
-    // Precondition: $\property{partially\_associative}(op)$
-    // Precondition: $(\forall x \in [f, l))\,fun(x)$ is defined
-    if (f == l) return z;
-    return reduce_nonempty(f, l, op, fun);
-}
-
-template <typename I, typename Op>
-    requires
-        Iterator<I> && BinaryOperation<Op> &&
-        Same<ValueType<I>, Domain<Op>>
-auto reduce(I f, I l, Op op, const Domain<Op>& z) -> Domain<Op>
-{
-    // Precondition: $\property{readable\_bounded\_range}(f, l)$
-    // Precondition: $\property{partially\_associative}(op)$
-    if (f == l) return z;
-    return reduce_nonempty(f, l, op);
-}
-
-template <typename I, typename Op, typename F>
-    requires
-        Iterator<I> && BinaryOperation<Op> && UnaryFunction<F> &&
-        Same<I, Domain<F>> && Same<I, Domain<F>> && Same<Codomain<F>, Domain<Op>>
-auto reduce_nonzeroes(I f, I l, Op op, F fun, const Domain<Op>& z) -> Domain<Op>
-{
-    // Precondition: $\property{bounded\_range}(f, l)$
-    // Precondition: $\property{partially\_associative}(op)$
-    // Precondition: $(\forall x \in [f, l))\,fun(x)$ is defined
-    Domain<Op> x;
-    do {
-        if (f == l) return z;
-        x = fun(f);
-        f = successor(f);
-    } while (x == z);
-    while (f != l) {
-        Domain<Op> y = fun(f);
-        if (y != z) x = op(x, y);
-        f = successor(f);
-    }
-    return x;
-}
-
-template <typename I, typename Op>
-    requires
-        Iterator<I> && BinaryOperation<Op> &&
-        Same<ValueType<I>, Domain<Op>>
-auto reduce_nonzeroes(I f, I l, Op op, const Domain<Op>& z) -> Domain<Op>
-{
-    // Precondition: $\property{readable\_bounded\_range}(f, l)$
-    // Precondition: $\property{partially\_associative}(op)$
-    Domain<Op> x;
-    do {
-        if (f == l) return z;
-        x = source(f);
-        f = successor(f);
-    } while (x == z);
-    while (f != l) {
-        auto y = source(f);
-        if (y != z) x = op(x, y);
-        f = successor(f);
-    }
-    return x;
-}
-
-template <typename I>
-    requires ReadableIterator<I> && AdditiveMonoid<ValueType<I>>
-auto reduce(I f, I l) -> ValueType<I>
-{
-    // Precondition: $\property{readable\_bounded\_range}(f, l)$
-    using T = ValueType<decltype(f)>;
-    return reduce(f, l, plus<T>(), T{0});
-}
-
-template <typename I, typename Proc>
-    requires ReadableIterator<I> && Procedure<Proc, ValueType<I>>
-auto for_each_n(I f, DistanceType<I> n, Proc proc) -> pair<Proc, I>
-{
-    // Precondition: $\property{readable\_weak\_range}(f, n)$
-    while (!zero(n)) {
-        n = predecessor(n);
-        proc(source(f));
-        f = successor(f);
-    }
-    return pair<Proc, I>{proc, f};
-}
-
-template <typename I>
-    requires ReadableIterator<I>
-auto find_n(I f, DistanceType<I> n, const ValueType<I>& x) -> pair<I, DistanceType<I>>
-{
-    // Precondition: $\property{readable\_weak\_range}(f, n)$
-    while (!zero(n) && source(f) != x) {
-        n = predecessor(n);
-        f = successor(f);
-    }
-    return pair<I, DistanceType<I>>{f, n};
-}
-
-
-// Exercise 6.3: implement variations taking a weak range instead of a bounded range
-// of all the versions of find, quantifiers, count, and reduce
-
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto find_if_unguarded(I f, P p) -> I
-{
-    // Precondition:
-    // $(\exists l)\,\func{readable\_bounded\_range}(f, l) \wedge \func{some}(f, l, p)$
-    while (!p(source(f))) f = successor(f);
-    return f;
-    // Postcondition: $p(\func{source}(f))$
-}
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto find_if_not_unguarded(I f, P p)
-{
-    // Let $l$ be the end of the implied range starting with $f$
-    // Precondition:
-    // $\func{readable\_bounded\_range}(f, l) \wedge \func{not\_all}(f, l, p)$
-    while (p(source(f))) f = successor(f);
-    return f;
-}
-
-template <typename I0, typename I1, typename R>
-    requires
-        ReadableIterator<I0> && ReadableIterator<I1> && Relation<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<I1>> && Same<ValueType<I0>, Domain<R>>
-auto find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r) -> pair<I0, I1>
-{
-    // Precondition: $\func{readable\_bounded\_range}(f0, l0)$
-    // Precondition: $\func{readable\_bounded\_range}(f1, l1)$
-    while (f0 != l0 && f1 != l1 && r(source(f0), source(f1))) {
-        f0 = successor(f0);
-        f1 = successor(f1);
-    }
-    return pair<I0, I1>{f0, f1};
-}
-
-template <typename I, typename R>
-    requires
-        ReadableIterator<I> && Relation<R> &&
-        Same<ValueType<I>, Domain<R>>
-auto find_adjacent_mismatch(I f, I l, R r) -> I
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    if (f == l) return l;
-    auto x = source(f);
-    f = successor(f);
-    while (f != l && r(x, source(f))) {
-        x = source(f);
-        f = successor(f);
-    }
-    return f;
-}
-
-template <typename I, typename R>
-    requires
-        ReadableIterator<I> && Relation<R> &&
-        Same<ValueType<I>, Domain<R>>
-bool relation_preserving(I f, I l, R r)
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return l == find_adjacent_mismatch(f, l, r);
-}
-
-template <typename I, typename R>
-    requires
-        ReadableIterator<I> && Relation<R> &&
-        Same<ValueType<I>, Domain<R>>
-bool strictly_increasing_range(I f, I l, R r)
-{
-    // Precondition:
-    // $\func{readable\_bounded\_range}(f, l) \wedge \func{weak\_ordering}(r)$
-    return relation_preserving(f, l, r);
-}
-
-template <typename I, typename R>
-    requires
-        ReadableIterator<I> && Relation<R> &&
-        Same<ValueType<I>, Domain<R>>
-bool increasing_range(I f, I l, R r)
-{
-    // Precondition:
-    // $\func{readable\_bounded\_range}(f, l) \wedge \func{weak\_ordering}(r)$
-    return relation_preserving(f, l, complement_of_converse<decltype(r)>(r));
-}
-
-template <typename I, typename P>
-    requires
-        ReadableIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-bool partitioned(I f, I l, P p)
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return l == find_if_not(find_if(f, l, p), l, p);
-}
-
-
-// Exercise 6.6: partitioned_n
-
-
-template <typename I, typename R>
-    requires
-        ReadableForwardIterator<I> && Relation<R> &&
-        Same<ValueType<I>, Domain<R>>
-auto find_adjacent_mismatch_forward(I f, I l, R r) -> I
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    if (f == l) return l;
-    I t;
-    do {
-        t = f;
-        f = successor(f);
-    } while (f != l && r(source(t), source(f)));
-    return f;
-}
-
-template <typename I, typename P>
-    requires
-        ReadableForwardIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto partition_point_n(I f, DistanceType<I> n, P p) -> I
-{
-    // Precondition:
-    // $\func{readable\_counted\_range}(f, n) \wedge \func{partitioned\_n}(f, n, p)$
-    while (!zero(n)) {
-        auto h = half_nonnegative(n);
-        auto m = f + h;
-        if (p(source(m))) {
-            n = h;
-        } else {
-            n = n - successor(h); f = successor(m);
-        }
-    }
-    return f;
-}
-
-template <typename I, typename P>
-    requires
-        ReadableForwardIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto partition_point(I f, I l, P p) -> I
-{
-    // Precondition:
-    // $\func{readable\_bounded\_range}(f, l) \wedge \func{partitioned}(f, l, p)$
-    return partition_point_n(f, l - f, p);
-}
-
-template <typename R>
-    requires Relation<R>
-struct lower_bound_predicate
-{
-    using T = Domain<R>;
-    const T& a;
-    R r;
-    lower_bound_predicate(const T& a, R r) : a{a}, r{r} {}
-    bool operator()(const T& x) { return !r(x, a); }
-};
-
-template <typename R>
-    requires Relation<R>
-struct input_type<lower_bound_predicate<R>, 0>
-{
-    using type = Domain<R>;
-};
-
-template <typename I, typename R>
-    requires
-        ReadableForwardIterator<I> && Relation<R> &&
-        Same<ValueType<I>, Domain<R>>
-auto lower_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r) -> I
-{
-    // Precondition:
-    // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
-    lower_bound_predicate<decltype(r)> p{a, r};
-    return partition_point_n(f, n, p);
-}
-
-template <typename R>
-    requires Relation<R>
-struct upper_bound_predicate
-{
-    using T = Domain<R>;
-    const T& a;
-    R r;
-    upper_bound_predicate(const T& a, R r) : a{a}, r{r} {}
-    bool operator()(const T& x) { return r(a, x); }
-};
-
-template <typename R>
-    requires Relation<R>
-struct input_type<upper_bound_predicate<R>, 0>
-{
-    using type = Domain<R>;
-};
-
-template <typename I, typename R>
-    requires
-        ReadableForwardIterator<I> && Relation<R> &&
-        Same<ValueType<I>, Domain<R>>
-auto upper_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r) -> I
-{
-    // Precondition:
-    // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
-    upper_bound_predicate<decltype(r)> p{a, r};
-    return partition_point_n(f, n, p);
-}
-
-
-// Exercise 6.7: equal_range
-
-
-template <typename I>
-    requires BidirectionalIterator<I>
-auto operator-(I l, DistanceType<I> n) -> I
-{
-    // Precondition: $n \geq 0 \wedge (\exists f \in I)\,(\func{weak\_range}(f, n) \wedge l = f+n)$
-    while (!zero(n)) {
-        n = predecessor(n);
-        l = predecessor(l);
-    }
-    return l;
-}
-
-template <typename I, typename P>
-    requires
-        ReadableBidirectionalIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto find_backward_if(I f, I l, P p) -> I
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (l != f && !p(source(predecessor(l))))
-        l = predecessor(l);
-    return l;
-}
-
-template <typename I, typename P>
-    requires
-        ReadableBidirectionalIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto find_backward_if_not(I f, I l, P p) -> I
-{
-    // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (l != f && p(source(predecessor(l))))
-        l = predecessor(l);
-    return l;
-}
-
-
-// Exercise 6.8: optimized find_backward_if
-
-
-// Exercise 6.9: palindrome predicate
-
-
-template <typename I, typename P>
-    requires
-        ReadableBidirectionalIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto find_backward_if_unguarded(I l, P p) -> I
-{
-    // Precondition:
-    // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{some}(f, l, p)$
-    do l = predecessor(l); while (!p(source(l)));
-    return l;
-    // Postcondition: $p(\func{source}(l))$
-}
-
-template <typename I, typename P>
-    requires
-        ReadableBidirectionalIterator<I> && UnaryPredicate<P> &&
-        Same<ValueType<I>, Domain<P>>
-auto find_backward_if_not_unguarded(I l, P p) -> I
-{
-    // Precondition:
-    // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{not\_all}(f, l, p)$
-    do l = predecessor(l); while (p(source(l)));
-    return l;
-    // Postcondition: $\neg p(\func{source}(l))$
-}
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3451,18 +2789,17 @@ quotient_remainder(Domain<F> a, Domain<F> b, F quo_rem)
 //
 
 
-template<typename I>
-    __requires(Iterator(I))
+template <typename I>
+    requires Iterator<I>
 void increment(I& x)
 {
     // Precondition: $\func{successor}(x)$ is defined
     x = successor(x);
 }
 
-
-template<typename I>
-    __requires(Iterator(I))
-I operator+(I f, DistanceType<I> n)
+template <typename I>
+    requires Iterator<I>
+auto operator+(I f, DistanceType<I> n) -> I
 {
     // Precondition: $n \geq 0 \wedge \property{weak\_range}(f, n)$
     while (!zero(n)) {
@@ -3472,13 +2809,12 @@ I operator+(I f, DistanceType<I> n)
     return f;
 }
 
-
-template<typename I>
-    __requires(Iterator(I))
-DistanceType<I> operator-(I l, I f)
+template <typename I>
+    requires Iterator<I>
+auto operator-(I l, I f) -> DistanceType<I>
 {
     // Precondition: $\property{bounded\_range}(f, l)$
-    DistanceType<I> n(0);
+    DistanceType<I> n{0};
     while (f != l) {
         n = successor(n);
         f = successor(f);
@@ -3486,11 +2822,9 @@ DistanceType<I> operator-(I l, I f)
     return n;
 }
 
-template<typename I, typename Proc>
-    __requires(Readable(I) && Iterator(I) &&
-        Procedure(Proc) && Arity(Proc) == 1 &&
-        ValueType<I> == InputType(Proc, 0))
-Proc for_each(I f, I l, Proc proc)
+template <typename I, typename Proc>
+    requires ReadableIterator<I> && Procedure<Proc, ValueType<I>>
+auto for_each(I f, I l, Proc proc) -> Proc
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -3500,88 +2834,101 @@ Proc for_each(I f, I l, Proc proc)
     return proc;
 }
 
-template<typename I>
-    __requires(Readable(I) && Iterator(I))
-I find(I f, I l, const ValueType<I>& x)
+template <typename I>
+    requires Iterator<I>
+auto find(I f, I l, const ValueType<I>& x) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && source(f) != x) f = successor(f);
     return f;
 }
 
-template<typename I>
-    __requires(Readable(I) && Iterator(I))
-I find_not(I f, I l, const ValueType<I>& x)
+template <typename I>
+    requires ReadableIterator<I>
+auto find_not(I f, I l, const ValueType<I>& x) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && source(f) == x) f = successor(f);
     return f;
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I find_if(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_if(I f, I l, P p) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l && !p(source(f))) f = successor(f);
     return f;
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I find_if_not(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_if_not(I f, I l, P p) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    while (f != l && p(source(f)))
-        f = successor(f);
+    while (f != l && p(source(f))) f = successor(f);
     return f;
 }
 
 // Exercise 6.1: quantifier functions
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
 bool all(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if_not(f, l, p);
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
 bool none(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if(f, l, p);
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
 bool not_all(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !all(f, l, p);
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
 bool some(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return !none(f, l, p);
 }
 
-template<typename I, typename P, typename J>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && Iterator(J) &&
-        ValueType<I> == Domain(P))
-J count_if(I f, I l, P p, J j)
+template <typename I, typename P, typename J>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Iterator<J> &&
+        Same<ValueType<I>, Domain<P>>
+auto count_if(I f, I l, P p, J j) -> J
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -3591,22 +2938,24 @@ J count_if(I f, I l, P p, J j)
     return j;
 }
 
-
 // Exercise 6.2: implement count_if using for_each
 
-
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-DistanceType<I> count_if(I f, I l, P p) {
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto count_if(I f, I l, P p) -> DistanceType<I>
+{
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count_if(f, l, p, DistanceType<I>(0));
+    return count_if(f, l, p, DistanceType<decltype(f)>{0});
 }
 
-template<typename I, typename J>
-    __requires(Readable(I) && Iterator(I) &&
-        Iterator(J))
-J count(I f, I l, const ValueType<I>& x, J j)
+template <typename I, typename J>
+    requires
+        ReadableIterator<I> &&
+        Iterator<J>
+auto count(I f, I l, const ValueType<I>& x, J j) -> J
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -3616,18 +2965,19 @@ J count(I f, I l, const ValueType<I>& x, J j)
     return j;
 }
 
-template<typename I>
-    __requires(Readable(I) && Iterator(I))
-DistanceType<I> count(I f, I l, const ValueType<I>& x)
+template <typename I>
+    requires ReadableIterator<I>
+auto count(I f, I l, const ValueType<I>& x) -> DistanceType<I>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-  return count(f, l, x, DistanceType<I>(0));
+    return count(f, l, x, DistanceType<I>{0});
 }
 
-template<typename I, typename J>
-    __requires(Readable(I) && Iterator(I) &&
-        Iterator(J))
-J count_not(I f, I l, const ValueType<I>& x, J j)
+template <typename I, typename J>
+    requires
+        ReadableIterator<I> &&
+        Iterator<J>
+auto count_not(I f, I l, const ValueType<I>& x, J j) -> J
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -3637,19 +2987,21 @@ J count_not(I f, I l, const ValueType<I>& x, J j)
     return j;
 }
 
-template<typename I>
-    __requires(Readable(I) && Iterator(I))
-DistanceType<I> count_not(I f, I l, const ValueType<I>& x)
+template <typename I>
+    requires ReadableIterator<I>
+auto count_not(I f, I l, const ValueType<I>& x) -> DistanceType<I>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-  return count_not(f, l, x, DistanceType<I>(0));
+    return count_not(f, l, x, DistanceType<I>{0});
 }
 
-template<typename I, typename P, typename J>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && Domain(P) == ValueType<I> &&
-        Iterator(J))
-J count_if_not(I f, I l, P p, J j)
+template <typename I, typename P, typename J>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>> &&
+        Iterator<J>
+auto count_if_not(I f, I l, P p, J j) -> J
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (f != l) {
@@ -3658,25 +3010,31 @@ J count_if_not(I f, I l, P p, J j)
     }
     return j;
 }
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && Domain(P) == ValueType<I>)
-DistanceType<I> count_if_not(I f, I l, P p)
+
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto count_if_not(I f, I l, P p) -> DistanceType<I>
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
-    return count_if_not(f, l, p, DistanceType<I>(0));
+    return count_if_not(f, l, p, DistanceType<decltype(f)>{0});
 }
 
-template<typename I, typename Op, typename F>
-    __requires(Iterator(I) && BinaryOperation(Op) &&
-        UnaryFunction(F) &&
-        I == Domain<F> && CoDomain<F> == Domain<Op>)
-Domain<Op> reduce_nonempty(I f, I l, Op op, F fun)
+template <typename I, typename Op, typename F>
+    requires
+        Iterator<I> &&
+        BinaryOperation<Op> &&
+        UnaryFunction<F> &&
+        Same<I, Domain<F>> &&
+        Same<Domain<Op>, Codomain<F>>
+auto reduce_nonempty(I f, I l, Op op, F fun) -> Domain<Op>
 {
     // Precondition: $\property{bounded\_range}(f, l) \wedge f \neq l$
     // Precondition: $\property{partially\_associative}(op)$
     // Precondition: $(\forall x \in [f, l))\,fun(x)$ is defined
-    Domain<Op> r = fun(f);
+    auto r = fun(f);
     f = successor(f);
     while (f != l) {
         r = op(r, fun(f));
@@ -3685,14 +3043,16 @@ Domain<Op> reduce_nonempty(I f, I l, Op op, F fun)
     return r;
 }
 
-template<typename I, typename Op>
-    __requires(Readable(I) && Iterator(I) && BinaryOperation(Op) &&
-        ValueType<I> == Domain<Op>)
-Domain<Op> reduce_nonempty(I f, I l, Op op)
+template <typename I, typename Op>
+    requires
+        ReadableIterator<I> &&
+        BinaryOperation<Op> &&
+        Same<ValueType<I>, Domain<Op>>
+auto reduce_nonempty(I f, I l, Op op) -> Domain<Op>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l) \wedge f \neq l$
     // Precondition: $\property{partially\_associative}(op)$
-    Domain<Op> r = source(f);
+    auto r = source(f);
     f = successor(f);
     while (f != l) {
         r = op(r, source(f));
@@ -3701,11 +3061,14 @@ Domain<Op> reduce_nonempty(I f, I l, Op op)
     return r;
 }
 
-template<typename I, typename Op, typename F>
-    __requires(Iterator(I) && BinaryOperation(Op) &&
-        UnaryFunction(F) &&
-        I == Domain<F> && CoDomain<F> == Domain<Op>)
-Domain<Op> reduce(I f, I l, Op op, F fun, const Domain<Op>& z)
+template <typename I, typename Op, typename F>
+    requires
+        Iterator<I> &&
+        BinaryOperation<Op> &&
+        UnaryFunction<F> &&
+        Same<I, Domain<F>> &&
+        Same<Domain<Op>, Codomain<F>>
+auto reduce(I f, I l, Op op, F fun, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -3714,10 +3077,12 @@ Domain<Op> reduce(I f, I l, Op op, F fun, const Domain<Op>& z)
     return reduce_nonempty(f, l, op, fun);
 }
 
-template<typename I, typename Op>
-    __requires(ReadableIterator(I) && BinaryOperation(Op) &&
-        ValueType<I> == Domain<Op>)
-Domain<Op> reduce(I f, I l, Op op, const Domain<Op>& z)
+template <typename I, typename Op>
+    requires
+        Iterator<I> &&
+        BinaryOperation<Op> &&
+        Same<ValueType<I>, Domain<Op>>
+auto reduce(I f, I l, Op op, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -3725,12 +3090,14 @@ Domain<Op> reduce(I f, I l, Op op, const Domain<Op>& z)
     return reduce_nonempty(f, l, op);
 }
 
-template<typename I, typename Op, typename F>
-    __requires(Iterator(I) && BinaryOperation(Op) &&
-        UnaryFunction(F) &&
-        I == Domain<F> && CoDomain<F> == Domain<Op>)
-Domain<Op> reduce_nonzeroes(I f, I l,
-                            Op op, F fun, const Domain<Op>& z)
+template <typename I, typename Op, typename F>
+    requires
+        Iterator<I> &&
+        BinaryOperation<Op> &&
+        UnaryFunction<F> &&
+        Same<I, Domain<F>> &&
+        Same<Domain<Op>, Codomain<F>>
+auto reduce_nonzeroes(I f, I l, Op op, F fun, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -3749,11 +3116,12 @@ Domain<Op> reduce_nonzeroes(I f, I l,
     return x;
 }
 
-template<typename I, typename Op>
-    __requires(ReadableIterator(I) && BinaryOperation(Op) &&
-        ValueType<I> == Domain<Op>)
-Domain<Op> reduce_nonzeroes(I f, I l,
-                            Op op, const Domain<Op>& z)
+template <typename I, typename Op>
+    requires
+        Iterator<I> &&
+        BinaryOperation<Op> &&
+        Same<ValueType<I>, Domain<Op>>
+auto reduce_nonzeroes(I f, I l, Op op, const Domain<Op>& z) -> Domain<Op>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
     // Precondition: $\property{partially\_associative}(op)$
@@ -3764,28 +3132,29 @@ Domain<Op> reduce_nonzeroes(I f, I l,
         f = successor(f);
     } while (x == z);
     while (f != l) {
-        Domain<Op> y = source(f);
+        auto y = source(f);
         if (y != z) x = op(x, y);
         f = successor(f);
     }
     return x;
 }
 
-template<typename I>
-    __requires(Readable(I) && Iterator(I) &&
-        AdditiveMonoid(ValueType<I>))
-ValueType<I> reduce(I f, I l)
+template <typename I>
+    requires
+        ReadableIterator<I> &&
+        AdditiveMonoid<ValueType<I>>
+auto reduce(I f, I l) -> ValueType<I>
 {
     // Precondition: $\property{readable\_bounded\_range}(f, l)$
-    typedef ValueType<I> T;
-    return reduce(f, l, plus<T>(), T(0));
+    using T = ValueType<decltype(f)>;
+    return reduce(f, l, plus<T>(), T{0});
 }
 
-template<typename I, typename Proc>
-    __requires(Readable(I) && Iterator(I) &&
-        Procedure(Proc) && Arity(Proc) == 1 &&
-        ValueType<I> == InputType(Proc, 0))
-pair<Proc, I> for_each_n(I f, DistanceType<I> n, Proc proc)
+template <typename I, typename Proc>
+    requires
+        ReadableIterator<I> &&
+        Procedure<Proc, ValueType<I>>
+auto for_each_n(I f, DistanceType<I> n, Proc proc) -> pair<Proc, I>
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
     while (!zero(n)) {
@@ -3793,31 +3162,31 @@ pair<Proc, I> for_each_n(I f, DistanceType<I> n, Proc proc)
         proc(source(f));
         f = successor(f);
     }
-    return pair<Proc, I>(proc, f);
+    return pair<Proc, I>{proc, f};
 }
 
-template<typename I>
-    __requires(Readable(I) && Iterator(I))
-pair<I, DistanceType<I>> find_n(I f, DistanceType<I> n,
-                                const ValueType<I>& x)
+template <typename I>
+    requires ReadableIterator<I>
+auto find_n(I f, DistanceType<I> n, const ValueType<I>& x) -> pair<I, DistanceType<I>>
 {
     // Precondition: $\property{readable\_weak\_range}(f, n)$
     while (!zero(n) && source(f) != x) {
         n = predecessor(n);
         f = successor(f);
     }
-    return pair<I, DistanceType<I>>(f, n);
+    return pair<I, DistanceType<I>>{f, n};
 }
-
 
 // Exercise 6.3: implement variations taking a weak range instead of a bounded range
 // of all the versions of find, quantifiers, count, and reduce
 
-
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I find_if_unguarded(I f, P p) {
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_if_unguarded(I f, P p) -> I
+{
     // Precondition:
     // $(\exists l)\,\func{readable\_bounded\_range}(f, l) \wedge \func{some}(f, l, p)$
     while (!p(source(f))) f = successor(f);
@@ -3825,10 +3194,13 @@ I find_if_unguarded(I f, P p) {
     // Postcondition: $p(\func{source}(f))$
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && Domain(P) == ValueType<I>)
-I find_if_not_unguarded(I f, P p) {
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_if_not_unguarded(I f, P p)
+{
     // Let $l$ be the end of the implied range starting with $f$
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{not\_all}(f, l, p)$
@@ -3836,12 +3208,14 @@ I find_if_not_unguarded(I f, P p) {
     return f;
 }
 
-template<typename I0, typename I1, typename R>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) && Relation(R) &&
-        ValueType(I0) == ValueType(I1) &&
-        ValueType(I0) == Domain<R>)
-pair<I0, I1> find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r)
+template <typename I0, typename I1, typename R>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        Relation<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<I1>> &&
+        Same<ValueType<I0>, Domain<R>>
+auto find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r) -> pair<I0, I1>
 {
     // Precondition: $\func{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\func{readable\_bounded\_range}(f1, l1)$
@@ -3849,17 +3223,19 @@ pair<I0, I1> find_mismatch(I0 f0, I0 l0, I1 f1, I1 l1, R r)
         f0 = successor(f0);
         f1 = successor(f1);
     }
-    return pair<I0, I1>(f0, f1);
+    return pair<I0, I1>{f0, f1};
 }
 
-template<typename I, typename R>
-    __requires(Readable(I) && Iterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-I find_adjacent_mismatch(I f, I l, R r)
+template <typename I, typename R>
+    requires
+        ReadableIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto find_adjacent_mismatch(I f, I l, R r) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     if (f == l) return l;
-    ValueType<I> x = source(f);
+    auto x = source(f);
     f = successor(f);
     while (f != l && r(x, source(f))) {
         x = source(f);
@@ -3868,18 +3244,22 @@ I find_adjacent_mismatch(I f, I l, R r)
     return f;
 }
 
-template<typename I, typename R>
-    __requires(Readable(I) && Iterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
+template <typename I, typename R>
+    requires
+        ReadableIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
 bool relation_preserving(I f, I l, R r)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_adjacent_mismatch(f, l, r);
 }
 
-template<typename I, typename R>
-    __requires(Readable(I) && Iterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
+template <typename I, typename R>
+    requires
+        ReadableIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
 bool strictly_increasing_range(I f, I l, R r)
 {
     // Precondition:
@@ -3887,35 +3267,37 @@ bool strictly_increasing_range(I f, I l, R r)
     return relation_preserving(f, l, r);
 }
 
-template<typename I, typename R>
-    __requires(Readable(I) && Iterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
+template <typename I, typename R>
+    requires
+        ReadableIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
 bool increasing_range(I f, I l, R r)
 {
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{weak\_ordering}(r)$
-    return relation_preserving(
-        f, l,
-        complement_of_converse<R>(r));
+    return relation_preserving(f, l, complement_of_converse<decltype(r)>(r));
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && Iterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
+template <typename I, typename P>
+    requires
+        ReadableIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
 bool partitioned(I f, I l, P p)
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     return l == find_if_not(find_if(f, l, p), l, p);
 }
 
-
 // Exercise 6.6: partitioned_n
 
-
-template<typename I, typename R>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-I find_adjacent_mismatch_forward(I f, I l, R r)
+template <typename I, typename R>
+    requires
+        ReadableForwardIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto find_adjacent_mismatch_forward(I f, I l, R r) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
     if (f == l) return l;
@@ -3927,16 +3309,18 @@ I find_adjacent_mismatch_forward(I f, I l, R r)
     return f;
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_point_n(I f, DistanceType<I> n, P p)
+template <typename I, typename P>
+    requires
+        ReadableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_point_n(I f, DistanceType<I> n, P p) -> I
 {
     // Precondition:
     // $\func{readable\_counted\_range}(f, n) \wedge \func{partitioned\_n}(f, n, p)$
     while (!zero(n)) {
-        DistanceType<I> h = half_nonnegative(n);
-        I m = f + h;
+        auto h = half_nonnegative(n);
+        auto m = f + h;
         if (p(source(m))) {
             n = h;
         } else {
@@ -3946,69 +3330,89 @@ I partition_point_n(I f, DistanceType<I> n, P p)
     return f;
 }
 
-template<typename I,  typename P>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I partition_point(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        ReadableForwardIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto partition_point(I f, I l, P p) -> I
 {
     // Precondition:
     // $\func{readable\_bounded\_range}(f, l) \wedge \func{partitioned}(f, l, p)$
     return partition_point_n(f, l - f, p);
 }
 
-template<typename R>
-    __requires(Relation(R))
+template <typename R>
+    requires Relation<R>
 struct lower_bound_predicate
 {
-    typedef Domain<R> T;
+    using T = Domain<R>;
     const T& a;
     R r;
-    lower_bound_predicate(const T& a, R r) : a(a), r(r) { }
+    lower_bound_predicate(const T& a, R r)
+        : a{a}, r{r}
+    {}
     bool operator()(const T& x) { return !r(x, a); }
 };
 
-template<typename I, typename R>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-I lower_bound_n(I f, DistanceType<I> n,
-                const ValueType<I>& a, R r)
+template <typename R>
+    requires Relation<R>
+struct input_type<lower_bound_predicate<R>, 0>
+{
+    using type = Domain<R>;
+};
+
+template <typename I, typename R>
+    requires
+        ReadableForwardIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto lower_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r) -> I
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
-    lower_bound_predicate<R> p(a, r);
+    lower_bound_predicate<decltype(r)> p{a, r};
     return partition_point_n(f, n, p);
 }
 
-template<typename R>
-    __requires(Relation(R))
+template <typename R>
+    requires Relation<R>
 struct upper_bound_predicate
 {
-    typedef Domain<R> T;
+    using T = Domain<R>;
     const T& a;
     R r;
-    upper_bound_predicate(const T& a, R r) : a(a), r(r) { }
+    upper_bound_predicate(const T& a, R r)
+        : a{a}, r{r}
+    {}
     bool operator()(const T& x) { return r(a, x); }
 };
 
-template<typename I, typename R>
-    __requires(Readable(I) && ForwardIterator(I) &&
-        Relation(R) && ValueType<I> == Domain<R>)
-I upper_bound_n(I f, DistanceType<I> n,
-                const ValueType<I>& a, R r)
+template <typename R>
+    requires Relation<R>
+struct input_type<upper_bound_predicate<R>, 0>
+{
+    using type = Domain<R>;
+};
+
+template <typename I, typename R>
+    requires
+        ReadableForwardIterator<I> &&
+        Relation<R> &&
+        Same<ValueType<I>, Domain<R>>
+auto upper_bound_n(I f, DistanceType<I> n, const ValueType<I>& a, R r) -> I
 {
     // Precondition:
     // $\property{weak\_ordering(r)} \wedge \property{increasing\_counted\_range}(f, n, r)$
-    upper_bound_predicate<R> p(a, r);
+    upper_bound_predicate<decltype(r)> p{a, r};
     return partition_point_n(f, n, p);
 }
 
-
 // Exercise 6.7: equal_range
 
-
-template<typename I>
-    __requires(BidirectionalIterator(I))
-I operator-(I l, DistanceType<I> n)
+template <typename I>
+    requires BidirectionalIterator<I>
+auto operator-(I l, DistanceType<I> n) -> I
 {
     // Precondition: $n \geq 0 \wedge (\exists f \in I)\,(\func{weak\_range}(f, n) \wedge l = f+n)$
     while (!zero(n)) {
@@ -4018,38 +3422,42 @@ I operator-(I l, DistanceType<I> n)
     return l;
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I find_backward_if(I f, I l, P p)
+template <typename I, typename P>
+    requires
+        ReadableBidirectionalIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_backward_if(I f, I l, P p) -> I
 {
-    // Precondition: $(f, l] \text{ is a readable bounded half-open on left range}$
+    // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (l != f && !p(source(predecessor(l))))
         l = predecessor(l);
     return l;
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I find_backward_if_not(I f, I l, P p) {
-    // Precondition: $(f, l] \text{ is a readable bounded half-open on left range}$
+template <typename I, typename P>
+    requires
+        ReadableBidirectionalIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_backward_if_not(I f, I l, P p) -> I
+{
+    // Precondition: $\func{readable\_bounded\_range}(f, l)$
     while (l != f && p(source(predecessor(l))))
         l = predecessor(l);
     return l;
 }
 
-
 // Exercise 6.8: optimized find_backward_if
-
 
 // Exercise 6.9: palindrome predicate
 
-
-template<typename I, typename P>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I find_backward_if_unguarded(I l, P p)
+template <typename I, typename P>
+    requires
+        ReadableBidirectionalIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_backward_if_unguarded(I l, P p) -> I
 {
     // Precondition:
     // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{some}(f, l, p)$
@@ -4058,10 +3466,12 @@ I find_backward_if_unguarded(I l, P p)
     // Postcondition: $p(\func{source}(l))$
 }
 
-template<typename I, typename P>
-    __requires(Readable(I) && BidirectionalIterator(I) &&
-        UnaryPredicate(P) && ValueType<I> == Domain(P))
-I find_backward_if_not_unguarded(I l, P p)
+template <typename I, typename P>
+    requires
+        ReadableBidirectionalIterator<I> &&
+        UnaryPredicate<P> &&
+        Same<ValueType<I>, Domain<P>>
+auto find_backward_if_not_unguarded(I l, P p) -> I
 {
     // Precondition:
     // $(\exists f \in I)\,\property{readable\_bounded\_range}(f, l) \wedge \property{not\_all}(f, l, p)$
