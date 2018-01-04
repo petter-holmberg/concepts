@@ -2027,516 +2027,6 @@ auto find_backward_if_not_unguarded(I l, P p) -> I
 }
 
 
-//
-//  Chapter 7. Coordinate structures
-//
-
-template <typename C>
-    requires BifurcateCoordinate<C>
-auto weight_recursive(C c)
-{
-    // Precondition: $\property{tree}(c)$
-    using N = WeightType<C>;
-    if (empty(c)) return N{0};
-    N l{0};
-    N r{0};
-    if (has_left_successor(c))
-        l = weight_recursive(left_successor(c));
-    if (has_right_successor(c))
-        r = weight_recursive(right_successor(c));
-    return successor(l + r);
-}
-
-template <typename C>
-    requires BifurcateCoordinate<C>
-auto height_recursive(C c)
-{
-    // Precondition: $\property{tree}(c)$
-    using N = WeightType<C>;
-    if (empty(c)) return N{0};
-    N l{0};
-    N r{0};
-    if (has_left_successor(c))
-        l = height_recursive(left_successor(c));
-    if (has_right_successor(c))
-        r = height_recursive(right_successor(c));
-    return successor(max(l, r));
-}
-
-enum visit { pre, in, post };
-
-template <typename C, typename Proc>
-    requires BifurcateCoordinate<C> && Procedure<Proc, visit, C>
-auto traverse_nonempty(C c, Proc proc) -> Proc
-{
-    // Precondition: $\property{tree}(c) \wedge \neg \func{empty}(c)$
-    proc(pre, c);
-    if (has_left_successor(c))
-        proc = traverse_nonempty(left_successor(c), proc);
-    proc(in, c);
-    if (has_right_successor(c))
-        proc = traverse_nonempty(right_successor(c), proc);
-    proc(post, c);
-    return proc;
-}
-
-template <typename C>
-    requires BidirectionalBifurcateCoordinate<C>
-bool is_left_successor(C j)
-{
-    // Precondition: $\func{has\_predecessor}(j)$
-    auto i = predecessor(j);
-    return has_left_successor(i) && left_successor(i) == j;
-}
-
-template <typename C>
-    requires BidirectionalBifurcateCoordinate<C>
-bool is_right_successor(C j)
-{
-    // Precondition: $\func{has\_predecessor}(j)$
-    auto i = predecessor(j);
-    return has_right_successor(i) && right_successor(i) == j;
-}
-
-template <typename C>
-    requires BidirectionalBifurcateCoordinate<C>
-auto traverse_step(visit& v, C& c)
-{
-    // Precondition: $\func{has\_predecessor}(c) \vee v \neq post$
-    switch (v) {
-    case pre:
-        if (has_left_successor(c)) {
-            c = left_successor(c);           return 1;
-        }   v = in;                          return 0;
-    case in:
-        if (has_right_successor(c)) {
-            v = pre; c = right_successor(c); return 1;
-        }   v = post;                        return 0;
-    case post:
-        if (is_left_successor(c))
-            v = in;
-            c = predecessor(c);              return -1;
-    }
-}
-
-template <typename C>
-    requires BidirectionalBifurcateCoordinate<C>
-bool reachable(C x, C y)
-{
-    // Precondition: $\property{tree}(x)$
-    if (empty(x)) return false;
-    auto root = x;
-    visit v = pre;
-    do {
-        if (x == y) return true;
-        traverse_step(v, x);
-    } while (x != root || v != post);
-    return false;
-}
-
-template <typename C>
-    requires BidirectionalBifurcateCoordinate<C>
-auto weight(C c) -> WeightType<C>
-{
-    // Precondition: $\property{tree}(c)$
-    using N = WeightType<C>;
-    if (empty(c)) return N{0};
-    auto root = c;
-    visit v = pre;
-    N n{1}; // Invariant: $n$ is count of $\type{pre}$ visits so far
-    do {
-        traverse_step(v, c);
-        if (v == pre) n = successor(n);
-    } while (c != root || v != post);
-    return n;
-}
-
-template <typename C>
-    requires BidirectionalBifurcateCoordinate<C>
-auto height(C c) -> WeightType<C>
-{
-    // Precondition: $\property{tree}(c)$
-    using N = WeightType<C>;
-    if (empty(c)) return N{0};
-    auto root = c;
-    visit v = pre;
-    N n{1}; // Invariant: $n$ is max of height of $\type{pre}$ visits so far
-    N m{1}; // Invariant: $m$ is height of current $\type{pre}$ visit
-    do {
-        m = (m - N{1}) + N(traverse_step(v, c) + 1);
-        n = max(n, m);
-    } while (c != root || v != post);
-    return n;
-}
-
-template <typename C, typename Proc>
-    requires BidirectionalBifurcateCoordinate<C> && Procedure<Proc, visit, C>
-auto traverse(C c, Proc proc) -> Proc
-{
-    // Precondition: $\property{tree}(c)$
-    if (empty(c)) return proc;
-    auto root = c;
-    visit v = pre;
-    proc(pre, c);
-    do {
-        traverse_step(v, c);
-        proc(v, c);
-    } while (c != root || v != post);
-    return proc;
-}
-
-
-// Exercise 7.3: Use traverse_step and the procedures of Chapter 2 to determine
-// whether the descendants of a bidirectional bifurcate coordinate form a DAG
-
-
-template <typename C0, typename C1>
-    requires BifurcateCoordinate<C0> && BifurcateCoordinate<C1>
-bool bifurcate_isomorphic_nonempty(C0 c0, C1 c1)
-{
-    // Precondition:
-    // $\property{tree}(c0) \wedge \property{tree}(c1) \wedge \neg \func{empty}(c0) \wedge \neg \func{empty}(c1)$
-    if (has_left_successor(c0))
-        if (has_left_successor(c1)) {
-            if (!bifurcate_isomorphic_nonempty(left_successor(c0), left_successor(c1)))
-                return false;
-        } else return false;
-    else if (has_left_successor(c1)) return false;
-    if (has_right_successor(c0))
-        if (has_right_successor(c1)) {
-            if (!bifurcate_isomorphic_nonempty(right_successor(c0), right_successor(c1)))
-                return false;
-        } else return false;
-    else if (has_right_successor(c1)) return false;
-    return true;
-}
-
-template <typename C0, typename C1>
-    requires BidirectionalBifurcateCoordinate<C0> && BidirectionalBifurcateCoordinate<C1>
-bool bifurcate_isomorphic(C0 c0, C1 c1)
-{
-    // Precondition: $\property{tree}(c0) \wedge \property{tree}(c1)$
-    if (empty(c0)) return empty(c1);
-    if (empty(c1)) return false;
-    auto root0 = c0;
-    visit v0 = pre;
-    visit v1 = pre;
-    while (true) {
-        traverse_step(v0, c0);
-        traverse_step(v1, c1);
-        if (v0 != v1) return false;
-        if (c0 == root0 && v0 == post) return true;
-    }
-}
-
-template <typename I0, typename I1, typename R>
-    requires
-        ReadableIterator<I0> && ReadableIterator<I1> && Relation<R> &&
-        Same_remove_cv<ValueType<I0>, ValueType<I1>> && Same<ValueType<I0>, Domain<R>>
-bool lexicographical_equivalent(I0 f0, I0 l0, I1 f1, I1 l1, R r)
-{
-    // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
-    // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
-    // Precondition: $\property{equivalence}(r)$
-    auto p = find_mismatch(f0, l0, f1, l1, r);
-    return p.m0 == l0 && p.m1 == l1;
-}
-
-template <typename I0, typename I1>
-    requires
-        ReadableIterator<I0> && ReadableIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-bool lexicographical_equal(I0 f0, I0 l0, I1 f1, I1 l1)
-{
-    return lexicographical_equivalent(f0, l0, f1, l1, equal<ValueType<I0>>());
-}
-
-// Could specialize to use lexicographic_equal for k > some cutoff
-template <int k, typename I0, typename I1>
-    requires
-        ReadableForwardIterator<I0> && ReadableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-struct lexicographical_equal_k
-{
-   bool operator()(I0 f0, I1 f1)
-   {
-       if (source(f0) != source(f1)) return false;
-       return lexicographical_equal_k<k - 1, I0, I1>()(successor(f0), successor(f1));
-   }
-};
-
-template <typename I0, typename I1>
-struct lexicographical_equal_k<0, I0, I1>
-{
-    bool operator()(I0, I1)
-    {
-        return true;
-    }
-};
-
-template <typename C0, typename C1, typename R>
-    requires
-        ReadableBifurcateCoordinate<C0> && ReadableBifurcateCoordinate<C1> && Relation<R> &&
-        Same<ValueType<C0>, ValueType<C1>> && Same<ValueType<C0>, Domain<R>>
-bool bifurcate_equivalent_nonempty(C0 c0, C1 c1, R r)
-{
-    // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
-    // Precondition: $\neg \func{empty}(c0) \wedge \neg \func{empty}(c1)$
-    // Precondition: $\property{equivalence}(r)$
-    if (!r(source(c0), source(c1))) return false;
-    if (has_left_successor(c0))
-        if (has_left_successor(c1)) {
-            if (!bifurcate_equivalent_nonempty(left_successor(c0), left_successor(c1), r))
-                return false;
-        } else return false;
-    else if (has_left_successor(c1)) return false;
-    if (has_right_successor(c0))
-        if (has_right_successor(c1)) {
-            if (!bifurcate_equivalent_nonempty(right_successor(c0), right_successor(c1), r))
-                return false;
-        } else return false;
-    else if (has_right_successor(c1)) return false;
-    return true;
-}
-
-template <typename C0, typename C1, typename R>
-    requires
-        ReadableBidirectionalBifurcateCoordinate<C0> &&
-        ReadableBidirectionalBifurcateCoordinate<C1> &&
-        Relation<R> &&
-        Same<ValueType<C0>, ValueType<C1>> && Same<ValueType<C0>, Domain<R>>
-bool bifurcate_equivalent(C0 c0, C1 c1, R r)
-{
-    // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
-    // Precondition: $\property{equivalence}(r)$
-    if (empty(c0)) return empty(c1);
-    if (empty(c1)) return false;
-    auto root0 = c0;
-    visit v0 = pre;
-    visit v1 = pre;
-    while (true) {
-        if (v0 == pre && !r(source(c0), source(c1))) return false;
-        traverse_step(v0, c0);
-        traverse_step(v1, c1);
-        if (v0 != v1) return false;
-        if (c0 == root0 && v0 == post) return true;
-    }
-}
-
-template <typename C0, typename C1>
-    requires
-        ReadableBidirectionalBifurcateCoordinate<C0> &&
-        ReadableBidirectionalBifurcateCoordinate<C1> &&
-        Same<ValueType<C0>, ValueType<C1>>
-bool bifurcate_equal(C0 c0, C1 c1)
-{
-    return bifurcate_equivalent(c0, c1, equal<ValueType<C0>>());
-}
-
-template <typename I0, typename I1, typename R>
-    requires
-        ReadableIterator<I0> && ReadableIterator<I1> && Relation<R> &&
-        Same<ValueType<I0>, ValueType<I1>> && Same<ValueType<I0>, Domain<R>>
-bool lexicographical_compare(I0 f0, I0 l0, I1 f1, I1 l1, R r)
-{
-    // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
-    // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
-    // Precondition: $\property{weak\_ordering}(r)$
-    while (true) {
-        if (f1 == l1) return false;
-        if (f0 == l0) return true;
-        if (r(source(f0), source(f1))) return true;
-        if (r(source(f1), source(f0))) return false;
-        f0 = successor(f0);
-        f1 = successor(f1);
-    }
-}
-
-template <typename I0, typename I1>
-    requires
-        ReadableIterator<I0> && ReadableIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-bool lexicographical_less(I0 f0, I0 l0, I1 f1, I1 l1)
-{
-    return lexicographical_compare(f0, l0, f1, l1, less<ValueType<I0>>());
-}
-
-template <int k, ReadableForwardIterator I0, ReadableForwardIterator I1>
-    requires
-        ReadableForwardIterator<I0> && ReadableForwardIterator<I1> &&
-        Same<ValueType<I0>, ValueType<I1>>
-struct lexicographical_less_k
-{
-   bool operator()(I0 f0, I1 f1)
-   {
-       if (source(f0) < source(f1)) return true;
-       if (source(f0) > source(f1)) return false;
-       return lexicographical_less_k<k - 1, I0, I1>()(successor(f0), successor(f1));
-   }
-};
-
-template <typename I0, typename I1>
-struct lexicographical_less_k<0, I0, I1>
-{
-    bool operator()(I0, I1)
-    {
-        return false;
-    }
-};
-
-
-// Exercise 7.6: bifurcate_compare_nonempty (using 3-way comparsion)
-
-// concept Comparator3Way(F) is
-//     HomogeneousFunction(F)
-//  /\ Arity<F> = 2
-//  /\ Codomain<F> = int
-
-// property(F : Comparator3Way)
-// three_way_compare : F
-//  f |- (all a,b in Domain<F>) f(a, b) in {-1, 0, 1}
-
-//  Also need axioms equivalent to weak_order : transitivity, etc.
-//  We could relax this to OrderedAdditiveGroup
-//  (allowing subtraction as the comparator for numbers)
-//  Should sense of positive/negative be flipped?
-
-template <typename R>
-    requires Relation<R>
-struct comparator_3_way
-{
-    using T = Domain<R>;
-    R r;
-    comparator_3_way(R r) : r{r}
-    {
-        // Precondition: $\property{weak\_ordering}(r)$
-        // Postcondition: three_way_compare(comparator_3_way(r))
-    }
-    auto operator()(const T& a, const T& b)
-    {
-        if (r(a, b)) return 1;
-        if (r(b, a)) return -1;
-        return 0;
-    }
-};
-
-template <typename I0, typename I1, typename F>
-    requires
-        ReadableIterator<I0> && ReadableIterator<I1> && Comparator3Way<F> &&
-        Same<ValueType<I0>, ValueType<I1>>
-        __requires(ValueType<I0> == Domain<F>)
-auto lexicographical_compare_3way(I0 f0, I0 l0, I1 f1, I1 l1, F comp)
-{
-    // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
-    // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
-    // Precondition: $\property{three\_way\_compare}(comp)$
-    while (true) {
-        if (f0 == l0)
-            if (f1 == l1) return 0;
-            else return 1;
-        if (f1 == l1) return -1;
-        auto tmp = comp(source(f0), source(f1));
-        if (tmp != 0) return tmp;
-        f0 = successor(f0);
-        f1 = successor(f1);
-    }
-}
-
-template <typename C0, typename C1, typename F>
-    requires
-        ReadableBifurcateCoordinate<C0> && ReadableBifurcateCoordinate<C1> && Comparator3Way<F> &&
-        Same<ValueType<C0>, ValueType<C1>>
-        __requires(ValueType<I0> == Domain<F>)
-auto bifurcate_compare_nonempty(C0 c0, C1 c1, F comp)
-{
-    // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
-    // Precondition: $\neg \func{empty}(c0) \wedge \neg \func{empty}(c1)$
-    // Precondition: $\property{three\_way\_compare}(comp)$
-    auto tmp = comp(source(c0), source(c1));
-    if (tmp != 0) return tmp;
-    if (has_left_successor(c0))
-        if (has_left_successor(c1)) {
-            tmp = bifurcate_compare_nonempty(left_successor(c0), left_successor(c1), comp);
-            if (tmp != 0) return tmp;
-        } else return -1;
-    else if (has_left_successor(c1)) return 1;
-    if (has_right_successor(c0))
-        if (has_right_successor(c1)) {
-            tmp = bifurcate_compare_nonempty(right_successor(c0), right_successor(c1), comp);
-            if (tmp != 0) return tmp;
-        } else return -1;
-    else if (has_right_successor(c1)) return 1;
-    return 0;
-}
-
-template <typename C0, typename C1, typename R>
-    requires
-        ReadableBidirectionalBifurcateCoordinate<C0> &&
-        ReadableBidirectionalBifurcateCoordinate<C1> &&
-        Relation<R> &&
-        Same<ValueType<C0>, ValueType<C1>> && Same<ValueType<C0>, Domain<R>>
-bool bifurcate_compare(C0 c0, C1 c1, R r)
-{
-    // Precondition: $\property{readable\_tree}(c0) \wedge
-    //                \property{readable\_tree}(c1) \wedge
-    //                \property{weak\_ordering}(r)$
-    if (empty(c1)) return false;
-    if (empty(c0)) return true;
-    auto root0 = c0;
-    visit v0 = pre;
-    visit v1 = pre;
-    while (true) {
-        if (v0 == pre) {
-            if (r(source(c0), source(c1))) return true;
-            if (r(source(c1), source(c0))) return false;
-        }
-        traverse_step(v0, c0);
-        traverse_step(v1, c1);
-        if (v0 != v1) return v0 > v1;
-        if (c0 == root0 && v0 == post) return false;
-    }
-}
-
-template <typename C0, typename C1>
-    requires
-        ReadableBidirectionalBifurcateCoordinate<C0> &&
-        ReadableBidirectionalBifurcateCoordinate<C1>
-bool bifurcate_less(C0 c0, C1 c1)
-{
-    // Precondition: $\property{readable\_tree}(c0) \wedge
-    //                \property{readable\_tree}(c1)
-    return bifurcate_compare(c0, c1, less<ValueType<C0>>());
-}
-
-template <typename T>
-    requires TotallyOrdered<T>
-struct always_false
-{
-    bool operator()(const T& x, const T& y)
-    {
-        return false;
-    }
-};
-
-template <typename T>
-    requires TotallyOrdered<T>
-struct input_type<always_false<T>, 0>
-{
-    using type = T;
-};
-
-template <typename C0, typename C1>
-    requires
-        ReadableBidirectionalBifurcateCoordinate<C0> &&
-        ReadableBidirectionalBifurcateCoordinate<C1>
-bool bifurcate_shape_compare(C0 c0, C1 c1)
-{
-    // Precondition: $\property{readable\_tree}(c0) \wedge
-    //                \property{readable\_tree}(c1)
-    return bifurcate_compare(c0, c1, always_false<ValueType<C0>>());
-}
-
-
 
 
 
@@ -4580,21 +4070,19 @@ I find_backward_if_not_unguarded(I l, P p)
     // Postcondition: $\neg p(\func{source}(l))$
 }
 
-
 //
 //  Chapter 7. Coordinate structures
 //
 
-
-template<typename C>
-    __requires(BifurcateCoordinate(C))
-WeightType<C> weight_recursive(C c)
+template <typename C>
+    requires BifurcateCoordinate<C>
+auto weight_recursive(C c) -> WeightType<C>
 {
     // Precondition: $\property{tree}(c)$
-    typedef WeightType<C> N;
-    if (empty(c)) return N(0);
-    N l(0);
-    N r(0);
+    using N = WeightType<C>;
+    if (empty(c)) return N{0};
+    N l{0};
+    N r{0};
     if (has_left_successor(c))
         l = weight_recursive(left_successor(c));
     if (has_right_successor(c))
@@ -4602,15 +4090,15 @@ WeightType<C> weight_recursive(C c)
     return successor(l + r);
 }
 
-template<typename C>
-    __requires(BifurcateCoordinate(C))
-WeightType<C> height_recursive(C c)
+template <typename C>
+    requires BifurcateCoordinate<C>
+auto height_recursive(C c) -> WeightType<C>
 {
     // Precondition: $\property{tree}(c)$
-    typedef WeightType<C> N;
-    if (empty(c)) return N(0);
-    N l(0);
-    N r(0);
+    using N = WeightType<C>;
+    if (empty(c)) return N{0};
+    N l{0};
+    N r{0};
     if (has_left_successor(c))
         l = height_recursive(left_successor(c));
     if (has_right_successor(c))
@@ -4620,12 +4108,9 @@ WeightType<C> height_recursive(C c)
 
 enum visit { pre, in, post };
 
-template<typename C, typename Proc>
-    __requires(BifurcateCoordinate(C) &&
-        Procedure(Proc) && Arity(Proc) == 2 &&
-        visit == InputType(Proc, 0) &&
-        C == InputType(Proc, 1))
-Proc traverse_nonempty(C c, Proc proc)
+template <typename C, typename Proc>
+    requires BifurcateCoordinate<C> && Procedure<Proc, visit, C>
+auto traverse_nonempty(C c, Proc proc) -> Proc
 {
     // Precondition: $\property{tree}(c) \wedge \neg \func{empty}(c)$
     proc(pre, c);
@@ -4638,33 +4123,33 @@ Proc traverse_nonempty(C c, Proc proc)
     return proc;
 }
 
-template<typename T>
-    __requires(BidirectionalBifurcateCoordinate(T))
-bool is_left_successor(T j)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+bool is_left_successor(C j)
 {
     // Precondition: $\func{has\_predecessor}(j)$
-    T i = predecessor(j);
+    auto i = predecessor(j);
     return has_left_successor(i) && left_successor(i) == j;
 }
 
-template<typename T>
-    __requires(BidirectionalBifurcateCoordinate(T))
-bool is_right_successor(T j)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+bool is_right_successor(C j)
 {
     // Precondition: $\func{has\_predecessor}(j)$
-    T i = predecessor(j);
+    auto i = predecessor(j);
     return has_right_successor(i) && right_successor(i) == j;
 }
 
-template<typename C>
-    __requires(BidirectionalBifurcateCoordinate(C))
-int traverse_step(visit& v, C& c)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+auto traverse_step(visit& v, C& c) -> int
 {
     // Precondition: $\func{has\_predecessor}(c) \vee v \neq post$
     switch (v) {
     case pre:
-        if (has_left_successor(c))  {
-                     c = left_successor(c);  return 1;
+        if (has_left_successor(c)) {
+            c = left_successor(c);           return 1;
         }   v = in;                          return 0;
     case in:
         if (has_right_successor(c)) {
@@ -4673,17 +4158,17 @@ int traverse_step(visit& v, C& c)
     case post:
         if (is_left_successor(c))
             v = in;
-                     c = predecessor(c);     return -1;
+            c = predecessor(c);              return -1;
     }
 }
 
-template<typename C>
-    __requires(BidirectionalBifurcateCoordinate(C))
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
 bool reachable(C x, C y)
 {
     // Precondition: $\property{tree}(x)$
     if (empty(x)) return false;
-    C root = x;
+    auto root = x;
     visit v = pre;
     do {
         if (x == y) return true;
@@ -4692,16 +4177,16 @@ bool reachable(C x, C y)
     return false;
 }
 
-template<typename C>
-    __requires(BidirectionalBifurcateCoordinate(C))
-WeightType<C> weight(C c)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+auto weight(C c) -> WeightType<C>
 {
     // Precondition: $\property{tree}(c)$
-    typedef WeightType<C> N;
-    if (empty(c)) return N(0);
-    C root = c;
+    using N = WeightType<C>;
+    if (empty(c)) return N{0};
+    auto root = c;
     visit v = pre;
-    N n(1); // Invariant: $n$ is count of $\type{pre}$ visits so far
+    N n{1}; // Invariant: $n$ is count of $\type{pre}$ visits so far
     do {
         traverse_step(v, c);
         if (v == pre) n = successor(n);
@@ -4709,34 +4194,31 @@ WeightType<C> weight(C c)
     return n;
 }
 
-template<typename C>
-    __requires(BidirectionalBifurcateCoordinate(C))
-WeightType<C> height(C c)
+template <typename C>
+    requires BidirectionalBifurcateCoordinate<C>
+auto height(C c) -> WeightType<C>
 {
     // Precondition: $\property{tree}(c)$
-    typedef WeightType<C> N;
-    if (empty(c)) return N(0);
-    C root = c;
+    using N = WeightType<C>;
+    if (empty(c)) return N{0};
+    auto root = c;
     visit v = pre;
-    N n(1); // Invariant: $n$ is max of height of $\type{pre}$ visits so far
-    N m(1); // Invariant: $m$ is height of current $\type{pre}$ visit
+    N n{1}; // Invariant: $n$ is max of height of $\type{pre}$ visits so far
+    N m{1}; // Invariant: $m$ is height of current $\type{pre}$ visit
     do {
-        m = (m - N(1)) + N(traverse_step(v, c) + 1);
+        m = (m - N{1}) + N(traverse_step(v, c) + 1);
         n = max(n, m);
     } while (c != root || v != post);
     return n;
 }
 
-template<typename C, typename Proc>
-    __requires(BidirectionalBifurcateCoordinate(C) &&
-        Procedure(Proc) && Arity(Proc) == 2 &&
-        visit == InputType(Proc, 0) &&
-        C == InputType(Proc, 1))
-Proc traverse(C c, Proc proc)
+template <typename C, typename Proc>
+    requires BidirectionalBifurcateCoordinate<C> && Procedure<Proc, visit, C>
+auto traverse(C c, Proc proc) -> Proc
 {
     // Precondition: $\property{tree}(c)$
     if (empty(c)) return proc;
-    C root = c;
+    auto root = c;
     visit v = pre;
     proc(pre, c);
     do {
@@ -4746,44 +4228,38 @@ Proc traverse(C c, Proc proc)
     return proc;
 }
 
-
 // Exercise 7.3: Use traverse_step and the procedures of Chapter 2 to determine
 // whether the descendants of a bidirectional bifurcate coordinate form a DAG
 
-
-template<typename C0, typename C1>
-    __requires(BifurcateCoordinate(C0) &&
-        BifurcateCoordinate(C1))
+template <typename C0, typename C1>
+    requires BifurcateCoordinate<C0> && BifurcateCoordinate<C1>
 bool bifurcate_isomorphic_nonempty(C0 c0, C1 c1)
 {
     // Precondition:
     // $\property{tree}(c0) \wedge \property{tree}(c1) \wedge \neg \func{empty}(c0) \wedge \neg \func{empty}(c1)$
     if (has_left_successor(c0))
         if (has_left_successor(c1)) {
-            if (!bifurcate_isomorphic_nonempty(
-                    left_successor(c0), left_successor(c1)))
+            if (!bifurcate_isomorphic_nonempty(left_successor(c0), left_successor(c1)))
                 return false;
         } else return false;
     else if (has_left_successor(c1)) return false;
     if (has_right_successor(c0))
         if (has_right_successor(c1)) {
-            if (!bifurcate_isomorphic_nonempty(
-                    right_successor(c0), right_successor(c1)))
+            if (!bifurcate_isomorphic_nonempty(right_successor(c0), right_successor(c1)))
                 return false;
         } else return false;
     else if (has_right_successor(c1)) return false;
     return true;
 }
 
-template<typename C0, typename C1>
-    __requires(BidirectionalBifurcateCoordinate(C0) &&
-        BidirectionalBifurcateCoordinate(C1))
+template <typename C0, typename C1>
+    requires BidirectionalBifurcateCoordinate<C0> && BidirectionalBifurcateCoordinate<C1>
 bool bifurcate_isomorphic(C0 c0, C1 c1)
 {
     // Precondition: $\property{tree}(c0) \wedge \property{tree}(c1)$
     if (empty(c0)) return empty(c1);
     if (empty(c1)) return false;
-    C0 root0 = c0;
+    auto root0 = c0;
     visit v0 = pre;
     visit v1 = pre;
     while (true) {
@@ -4794,35 +4270,38 @@ bool bifurcate_isomorphic(C0 c0, C1 c1)
     }
 }
 
-template<typename I0, typename I1, typename R>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) &&
-        ValueType(I0) == ValueType(I1) &&
-        Relation(R) && ValueType(I0) == Domain<R>)
+template <typename I0, typename I1, typename R>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        Relation<R> &&
+        Same_remove_cv<ValueType<I0>, ValueType<I1>> &&
+        Same<ValueType<I0>, Domain<R>>
 bool lexicographical_equivalent(I0 f0, I0 l0, I1 f1, I1 l1, R r)
 {
     // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
     // Precondition: $\property{equivalence}(r)$
-    pair<I0, I1> p = find_mismatch(f0, l0, f1, l1, r);
+    auto p = find_mismatch(f0, l0, f1, l1, r);
     return p.m0 == l0 && p.m1 == l1;
 }
 
-template<typename I0, typename I1>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) &&
-        ValueType(I0) == ValueType(I1))
+template <typename I0, typename I1>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 bool lexicographical_equal(I0 f0, I0 l0, I1 f1, I1 l1)
 {
-    return lexicographical_equivalent(f0, l0, f1, l1,
-                                      equal<ValueType<I0>>());
+    return lexicographical_equivalent(f0, l0, f1, l1, equal<ValueType<I0>>());
 }
 
 // Could specialize to use lexicographic_equal for k > some cutoff
-template<int k, typename I0, typename I1>
-    __requires(Readable(I0) && ForwardIterator(I0) &&
-       Readable(I1) && ForwardIterator(I1) &&
-       ValueType(I0) == ValueType(I1))
+template <int k, typename I0, typename I1>
+    requires
+        ReadableForwardIterator<I0> &&
+        ReadableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 struct lexicographical_equal_k
 {
    bool operator()(I0 f0, I1 f1)
@@ -4832,20 +4311,22 @@ struct lexicographical_equal_k
    }
 };
 
-template<typename I0, typename I1>
+template <typename I0, typename I1>
 struct lexicographical_equal_k<0, I0, I1>
 {
-   bool operator()(I0, I1)
-   {
-       return true;
-   }
+    bool operator()(I0, I1)
+    {
+        return true;
+    }
 };
 
-template<typename C0, typename C1, typename R>
-    __requires(Readable(C0) && BifurcateCoordinate(C0) &&
-        Readable(C1) && BifurcateCoordinate(C1) &&
-        ValueType(C0) == ValueType(C1) &&
-        Relation(R) && ValueType(C0) == Domain<R>)
+template <typename C0, typename C1, typename R>
+    requires
+        ReadableBifurcateCoordinate<C0> &&
+        ReadableBifurcateCoordinate<C1> &&
+        Relation<R> &&
+        Same<ValueType<C0>, ValueType<C1>> &&
+        Same<ValueType<C0>, Domain<R>>
 bool bifurcate_equivalent_nonempty(C0 c0, C1 c1, R r)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
@@ -4854,40 +4335,37 @@ bool bifurcate_equivalent_nonempty(C0 c0, C1 c1, R r)
     if (!r(source(c0), source(c1))) return false;
     if (has_left_successor(c0))
         if (has_left_successor(c1)) {
-            if (!bifurcate_equivalent_nonempty(
-                  left_successor(c0), left_successor(c1), r))
+            if (!bifurcate_equivalent_nonempty(left_successor(c0), left_successor(c1), r))
                 return false;
         } else return false;
     else if (has_left_successor(c1)) return false;
     if (has_right_successor(c0))
         if (has_right_successor(c1)) {
-            if (!bifurcate_equivalent_nonempty(
-                  right_successor(c0), right_successor(c1), r))
+            if (!bifurcate_equivalent_nonempty(right_successor(c0), right_successor(c1), r))
                 return false;
         } else return false;
     else if (has_right_successor(c1)) return false;
     return true;
 }
 
-template<typename C0, typename C1, typename R>
-    __requires(Readable(C0) &&
-        BidirectionalBifurcateCoordinate(C0) &&
-        Readable(C1) &&
-        BidirectionalBifurcateCoordinate(C1) &&
-        ValueType(C0) == ValueType(C1) &&
-        Relation(R) && ValueType(C0) == Domain<R>)
+template <typename C0, typename C1, typename R>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1> &&
+        Relation<R> &&
+        Same<ValueType<C0>, ValueType<C1>> &&
+        Same<ValueType<C0>, Domain<R>>
 bool bifurcate_equivalent(C0 c0, C1 c1, R r)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
     // Precondition: $\property{equivalence}(r)$
     if (empty(c0)) return empty(c1);
     if (empty(c1)) return false;
-    C0 root0 = c0;
+    auto root0 = c0;
     visit v0 = pre;
     visit v1 = pre;
     while (true) {
-        if (v0 == pre && !r(source(c0), source(c1)))
-            return false;
+        if (v0 == pre && !r(source(c0), source(c1))) return false;
         traverse_step(v0, c0);
         traverse_step(v1, c1);
         if (v0 != v1) return false;
@@ -4895,22 +4373,23 @@ bool bifurcate_equivalent(C0 c0, C1 c1, R r)
     }
 }
 
-template<typename C0, typename C1>
-    __requires(Readable(C0) &&
-        BidirectionalBifurcateCoordinate(C0) &&
-        Readable(C1) &&
-        BidirectionalBifurcateCoordinate(C1) &&
-        ValueType(C0) == ValueType(C1))
+template <typename C0, typename C1>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1> &&
+        Same<ValueType<C0>, ValueType<C1>>
 bool bifurcate_equal(C0 c0, C1 c1)
 {
     return bifurcate_equivalent(c0, c1, equal<ValueType<C0>>());
 }
 
-template<typename I0, typename I1, typename R>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) &&
-        ValueType(I0) == ValueType(I1) &&
-        Relation(R) && ValueType(I0) == Domain<R>)
+template <typename I0, typename I1, typename R>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        Relation<R> &&
+        Same<ValueType<I0>, ValueType<I1>> &&
+        Same<ValueType<I0>, Domain<R>>
 bool lexicographical_compare(I0 f0, I0 l0, I1 f1, I1 l1, R r)
 {
     // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
@@ -4926,48 +4405,46 @@ bool lexicographical_compare(I0 f0, I0 l0, I1 f1, I1 l1, R r)
     }
 }
 
-template<typename I0, typename I1>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) &&
-        ValueType(I0) == ValueType(I1))
+template <typename I0, typename I1>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 bool lexicographical_less(I0 f0, I0 l0, I1 f1, I1 l1)
 {
-    return lexicographical_compare(f0, l0, f1, l1,
-                                   less<ValueType<I0>>());
+    return lexicographical_compare(f0, l0, f1, l1, less<ValueType<I0>>());
 }
 
-template<int k, typename I0, typename I1>
-    __requires(Readable(I0) && ForwardIterator(I0) &&
-       Readable(I1) && ForwardIterator(I1) &&
-       ValueType(I0) == ValueType(I1))
+template <int k, ReadableForwardIterator I0, ReadableForwardIterator I1>
+    requires
+        ReadableForwardIterator<I0> &&
+        ReadableForwardIterator<I1> &&
+        Same<ValueType<I0>, ValueType<I1>>
 struct lexicographical_less_k
 {
    bool operator()(I0 f0, I1 f1)
    {
        if (source(f0) < source(f1)) return true;
        if (source(f0) > source(f1)) return false;
-       return lexicographical_less_k<k - 1, I0, I1>()(
-           successor(f0),
-           successor(f1));
+       return lexicographical_less_k<k - 1, I0, I1>()(successor(f0), successor(f1));
    }
 };
 
-template<typename I0, typename I1>
+template <typename I0, typename I1>
 struct lexicographical_less_k<0, I0, I1>
 {
-   bool operator()(I0, I1)
-   {
-       return false;
-   }
+    bool operator()(I0, I1)
+    {
+        return false;
+    }
 };
-
 
 // Exercise 7.6: bifurcate_compare_nonempty (using 3-way comparsion)
 
 // concept Comparator3Way(F) is
 //     HomogeneousFunction(F)
-//  /\ Arity(F) = 2
-//  /\ CoDomain<F> = int
+//  /\ Arity<F> = 2
+//  /\ Codomain<F> = int
 
 // property(F : Comparator3Way)
 // three_way_compare : F
@@ -4978,18 +4455,19 @@ struct lexicographical_less_k<0, I0, I1>
 //  (allowing subtraction as the comparator for numbers)
 //  Should sense of positive/negative be flipped?
 
-template<typename R>
-    __requires(Relation(R))
+template <typename R>
+    requires Relation<R>
 struct comparator_3_way
 {
-    typedef Domain<R> T;
+    using T = Domain<R>;
     R r;
-    comparator_3_way(R r) : r(r)
+    comparator_3_way(R r)
+        : r{r}
     {
         // Precondition: $\property{weak\_ordering}(r)$
         // Postcondition: three_way_compare(comparator_3_way(r))
     }
-    int operator()(const T& a, const T& b)
+    auto operator()(const T& a, const T& b)
     {
         if (r(a, b)) return 1;
         if (r(b, a)) return -1;
@@ -4997,12 +4475,14 @@ struct comparator_3_way
     }
 };
 
-template<typename I0, typename I1, typename F>
-    __requires(Readable(I0) && Iterator(I0) &&
-        Readable(I1) && Iterator(I1) &&
-        ValueType(I0) == ValueType(I1) &&
-        Comparator3Way(F) && ValueType(I0) == Domain<F>)
-int lexicographical_compare_3way(I0 f0, I0 l0, I1 f1, I1 l1, F comp)
+template <typename I0, typename I1, typename F>
+    requires
+        ReadableIterator<I0> &&
+        ReadableIterator<I1> &&
+        Comparator3Way<F> &&
+        Same<ValueType<I0>, ValueType<I1>>
+    __requires(Same<ValueType<I0>, Domain<F>>)
+auto lexicographical_compare_3way(I0 f0, I0 l0, I1 f1, I1 l1, F comp) -> int
 {
     // Precondition: $\property{readable\_bounded\_range}(f0, l0)$
     // Precondition: $\property{readable\_bounded\_range}(f1, l1)$
@@ -5012,49 +4492,48 @@ int lexicographical_compare_3way(I0 f0, I0 l0, I1 f1, I1 l1, F comp)
             if (f1 == l1) return 0;
             else return 1;
         if (f1 == l1) return -1;
-        int tmp = comp(source(f0), source(f1));
+        auto tmp = comp(source(f0), source(f1));
         if (tmp != 0) return tmp;
         f0 = successor(f0);
         f1 = successor(f1);
     }
 }
 
-template<typename C0, typename C1, typename F>
-    __requires(Readable(C0) && BifurcateCoordinate(C0) &&
-        Readable(C1) && BifurcateCoordinate(C1) &&
-        ValueType(C0) == ValueType(C1) &&
-        Comparator3Way(F) && ValueType(I0) == Domain<F>)
-int bifurcate_compare_nonempty(C0 c0, C1 c1, F comp)
+template <typename C0, typename C1, typename F>
+    requires
+        ReadableBifurcateCoordinate<C0> &&
+        ReadableBifurcateCoordinate<C1> &&
+        Comparator3Way<F> &&
+        Same<ValueType<C0>, ValueType<C1>>
+    __requires(ValueType<I0> == Domain<F>)
+auto bifurcate_compare_nonempty(C0 c0, C1 c1, F comp) -> int
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge \property{readable\_tree}(c1)$
     // Precondition: $\neg \func{empty}(c0) \wedge \neg \func{empty}(c1)$
     // Precondition: $\property{three\_way\_compare}(comp)$
-    int tmp = comp(source(c0), source(c1));
+    auto tmp = comp(source(c0), source(c1));
     if (tmp != 0) return tmp;
     if (has_left_successor(c0))
         if (has_left_successor(c1)) {
-            tmp = bifurcate_compare_nonempty(left_successor(c0), left_successor(c1),
-                                             comp);
+            tmp = bifurcate_compare_nonempty(left_successor(c0), left_successor(c1), comp);
             if (tmp != 0) return tmp;
         } else return -1;
     else if (has_left_successor(c1)) return 1;
     if (has_right_successor(c0))
         if (has_right_successor(c1)) {
-            tmp = bifurcate_compare_nonempty(right_successor(c0), right_successor(c1),
-                                             comp);
+            tmp = bifurcate_compare_nonempty(right_successor(c0), right_successor(c1), comp);
             if (tmp != 0) return tmp;
         } else return -1;
     else if (has_right_successor(c1)) return 1;
     return 0;
 }
 
-template<typename C0, typename C1, typename R>
-    __requires(Readable(C0) &&
-        BidirectionalBifurcateCoordinate(C0) &&
-        Readable(C1) &&
-        BidirectionalBifurcateCoordinate(C1) &&
-        ValueType(C0) == ValueType(C1) &&
-        Relation(R) && ValueType(C0) == Domain<R>)
+template <typename C0, typename C1, typename R>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1> &&
+        Relation<R> &&
+        Same<ValueType<C0>, ValueType<C1>> && Same<ValueType<C0>, Domain<R>>
 bool bifurcate_compare(C0 c0, C1 c1, R r)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge
@@ -5062,7 +4541,7 @@ bool bifurcate_compare(C0 c0, C1 c1, R r)
     //                \property{weak\_ordering}(r)$
     if (empty(c1)) return false;
     if (empty(c0)) return true;
-    C0 root0 = c0;
+    auto root0 = c0;
     visit v0 = pre;
     visit v1 = pre;
     while (true) {
@@ -5077,11 +4556,10 @@ bool bifurcate_compare(C0 c0, C1 c1, R r)
     }
 }
 
-template<typename C0, typename C1>
-    __requires(Readable(C0) &&
-        BidirectionalBifurcateCoordinate(C0) &&
-        Readable(C1) &&
-        BidirectionalBifurcateCoordinate(C1))
+template <typename C0, typename C1>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1>
 bool bifurcate_less(C0 c0, C1 c1)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge
@@ -5089,8 +4567,8 @@ bool bifurcate_less(C0 c0, C1 c1)
     return bifurcate_compare(c0, c1, less<ValueType<C0>>());
 }
 
-template<typename T>
-    __requires(TotallyOrdered(T))
+template <typename T>
+    requires TotallyOrdered<T>
 struct always_false
 {
     bool operator()(const T& x, const T& y)
@@ -5099,11 +4577,17 @@ struct always_false
     }
 };
 
-template<typename C0, typename C1>
-    __requires(Readable(C0) &&
-        BidirectionalBifurcateCoordinate(C0) &&
-        Readable(C1) &&
-        BidirectionalBifurcateCoordinate(C1))
+template <typename T>
+    requires TotallyOrdered<T>
+struct input_type<always_false<T>, 0>
+{
+    using type = T;
+};
+
+template <typename C0, typename C1>
+    requires
+        ReadableBidirectionalBifurcateCoordinate<C0> &&
+        ReadableBidirectionalBifurcateCoordinate<C1>
 bool bifurcate_shape_compare(C0 c0, C1 c1)
 {
     // Precondition: $\property{readable\_tree}(c0) \wedge
