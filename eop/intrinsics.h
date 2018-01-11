@@ -44,10 +44,11 @@
 //  linear notation and allow simple top-down parsing. They are
 //  implemented as:
 
-#define pointer(T) T*
+template <typename T>
+using Pointer = T*;
 
 template<typename T>
-pointer(T) addressof(T& x)
+Pointer<T> addressof(T& x)
 {
     return &x;
 }

@@ -156,7 +156,7 @@ void test_tuples()
     type_pair<int, char>(0, 0, 'a', 'z');
 
     char a[] = {'a', 'Z'};
-    type_pair<P, pointer(char)>(P(0, 'a'), P(1, 'Z'), &(a[0]), &(a[1]));
+    type_pair<P, Pointer<char>>(P(0, 'a'), P(1, 'Z'), &(a[0]), &(a[1]));
 
     array<int> a0;
     array<int> a1(3, 3, 0);
@@ -781,14 +781,14 @@ void algorithm_select_1_4()
     print("    select_1_4\n");
     using T = pair<int, int>;
     T t[] = {T(1, 1), T(2, 2), T(2, 3), T(3, 4)};
-    pointer(T) l = t + sizeof(t) / sizeof(T);
+    Pointer<T> l = t + sizeof(t) / sizeof(T);
     do {
         if (verbose) {
             print("      2nd of ("); print_range(t, l); print(") is ");
         }
         T r = select_1_4(t[0], t[1], t[2], t[3],
                          key_ordering<first<int, int>, less<int>>(first<int, int>(), less<int>()));
-        pointer(T) f = find_if(t, l, eq_first<int, int>(2));
+        Pointer<T> f = find_if(t, l, eq_first<int, int>(2));
         Assert(f != l && source(f) == r);
         if (verbose) {
             print(r);
@@ -802,14 +802,14 @@ void algorithm_select_1_4_stability_indices()
     print("    select_1_4 with stability indices\n");
     using T = pair<int, int>;
     T t[] = {T(1, 1), T(2, 2), T(2, 3), T(3, 4)};
-    pointer(T) l = t + sizeof(t) / sizeof(T);
+    Pointer<T> l = t + sizeof(t) / sizeof(T);
     do {
         if (verbose) {
             print("      2nd of ("); print_range(t, l); print(") is ");
         }
         T r = select_1_4<0,1,2,3>(t[0], t[1], t[2], t[3],
                                   key_ordering<first<int, int>, less<int>>(first<int, int>(), less<int>()));
-        pointer(T) f = find_if(t, l, eq_first<int, int>(2));
+        Pointer<T> f = find_if(t, l, eq_first<int, int>(2));
         Assert(f != l && source(f) == r);
         if (verbose) {
             print(r);
@@ -2075,7 +2075,7 @@ void test_ch_6()
         i = int(0); increment(i); Assert(i == int(1));
         i = int(99); increment(i); Assert(i == int(100));
         double x[100];
-        pointer(double) fx;
+        Pointer<double> fx;
         fx = x; increment(fx); Assert(fx == x + 1);
         fx = &x[99]; increment(fx); Assert(fx == x + 100);
     }
@@ -2287,10 +2287,10 @@ void test_ch_6()
      }
 
     int a[] = {0, 1, 2, 2, 4, 4, 5};
-    pointer(int) f = a;
-    pointer(int) l = a + sizeof(a) / sizeof(int);
+    Pointer<int> f = a;
+    Pointer<int> l = a + sizeof(a) / sizeof(int);
     distance_type<int*>::type n = l - f;
-    pointer(int) m;
+    Pointer<int> m;
 
     m = lower_bound_n(f, n, 2, less<int>()); Assert(m == a + 2);
     m = upper_bound_n(f, n, 2, less<int>()); Assert(m == a + 4);
@@ -2345,7 +2345,7 @@ void algorithms_lexicographical()
     verify_conservation<int> v(slist_node_count);
 
     Z a[] = {0, 1, 2, 3, 4, 5};
-    using I = pointer(Z);
+    using I = Pointer<Z>;
     I f_a = a;
     I l_a = f_a + (sizeof(a) / sizeof(Z));
     slist<Z> la(counted_range<Z*>(a, sizeof(a) / sizeof(Z)));
@@ -3454,7 +3454,7 @@ void type_temporary_buffer(N n)
 {
     {
         temporary_buffer<T> b(n);
-        DistanceType<pointer(T)> m = size(b);
+        DistanceType<Pointer<T>> m = size(b);
         Assert(0 < m && m <= n);
         if (verbose) {
             print("size(temporary_buffer<T>(");
@@ -3518,7 +3518,7 @@ void algorithms_reverse()
     equal_iota_reverse(begin(l), end(l));
 }
 
-using int_pointer = pointer(int);
+using int_pointer = Pointer<int>;
 
 template<typename C>
     __requires(IteratorConcept(C))
@@ -3637,7 +3637,7 @@ void algorithms_rotate()
     //   rotate_forward_nontrivial
     //   rotate_with_buffer_nontrivial
     //   rotate_with_buffer_backward_nontrivial
-    using I = pointer(int);
+    using I = Pointer<int>;
     int a[8];
     int b[8];
     for (int n = 6; n < 8; ++n) {
@@ -3696,9 +3696,9 @@ typedef bool (*int_pred_type)(int);
 
 struct partition_algorithm_tester
 {
-    using I = pointer(int);
+    using I = int*;
     using N = distance_type<I>::type;
-    const pointer(char) name;
+    Pointer<const char> name;
     array_k<6, int> a;
     I f;
     I l;
@@ -3706,7 +3706,7 @@ struct partition_algorithm_tester
     bool (*p)(int);
     slist<int> b;
     I m_potential;
-    partition_algorithm_tester(const pointer(char) name) :
+    partition_algorithm_tester(Pointer<const char> name) :
         name(name),
         a(),
         f(begin(a)),
@@ -3756,10 +3756,10 @@ void algorithms_partition()
 {
     {
         int a[] = {0, 2, 4, 1, 3, 5};
-        pointer(int) f = a;
-        pointer(int) l = a + sizeof(a) / sizeof(int);
+        Pointer<int> f = a;
+        Pointer<int> l = a + sizeof(a) / sizeof(int);
         // exercise
-        pointer(int) m = potential_partition_point(f, l, odd<int>);
+        Pointer<int> m = potential_partition_point(f, l, odd<int>);
         // exercise
         Assert(partitioned_at_point(f, m, l, odd<int>));
     }
@@ -3871,7 +3871,7 @@ struct input_type<equal_ignoring_case, 0>
     using type = char;
 };
 
-int size_unguarded(const pointer(char) a)
+int size_unguarded(Pointer<const char> a)
 {
     int n(0);
     while (source(a) != char(0)) {
@@ -3881,9 +3881,9 @@ int size_unguarded(const pointer(char) a)
     return n;
 }
 
-const pointer(char) begin(const pointer(char) a) { return a; }
+Pointer<const char> begin(Pointer<const char> a) { return a; }
 
-const pointer(char) end(const pointer(char) a) { return begin(a) + size_unguarded(a); }
+Pointer<const char> end(Pointer<const char> a) { return begin(a) + size_unguarded(a); }
 
 template<typename M, typename R, typename E>
     __requires(WrappedMerger(M) &&
@@ -3902,14 +3902,14 @@ struct merge_case
         // Precondition: $\property{equivalence}(e)
     }
     void subcase(
-        const pointer(char) a, int n_a,
-        const pointer(char) b, int n_b,
-        const pointer(char) c, int n_c)
+        Pointer<const char> a, int n_a,
+        Pointer<const char> b, int n_b,
+        Pointer<const char> c, int n_c)
     {
         array<char> tmp(n_c, n_c, char(0));
-        pointer(char) f_ab = begin(tmp);
-        pointer(char) m_ab = copy_n(begin(a), n_a, f_ab).m1;
-        pointer(char) l_ab = copy_n(begin(b), n_b, m_ab).m1;
+        Pointer<char> f_ab = begin(tmp);
+        Pointer<char> m_ab = copy_n(begin(a), n_a, f_ab).m1;
+        Pointer<char> l_ab = copy_n(begin(b), n_b, m_ab).m1;
         Assert(l_ab == end(tmp));
 
         merger(f_ab, n_a, m_ab, n_b, r);
@@ -3922,7 +3922,7 @@ struct merge_case
             print_eol();
         }
     }
-    void operator()(const pointer(char) a, const pointer(char) b, const pointer(char) c)
+    void operator()(Pointer<const char> a, Pointer<const char> b, Pointer<const char> c)
     {
         int n_a = size_unguarded(a) ;
         int n_b = size_unguarded(b);
@@ -3987,7 +3987,7 @@ I wrapped_merge_n_adaptive(I f0, DistanceType<I> n0,
 
 void algorithms_merge()
 {
-    using I = pointer(char);
+    using I = Pointer<char>;
 
     merge_cases(wrapped_merge_n_with_buffer<I, less_ignoring_case>);
     merge_cases(wrapped_merge_n_adaptive<I, less_ignoring_case>);
@@ -4019,7 +4019,7 @@ void algorithms_sort(S& s)
     {
         iota(n, f);
             array<int> buffer(50, 50, 0);
-            pointer(int) f_b = begin(buffer);
+            Pointer<int> f_b = begin(buffer);
             int n_b = size(buffer);
             m = sort_n_adaptive(f, n, f_b, n_b, greater);
         Assert(m == l && equal_iota_reverse(f, l));
@@ -4142,7 +4142,7 @@ void concept_ConstantSizeSequence(T0& a0, T1& a1, ValueType<T1>& x)
     Assert(!empty(a0));
     Assert(!empty(a1));
 
-    // Iterator is pointer(T)
+    // Iterator is Pointer<T>
     Assert(begin(a0) == addressof(a0[0]));
 
     // Equality behavior
@@ -4583,8 +4583,8 @@ void test_ch_12()
         const int N = 10;
         array<int> a0(N, N, 0);
         array<int> a1(N, N, 1);
-        pointer(int) p0 = begin(a0);
-        pointer(int) p1 = begin(a1);
+        Pointer<int> p0 = begin(a0);
+        Pointer<int> p1 = begin(a1);
         swap(a0, a1);
         Assert(all(begin(a0), end(a0), equal_to_x<int>(1)));
         Assert(all(begin(a1), end(a1), zero<int>));

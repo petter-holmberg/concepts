@@ -40,7 +40,7 @@
 //  appropriate, a default can be provided in the base structure
 //  template:
 
-// template<typename T>
+// template <typename T>
 // struct value_type
 // {
 //     typedef T type;
@@ -56,7 +56,7 @@
 // We refine the global definition for a particular type by
 // specializing:
 
-// template<typename T>
+// template <typename T>
 // struct value_type<pointer(T)>
 // {
 //     typedef T type;
@@ -68,11 +68,11 @@
 
 // Codomain : FunctionalProcedure -> Regular
 
-template<typename T>
+template <typename T>
     __requires(FunctionalProcedure(T))
 struct codomain_type;
 
-template<typename T>
+template <typename T>
 using Codomain = typename codomain_type<T>::type;
 
 
@@ -88,7 +88,7 @@ using InputType = typename input_type<T, i>::type;
 
 // Domain : HomogeneousFunction -> Regular
 
-template<typename T>
+template <typename T>
 using Domain = InputType<T, 0>;
 
 
@@ -121,33 +121,33 @@ struct distance_type<long long>
     using type = unsigned long long;
 };
 
-template<typename T>
+template <typename T>
 using DistanceType = typename distance_type<T>::type;
 
 // Chapter 3 - Associative operations
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct input_type<T (*)(T x, T y), 0>
 {
     using type = T;
 };
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct codomain_type<T (*)(T x, T y)>
 {
     using type = T;
 };
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct input_type<T (*)(const T& x, const T& y), 0>
 {
     using type = T;
 };
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct codomain_type<T (*)(const T& x, const T& y)>
 {
@@ -160,14 +160,14 @@ struct codomain_type<T (*)(const T& x, const T& y)>
 
 // Domain type function for Predicate
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct input_type<bool (*)(T x), 0>
 {
     using type = T;
 };
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct input_type<bool (*)(const T& x), 0>
 {
@@ -177,14 +177,14 @@ struct input_type<bool (*)(const T& x), 0>
 
 // Domain type function for Relation
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct input_type<bool (*)(T x, T y), 0>
 {
     using type = T;
 };
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct input_type<bool (*)(const T& x, const T& y), 0>
 {
@@ -194,11 +194,11 @@ struct input_type<bool (*)(const T& x, const T& y), 0>
 
 // Chapter 5 - Ordered algebraic structures
 
-template<typename T>
+template <typename T>
     __requires(ArchimedeanMonoid(T))
 struct quotient_type;
 
-template<typename T>
+template <typename T>
 using QuotientType = typename quotient_type<T>::type;
 
 
@@ -222,14 +222,14 @@ struct quotient_type<long>
 
 // ValueType : Readable -> Regular
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct value_type
 {
     using type = T;
 };
 
-template<typename T>
+template <typename T>
 using ValueType = typename value_type<T>::type;
 
 
@@ -239,7 +239,7 @@ template<typename I>
     __requires(RandomAccessIterator(I))
 struct difference_type;
 
-template<typename T>
+template <typename T>
 using DifferenceType = typename difference_type<T>::type;
 
 
@@ -248,11 +248,11 @@ using DifferenceType = typename difference_type<T>::type;
 
 // WeightType : BifurcateCoordinate -> Integer
 
-template<typename T>
+template <typename T>
     __requires(WeakBifurcateCoordinate(T))
 struct weight_type;
 
-template<typename T>
+template <typename T>
 using WeightType = typename weight_type<T>::type;
 
 
@@ -262,11 +262,11 @@ using WeightType = typename weight_type<T>::type;
 // IteratorType : ForwardLinker -> ForwardIterator
 // IteratorType : BackwardLinker -> BidirectionalIterator
 
-template<typename T>
+template <typename T>
     __requires(ImplementsIteratorType(T))
 struct iterator_type;
 
-template<typename T>
+template <typename T>
 using IteratorType = typename iterator_type<T>::type;
 
 
@@ -284,7 +284,7 @@ struct random_access_iterator_tag {};
 
 // IteratorConcept : Iterator -> IteratorTag
 
-template<typename T>
+template <typename T>
     __requires(Iterator(T))
 struct iterator_concept
 {
@@ -324,7 +324,7 @@ template<typename S>
     __requires(DynamicSequence(S))
 struct base_type;
 
-template<typename T>
+template <typename T>
 using BaseType = typename base_type<T>::type;
 
 
@@ -338,24 +338,24 @@ struct false_type {};
 // NeedsConstruction : Regular -> BooleanType
 // NeedsDestruction  : Regular -> BooleanType
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct needs_construction_type
 {
     using type = true_type; // default
 };
 
-template<typename T>
+template <typename T>
 using NeedsConstruction = typename needs_construction_type<T>::type;
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct needs_destruction_type
 {
     using type = true_type; // default
 };
 
-template<typename T>
+template <typename T>
 using NeedsDestruction = typename needs_destruction_type<T>::type;
 
 template<>
@@ -376,23 +376,23 @@ struct needs_destruction_type<int>
 
 // CoordinateType : Container -> Coordinate
 
-template<typename T>
+template <typename T>
     __requires(Container(T))
 struct coordinate_type;
 
-template<typename T>
+template <typename T>
 using CoordinateType = typename coordinate_type<T>::type;
 
 
 // UnderlyingType : Regular -> Regular
 
-template<typename T> __requires(Regular(T))
+template <typename T> __requires(Regular(T))
 struct underlying_type
 {
     using type = T; // default
 };
 
-template<typename T>
+template <typename T>
 using UnderlyingType = typename underlying_type<T>::type;
 
 
@@ -462,7 +462,7 @@ template<class F>
 struct function_traits<F&&> : public function_traits<F>
 {};
 
-template<typename T>
+template <typename T>
 constexpr auto Arity = function_traits<T>::arity;
 
 

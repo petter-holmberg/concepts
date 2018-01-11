@@ -20,9 +20,7 @@
 // Addison-Wesley Professional, 2009
 
 
-#ifndef EOP_POINTERS
-#define EOP_POINTERS
-
+#pragma once
 
 #include "intrinsics.h"
 #include "type_functions.h"
@@ -30,82 +28,80 @@
 #include <cstddef> // ptrdiff_t
 
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
-struct value_type<pointer(T)>
+struct value_type<Pointer<T>>
 {
     typedef T type;
 };
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
-const T& source(pointer(T) x)
+const T& source(Pointer<T> x)
 {
     return *x;
 }
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 const T& source(const T& x)
 {
     return x;
 }
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
-struct distance_type<pointer(T)>
+struct distance_type<Pointer<T>>
 {
     typedef ptrdiff_t type;
 };
 
 template<typename T>
     __requires(Regular(T))
-pointer(T) successor(pointer(T) x)
+auto successor(Pointer<T> x) -> Pointer<T>
 {
     return x + ptrdiff_t(1);
 }
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
-pointer(T) predecessor(pointer(T) x)
+auto predecessor(Pointer<T> x) -> Pointer<T>
 {
     return x - ptrdiff_t(1);
 }
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
-T& sink(pointer(T) x)
+auto sink(Pointer<T> x) -> T&
 {
     return *x;
 }
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
-T& sink(T& x)
+auto sink(T& x) -> T&
 {
     return x;
 }
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
-T& deref(pointer(T) x)
+auto deref(Pointer<T> x) -> T&
 {
     return *x;
 }
 
-//template<typename T>
+//template <typename T>
 //    __requires(Regular(T))
 //T& deref(T& x)
 //{
 //    return x;
 //}
 
-template<typename T>
+template <typename T>
     __requires(Regular(T))
 struct iterator_concept<T*>
 {
     typedef random_access_iterator_tag __concept;
 };
-
-#endif // EOP_POINTERS
 

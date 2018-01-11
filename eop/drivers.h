@@ -157,7 +157,7 @@ void run_table_transformation()
         using N_0 = size_type<T_0>::type;
         using T = array<N_0>;
         using N = size_type<T>::type; // hopefully N = N_0
-        using I = iterator_type<T>::type; // i.e., pointer(int)
+        using I = iterator_type<T>::type; // i.e., Pointer<int>
         T a;
         while (true) {
   	        N x;
@@ -214,10 +214,10 @@ struct LCG // linear congruential generator
 {
     using T = long long;
     T m, a, b, x0;
-    const pointer(char) name;
-    LCG() { }
-    LCG(T m, T a, T b, T x0, const pointer(char) name) :
-        m(m), a(a), b(b), x0(x0), name(name) { }
+    Pointer<const char> name;
+    LCG() {}
+    LCG(T m, T a, T b, T x0, Pointer<const char> name)
+        : m{m}, a{a}, b{b}, x0{x0}, name{name} {}
     T operator()(T x) { return (a * x + b) % m; }
 };
 
@@ -275,7 +275,7 @@ void run_lcg_transformation()
     print("Enter an index (out of range to end)"
           " and a seed (negative to use default):\n");
     int i(0);
-    pointer(LCG) p = begin(lcg);
+    Pointer<LCG> p = begin(lcg);
     while (i < size(lcg)) {
         print("  "); print(i); print(" "); print(source(p + i).name); print_eol();
         i = successor(i);
@@ -883,7 +883,7 @@ void run_array_tests()
 
     array<int> v;
     int buf[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-    insert_range(back<array<int>>(v), counted_range<pointer(int)>(buf, 9));
+    insert_range(back<array<int>>(v), counted_range<Pointer<int>>(buf, 9));
     print("v: "); print(v); print_eol();
     array<array<int>> vv(12, 12, v);
     print("vv: "); print(vv); print_eol();
@@ -920,7 +920,7 @@ void run_array_tests()
     array<int> copy_of_a(a);
     print_eol();
     print("array: "); print_range(begin(a), end(a)); print_eol();
-    using I = pointer(int);
+    using I = Pointer<int>;
 
     print("merge: "); print_range(begin(a), end(a)); print_eol();
     pair<int*, int*> p = partition_stable_n(begin(a), 6, odd<int>);
@@ -930,7 +930,7 @@ void run_array_tests()
     int bb[] = {17, 29, 0, 1001, 47, 3, 2, 1, 124, 49, 981, 3, 29};
     print("Array:  "); print_range(bb, bb + sizeof(bb) / sizeof(int)); print_eol();
     array<int> b(counted_range<int*>(bb, sizeof(bb) / sizeof(int)));
-    I f_buf(0);
+    I f_buf{nullptr};
     int n_buf(0);
     sort_n_adaptive(begin(b), size(b), f_buf, n_buf, less<int>());
     print("Sorted: "); print_range(begin(b), end(b)); print_eol();

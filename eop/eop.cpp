@@ -33,10 +33,10 @@
 
 struct cmd
 {
-    const pointer(char) name;
+    Pointer<const char> name;
     void (*action)();
-    cmd() { }
-    cmd(const pointer(char) name, void (*action)()) : name(name), action(action) { }
+    cmd() {}
+    cmd(Pointer<const char> name, void (*action)()) : name{name}, action{action} {}
 };
 
 int main()

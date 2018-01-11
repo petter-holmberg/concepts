@@ -1473,7 +1473,7 @@ auto for_each(I f, I l, Proc proc) -> Proc
 }
 
 template <typename I>
-    requires Iterator<I>
+    requires ReadableIterator<I>
 auto find(I f, I l, const ValueType<I>& x) -> I
 {
     // Precondition: $\func{readable\_bounded\_range}(f, l)$
@@ -4038,7 +4038,7 @@ template <typename T>
     //requires Regular<T>
 struct temporary_buffer
 {
-    using P = pointer(T);
+    using P = Pointer<T>;
     using N = DistanceType<P>;
     P p;
     N n;
@@ -4046,8 +4046,8 @@ struct temporary_buffer
         : n{n}
     {
         while (true) {
-            p = P(malloc(n * sizeof(T)));
-            if (p != P(0)) {
+            p = reinterpret_cast<P>(malloc(n * sizeof(T)));
+            if (p != P{nullptr}) {
                 construct_all(p, p + n);
                 return;
             }
@@ -4065,14 +4065,14 @@ struct temporary_buffer
 
 template <typename T>
     requires Regular<T>
-auto size(const temporary_buffer<T>& b) -> DistanceType<pointer(T)>
+auto size(const temporary_buffer<T>& b) -> DistanceType<Pointer<T>>
 {
     return b.n;
 }
 
 template <typename T>
     requires Regular<T>
-auto begin(temporary_buffer<T>& b) -> pointer(T)
+auto begin(temporary_buffer<T>& b) -> Pointer<T>
 {
     return b.p;
 }
@@ -4473,7 +4473,7 @@ struct counter_machine
     Op op;
     T z;
     T f[64];
-    DistanceType<pointer(T)> n;
+    DistanceType<Pointer<T>> n;
     counter_machine(Op op, const T& z)
         : op{op}, z{z}, n{0}
     {}
@@ -4766,7 +4766,7 @@ template <int k, typename T>
     requires Regular<T>
 struct iterator_type<array_k<k, T>>
 {
-    using type = pointer(T);
+    using type = Pointer<T>;
 };
 
 template <int k, typename T>
@@ -4780,7 +4780,7 @@ template <int k, typename T>
     requires Regular<T>
 struct size_type<array_k<k, T>>
 {
-    using type = DistanceType<pointer(T)>;
+    using type = DistanceType<Pointer<T>>;
 };
 
 template <int k, typename T>
@@ -4792,28 +4792,28 @@ struct underlying_type<array_k<k, T>>
 
 template <int k, typename T>
     requires Regular<T>
-auto begin(array_k<k, T>& x) -> pointer(T)
+auto begin(array_k<k, T>& x) -> Pointer<T>
 {
     return addressof(x.a[0]);
 }
 
 template <int k, typename T>
     requires Regular<T>
-auto begin(const array_k<k, T>& x) -> const pointer(T)
+auto begin(const array_k<k, T>& x) -> Pointer<const T>
 {
     return addressof(x.a[0]);
 }
 
 template <int k, typename T>
     requires Regular<T>
-auto end(array_k<k, T>& x) -> pointer(T)
+auto end(array_k<k, T>& x) -> Pointer<T>
 {
     return begin(x) + k;
 }
 
 template <int k, typename T>
     requires Regular<T>
-auto end(const array_k<k, T>& x) -> const pointer(T)
+auto end(const array_k<k, T>& x) -> Pointer<const T>
 {
     return begin(x) + k;
 }
@@ -5095,7 +5095,7 @@ template <typename S>
 struct before
 {
     using I = IteratorType<S>;
-    pointer(S) s;
+    Pointer<S> s;
     I i;
     before(S& s, I i)
         : s{&s}, i{i}
@@ -5163,7 +5163,7 @@ template <typename S>
 struct after
 {
     using I = IteratorType<S>;
-    pointer(S) s;
+    Pointer<S> s;
     I i;
     after(S& s, I i)
         : s{&s}, i{i}
@@ -5230,7 +5230,7 @@ template <typename S>
     requires DynamicSequence<S>
 struct front
 {
-    pointer(S) s;
+    Pointer<S> s;
     front(S& s)
         : s{&s}
     {}
@@ -5296,7 +5296,7 @@ template <typename S>
     requires DynamicSequence<S>
 struct back
 {
-    pointer(S) s;
+    Pointer<S> s;
     back(S& s)
         : s{&s}
     {}
@@ -5363,7 +5363,7 @@ template <typename S>
 struct at
 {
     using I = IteratorType<S>;
-    pointer(S) s;
+    Pointer<S> s;
     I i;
     at(S& s, I i)
         : s{&s}, i{i}
@@ -5508,8 +5508,8 @@ template <typename T>
 struct slist_node
 {
     T value;
-    pointer(slist_node) forward_link;
-    slist_node(const T& v, pointer(slist_node) f)
+    Pointer<slist_node> forward_link;
+    slist_node(const T& v, Pointer<slist_node> f)
         : value(v), forward_link(f)
     {}
 };
@@ -5520,12 +5520,12 @@ template <typename T>
     requires Regular<T>
 struct slist_iterator
 {
-    pointer(slist_node<T>) p;
+    Pointer<slist_node<T>> p;
     slist_iterator()
-        : p(0)
+        : p{nullptr}
     {}
-    slist_iterator(pointer(slist_node<T>) p)
-        : p(p)
+    slist_iterator(Pointer<slist_node<T>> p)
+        : p{p}
     {}
 };
 
@@ -5823,9 +5823,9 @@ template <typename T>
 struct list_node
 {
     T value;
-    pointer(list_node) forward_link;
-    pointer(list_node) backward_link;
-    list_node(const T& v, pointer(list_node) f, pointer(list_node) b)
+    Pointer<list_node> forward_link;
+    Pointer<list_node> backward_link;
+    list_node(const T& v, Pointer<list_node> f, Pointer<list_node> b)
         : value{v}, forward_link{f}, backward_link{b}
     {}
 };
@@ -5836,11 +5836,11 @@ template <typename T>
     requires Regular<T>
 struct list_iterator
 {
-    pointer(list_node<T>) p;
+    Pointer<list_node<T>> p;
     list_iterator()
-        : p{0}
+        : p{nullptr}
     {}
-    list_iterator(pointer(list_node<T>) p)
+    list_iterator(Pointer<list_node<T>> p)
         : p{p}
     {}
 };
@@ -6152,14 +6152,14 @@ template <typename T>
     requires Regular<T>
 struct stree_node
 {
-    using Link = pointer(stree_node);
+    using Link = Pointer<stree_node>;
     T value;
     Link left_successor_link;
     Link right_successor_link;
     stree_node()
-        : left_successor_link{0}, right_successor_link{0}
+        : left_successor_link{nullptr}, right_successor_link{nullptr}
     {}
-    stree_node(T v, Link l = 0, Link r = 0)
+    stree_node(T v, Link l = nullptr, Link r = nullptr)
         : value{v}, left_successor_link{l}, right_successor_link{r}
     {}
 };
@@ -6168,11 +6168,11 @@ template <typename T>
     requires Regular<T>
 struct stree_coordinate
 {
-    pointer(stree_node<T>) ptr;
+    Pointer<stree_node<T>> ptr;
     stree_coordinate()
-        : ptr{0}
+        : ptr{nullptr}
     {}
-    stree_coordinate(pointer(stree_node<T>) ptr)
+    stree_coordinate(Pointer<stree_node<T>> ptr)
         : ptr{ptr}
     {}
 };
@@ -6188,15 +6188,14 @@ template <typename T>
     requires Regular<T>
 struct weight_type<stree_coordinate<T>>
 {
-    using type = DistanceType<pointer(stree_node<T>)>;
+    using type = DistanceType<Pointer<stree_node<T>>>;
 };
 
 template <typename T>
     requires Regular<T>
 auto empty(stree_coordinate<T> c) -> bool
 {
-    using I = pointer(stree_node<T>);
-    return c.ptr == I{0};
+    return c.ptr == Pointer<stree_node<T>>{nullptr};
 }
 
 template <typename T>
@@ -6476,15 +6475,15 @@ template <typename T>
     requires Regular<T>
 struct tree_node
 {
-    using Link = pointer(tree_node);
+    using Link = Pointer<tree_node>;
     T value;
     Link left_successor_link;
     Link right_successor_link;
     Link predecessor_link;
     tree_node()
-        : left_successor_link{0}, right_successor_link{0}, predecessor_link{0}
+        : left_successor_link{nullptr}, right_successor_link{nullptr}, predecessor_link{nullptr}
     {}
-    tree_node(T v, Link l = 0, Link r = 0, Link p = 0)
+    tree_node(T v, Link l = nullptr, Link r = nullptr, Link p = nullptr)
         : value{v}, left_successor_link{l}, right_successor_link{r}, predecessor_link{p}
     {}
 };
@@ -6493,11 +6492,11 @@ template <typename T>
     requires Regular<T>
 struct tree_coordinate
 {
-    pointer(tree_node<T>) ptr;
+    Pointer<tree_node<T>> ptr;
     tree_coordinate()
-        : ptr{0}
+        : ptr{nullptr}
     {}
-    tree_coordinate(pointer(tree_node<T>) ptr)
+    tree_coordinate(Pointer<tree_node<T>> ptr)
         : ptr{ptr}
     {}
 };
@@ -6513,7 +6512,7 @@ template <typename T>
     requires Regular<T>
 struct weight_type<tree_coordinate<T>>
 {
-    using type = DistanceType<pointer(tree_node<T>)>;
+    using type = DistanceType<Pointer<tree_node<T>>>;
 };
 
 template <typename T>
@@ -6741,8 +6740,8 @@ template <typename T>
     requires Regular<T>
 struct array_prefix
 {
-    pointer(T) m;
-    pointer(T) l;
+    Pointer<T> m;
+    Pointer<T> l;
     T a;
     // Invariant: $[addressof(a), m)$ are constructed elements
     // Invariant: $[m, l)$ are unconstructed (reserve) elements
@@ -6750,13 +6749,13 @@ struct array_prefix
 
 template <typename T>
     requires Regular<T>
-auto allocate_array(DistanceType<T*> n) -> pointer(array_prefix<T>)
+auto allocate_array(DistanceType<T*> n) -> Pointer<array_prefix<T>>
 {
-    using P = pointer(array_prefix<T>);
-    if (zero(n)) return P(0);
+    using P = Pointer<array_prefix<T>>;
+    if (zero(n)) return P{nullptr};
     auto bsize = int(predecessor(n)) * sizeof(T);
     auto p = P(malloc(sizeof(array_prefix<T>) + bsize));
-    pointer(T) f = &sink(p).a;
+    Pointer<T> f = &sink(p).a;
     sink(p).m = f;
     sink(p).l = f + n;
     return p;
@@ -6764,7 +6763,7 @@ auto allocate_array(DistanceType<T*> n) -> pointer(array_prefix<T>)
 
 template <typename T>
     requires Regular<T>
-void deallocate_array(pointer(array_prefix<T>) p)
+void deallocate_array(Pointer<array_prefix<T>> p)
 {
     free(p);
 }
@@ -6774,9 +6773,9 @@ template <typename T>
 struct array
 {
     using N = DistanceType<IteratorType<array<T>>>;
-    pointer(array_prefix<T>) p;
+    Pointer<array_prefix<T>> p;
     array()
-        : p{0}
+        : p{nullptr}
     {}
     array(N c)
         : p(allocate_array<T>(c))
@@ -6827,7 +6826,7 @@ template <typename T>
     requires Regular<T>
 struct iterator_type<array<T>>
 {
-    using type = pointer(T);
+    using type = Pointer<T>;
 };
 
 template <typename T>
@@ -6848,16 +6847,16 @@ template <typename T>
     requires Regular<T>
 struct underlying_type<array<T>>
 {
-    using type = struct { pointer(array_prefix<T>) p; };
+    using type = struct { Pointer<array_prefix<T>> p; };
 };
 
 template <typename T>
     requires Regular<T>
 auto begin(const array<T>& x) -> IteratorType<array<T>>
 {
-    using P = pointer(array_prefix<T>);
+    using P = Pointer<array_prefix<T>>;
     using I = IteratorType<array<T>>;
-    if (x.p == P{0}) return I{0};
+    if (x.p == P{nullptr}) return I{0};
     return I(addressof(source(x.p).a));
 }
 
@@ -6865,9 +6864,9 @@ template <typename T>
     requires Regular<T>
 auto end(const array<T>& x) -> IteratorType<array<T>>
 {
-    using P = pointer(array_prefix<T>);
+    using P = Pointer<array_prefix<T>>;
     using I = IteratorType<array<T>>;
-    if (x.p == P{0}) return I{0};
+    if (x.p == P{nullptr}) return I{0};
     return I(source(x.p).m);
 }
 
@@ -6875,9 +6874,9 @@ template <typename T>
     requires Regular<T>
 auto end_of_storage(const array<T>& x) -> IteratorType<array<T>>
 {
-    using P = pointer(array_prefix<T>);
+    using P = Pointer<array_prefix<T>>;
     using I = IteratorType<array<T>>;
-    if (x.p == P{0}) return I{0};
+    if (x.p == P{nullptr}) return I{0};
     return I(source(x.p).l);
 }
 
