@@ -573,8 +573,7 @@ template <typename C>
 concept ReadableBidirectionalBifurcateCoordinate = Readable<C> && BidirectionalBifurcateCoordinate<C>;
 
 template <typename F>
-concept Comparator3Way = HomogeneousFunction<F> && Arity<F> == 2;
-    //  /\ Codomain(F) = int
+concept Comparator3Way = HomogeneousFunction<F> && Arity<F> == 2 && Same<Codomain<F>, int>;
 
 template <typename F>
 concept LinkedForwardIterator = true;

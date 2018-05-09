@@ -2693,6 +2693,13 @@ struct comparator_3_way
     }
 };
 
+template <typename R>
+    requires Relation<R>
+struct codomain_type<comparator_3_way<R>>
+{
+    using type = int;
+};
+
 template <typename I0, typename I1, typename F>
     requires
         ReadableIterator<I0> &&
